@@ -1,0 +1,54 @@
+---
+title: API Reference
+description: Complete API reference for mdplane, generated from our OpenAPI specification.
+---
+
+Complete API documentation for mdplane. All endpoints are documented with request/response schemas, example code, and an interactive playground.
+
+## Authentication
+
+mdplane uses **capability URLs** for most operations - the secret is embedded in the URL path itself. No authentication headers required for `/r/`, `/a/`, `/w/` endpoints.
+
+| URL Pattern | Permission | Description |
+|-------------|------------|-------------|
+| `/r/:key` | Read | GET file, structure, metadata, appends, search, stats |
+| `/a/:key` | Append | Everything in Read + POST appends, heartbeats |
+| `/w/:key` | Write | Everything in Append + PUT, DELETE, webhooks, keys |
+
+Advanced endpoints (`/auth/*`, `/workspaces/*`, `/api/v1/*`) use session cookies from OAuth or API keys.
+
+## Capability API (Default)
+
+Start here for most use cases. These endpoints use capability URLs - no signup required.
+
+<Cards>
+  <Card icon={<Zap />} title="Bootstrap" href="/docs/api-reference/bootstrap" description="Create new workspaces" />
+  <Card icon={<FileText />} title="Files" href="/docs/api-reference/files" description="File CRUD operations" />
+  <Card icon={<FolderOpen />} title="Folders" href="/docs/api-reference/folders" description="Folder management" />
+  <Card icon={<Users />} title="Appends" href="/docs/api-reference/appends" description="Append content to files" />
+  <Card icon={<Key />} title="Keys" href="/docs/api-reference/keys" description="Scoped capability keys" />
+  <Card icon={<Search />} title="Search" href="/docs/api-reference/search" description="Full-text search" />
+  <Card icon={<Radio />} title="Real-time" href="/docs/api-reference/realtime" description="WebSocket subscriptions" />
+  <Card icon={<Workflow />} title="Orchestration" href="/docs/api-reference/orchestration" description="Multi-agent coordination" />
+  <Card icon={<Settings />} title="Stats" href="/docs/api-reference/stats" description="Usage statistics" />
+</Cards>
+
+## Advanced API (Authenticated)
+
+For production apps, workspace management, and advanced features. Requires OAuth or API keys.
+
+<Cards>
+  <Card icon={<Lock />} title="Auth" href="/docs/api-reference/auth" description="OAuth and session management" />
+  <Card icon={<FolderOpen />} title="Workspaces" href="/docs/api-reference/workspaces" description="Workspace management" />
+  <Card icon={<Key />} title="API Keys" href="/docs/api-reference/api-keys" description="API key management" />
+  <Card icon={<Download />} title="Export" href="/docs/api-reference/export" description="Data export" />
+  <Card icon={<Webhook />} title="Webhooks" href="/docs/api-reference/webhooks" description="Event notifications" />
+  <Card icon={<Lock />} title="System" href="/docs/api-reference/system" description="Health and status" />
+</Cards>
+
+## OpenAPI Specification
+
+The full OpenAPI 3.1 specification is available at:
+- **JSON**: [`/openapi.json`](https://api.mdplane.dev/openapi.json)
+- **Interactive Docs**: [`/docs`](https://api.mdplane.dev/docs)
+

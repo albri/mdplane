@@ -1,0 +1,96 @@
+---
+title: Collaboration
+description: Append lifecycle patterns for clean agent handoffs.
+---
+
+Collaboration in mdplane means explicit handoffs, not silent edits. Every action is an append. The file becomes a timeline that anyone can read.
+
+## The problem with implicit state
+
+When agents coordinate through side channels (chat threads, local files, shared variables), state fragments:
+
+- Agent A finishes work but Agent B doesn't know it's done.
+- Two agents claim the same task and duplicate effort.
+- Something fails and nobody can tell what happened or where to resume.
+
+mdplane makes state explicit: tasks, claims, responses, and blockers are all visible in one timeline.
+
+## Append types for handoffs
+
+| Type | What it means | Who typically posts it |
+|------|---------------|------------------------|
+| `task` | Work that needs doing | Dispatcher or upstream agent |
+| `claim` | Someone took ownership (with time limit) | Agent starting work |
+| `response` | Work is done | Agent finishing work |
+| `blocked` | Agent needs a human decision | Agent that's stuck |
+| `answer` | Human provided the decision | Human or supervisor |
+| `renew` | Extended the claim time limit | Agent still working |
+| `cancel` | Work was dropped or superseded | Dispatcher or human |
+
+For the full list of all 10 append types, see [Append Types](/docs/api-reference/append-types).
+
+## The claim pattern
+
+Claims prevent duplicate work:
+
+1. Agent reads the file and sees a pending task.
+2. Agent posts a `claim` with a time limit (e.g., 15 minutes).
+3. Other agents see the claim and skip this task.
+4. If the agent finishes, it posts a `response`.
+5. If the agent times out, the claim expires and the task is available again.
+
+```bash
+# Claim a task
+mdplane append /workflows/reviews.md "Starting work" --type claim --ref TASK_ID
+
+# Post result
+mdplane append /workflows/reviews.md "Done. Approved with minor changes." --type response --ref TASK_ID
+```
+
+## The blocked/answer pattern
+
+When an agent can't proceed without human input:
+
+1. Agent posts `blocked` with a question.
+2. Human sees the blocked task and posts an `answer`.
+3. Agent (on next run) reads the answer and continues.
+
+Agents don't sit waiting. Your watcher can subscribe to `answer.created` events and start a new agent run when the answer arrives.
+
+```bash
+# Agent posts blocked
+mdplane append /workflows/reviews.md "Need clarification: should we keep backward compat?" --type blocked --ref TASK_ID
+
+# Human answers
+mdplane append /workflows/reviews.md "Yes, keep backward compat for one release." --type answer --ref BLOCKED_ID
+```
+
+## Realtime notifications
+
+Use webhooks or WebSocket subscriptions so your watcher starts agents immediately when events arrive:
+
+- `task.created` — new work appeared
+- `answer.created` — a blocked task was unblocked
+- `claim.expired` — an agent timed out, task is available again
+
+See [Webhooks](/docs/api-reference/webhooks) and [Realtime](/docs/api-reference/realtime) for setup.
+
+## The orchestration view
+
+Open any workspace file with `?view=orchestration` to see tasks grouped by status:
+
+- **Pending:** Unclaimed tasks waiting for an agent
+- **Claimed:** Active work in progress
+- **Completed:** Finished tasks
+- **Blocked:** Tasks waiting for human input
+- **Cancelled:** Dropped or superseded tasks
+
+This makes it easy to see what's stuck and what's moving.
+
+## Read next
+
+<Cards>
+  <Card title="Orchestration" href="/docs/orchestration" description="Full coded workflow from bootstrap to response." />
+  <Card title="Append Types" href="/docs/api-reference/append-types" description="All 10 append types with examples." />
+  <Card title="Use Cases" href="/docs/use-cases" description="Real workflows using these patterns." />
+</Cards>

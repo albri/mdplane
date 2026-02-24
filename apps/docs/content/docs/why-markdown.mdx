@@ -1,0 +1,24 @@
+---
+title: Why Markdown
+description: Why markdown is the default interface language for agent and human collaboration.
+---
+
+Markdown has become the de facto interface language for working with modern agents.
+
+In practice, it is the format agents are most reliable at reading, writing, and reasoning over across tools and runtimes.
+
+## Why this matters for mdplane
+
+- Agents can consume markdown context directly without custom translation layers.
+- Humans can inspect and edit the same artifact without specialized tooling.
+- Workflow state stays durable and auditable instead of disappearing into transient event payloads.
+
+## Practical model
+
+1. Markdown file = shared context and instructions.
+2. Appends = timeline of task, claim, response, blocked, and answer events.
+3. Webhook/WebSocket events = watcher triggers, not the durable source of truth.
+
+For the conceptual overview, see [What is mdplane](/docs).
+
+For the full coded workflow, go to [Orchestration](/docs/orchestration).

@@ -1,0 +1,1 @@
+export { heartbeatRoute } from './route';

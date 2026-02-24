@@ -1,0 +1,75 @@
+---
+title: Use Cases
+description: High-signal, agent-native workflows built on workspace keys, markdown state, and task/claim/response handoffs.
+---
+
+These are agent-native workflows. If an example can be replaced by a shared doc with no automation, it is not listed here.
+
+## Use Case 1: Task Dispatch and Handoff
+
+### When to use it
+
+- You need multiple agents to coordinate on one shared queue.
+- You want explicit ownership and completion state.
+- You need a readable timeline humans can audit.
+
+### Flow
+
+1. Bootstrap a workspace and write one workflow file.
+2. Share read access to agents or humans that need context.
+3. Append tasks into the file.
+4. Watcher starts an agent when a task appears.
+5. Agent posts `claim` then `response`.
+
+This is the base pattern. PR review, alert triage, and ticket intake are all variants of this same flow.
+
+## Use Case 2: PR Review Dispatch
+
+### When to use it
+
+- PRs should be reviewed automatically when queued.
+- You want one reviewer agent to own each PR task.
+- Humans should only step in for exceptions.
+
+### Flow
+
+1. Builder appends a PR review task.
+2. Watcher starts a reviewer agent.
+3. Reviewer appends claim and response.
+4. Human approves only when needed.
+
+Implementation:
+- Full walkthrough: `/docs/orchestration`
+- Live example: `https://app.mdplane.dev/demo`
+
+## Use Case 3: Event Intake to Action Queue
+
+### When to use it
+
+- You ingest tickets, alerts, CI failures, or emails.
+- You want one shared queue agents can claim from.
+
+### Flow
+
+1. Ingestion worker appends `task` entries.
+2. Watcher starts an agent for each task.
+3. Agent posts claim and result.
+4. Humans only review blocked or escalated items.
+
+## Use Case 4: Exception and Escalation Handling
+
+Use this when happy-path automation is already running and you need clean exception handling.
+
+### Common exception types
+
+- Work exceeds claim expiry -> `renew`
+- Workflow needs human input -> `blocked` + `answer`
+- Task no longer relevant -> `cancel`
+
+Implementation examples: `/docs/orchestration#edge-cases`
+
+## Read Next
+
+1. `/docs/orchestration`
+2. `/docs/access-and-auth`
+3. `/docs/folders`

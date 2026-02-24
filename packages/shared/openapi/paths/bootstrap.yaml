@@ -1,0 +1,76 @@
+# ==============================================================================
+# BOOTSTRAP ENDPOINTS
+# Create new workspaces (no auth required)
+# ==============================================================================
+
+/bootstrap:
+  post:
+    operationId: createWorkspace
+    tags:
+      - Bootstrap
+    summary: Create a new workspace
+    security: []
+    description: |
+      Zero-friction entry point. Creates a new workspace with a root folder immediately.
+      
+      No authentication required. Users can start creating files right away using the 
+      returned capability URLs.
+      
+      **Rate limit:** 10 workspaces per IP per hour.
+    requestBody:
+      required: true
+      description: Required workspace bootstrap configuration
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas.yaml#/BootstrapRequest'
+          examples:
+            withName:
+              summary: Create with workspace name
+              value:
+                workspaceName: "My Project"
+    responses:
+      '201':
+        description: Workspace created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/BootstrapResponse'
+            example:
+              ok: true
+              data:
+                workspaceId: "ws_x8k2mP9qL3nR"
+                keys:
+                  read: "m7dXp9lKa2nQe4R8vL5wYt"
+                  append: "a_nK3pL9mQ2xR8vL5wYt"
+                  write: "w_vT5yU8wX1zA4vL5wYt"
+                urls:
+                  api:
+                    read: "https://api.mdplane.dev/r/m7dXp9lKa2nQe4R8vL5wYt"
+                    append: "https://api.mdplane.dev/a/a_nK3pL9mQ2xR8vL5wYt"
+                    write: "https://api.mdplane.dev/w/w_vT5yU8wX1zA4vL5wYt"
+                  web:
+                    read: "https://app.mdplane.dev/r/m7dXp9lKa2nQe4R8vL5wYt"
+                    claim: "https://app.mdplane.dev/claim/w_vT5yU8wX1zA4vL5wYt"
+                createdAt: "2024-01-08T09:00:00Z"
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '429':
+        description: Rate limit exceeded
+        headers:
+          Retry-After:
+            description: Seconds to wait before retrying
+            schema:
+              type: integer
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+            example:
+              ok: false
+              error:
+                code: "RATE_LIMITED"
+                message: "Too many workspace creation requests. Please try again later."
+                details:
+                  retryAfterSeconds: 3600
+

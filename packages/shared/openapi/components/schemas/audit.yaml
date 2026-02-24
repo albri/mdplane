@@ -1,0 +1,86 @@
+# Audit-related schemas for mdplane API
+# Reference: docs/Obsidian Vault/Projects/mdplane/API Design.md
+
+# -----------------------------------------------------------------------------
+# Audit Log Entry
+# -----------------------------------------------------------------------------
+AuditLogEntry:
+  type: object
+  required: [id, action, resourceType, createdAt]
+  properties:
+    id:
+      type: string
+      description: Unique audit log ID
+    action:
+      type: string
+      description: The action that was performed
+    resourceType:
+      type: string
+      description: Type of resource affected
+    resourceId:
+      type: string
+      description: ID of the affected resource
+    resourcePath:
+      type: string
+      description: Path of the affected resource
+    actor:
+      type: string
+      description: Actor who performed the action
+    actorType:
+      type: string
+      enum: [capability_url, api_key, session]
+      description: Type of actor
+    metadata:
+      type: object
+      description: Additional action-specific metadata
+      additionalProperties: true
+    ipAddress:
+      type: string
+      description: IP address of the request
+    userAgent:
+      type: string
+      description: User agent of the request
+    createdAt:
+      type: string
+      format: date-time
+      description: When the action occurred
+
+# -----------------------------------------------------------------------------
+# Audit Log Pagination
+# -----------------------------------------------------------------------------
+AuditLogPagination:
+  type: object
+  required: [total, limit, cursor, hasMore]
+  properties:
+    total:
+      type: integer
+      description: Total number of matching logs
+    limit:
+      type: integer
+      description: Maximum logs per page
+    cursor:
+      type:
+        - string
+        - 'null'
+      description: Cursor for next page (opaque), null when no more results
+    hasMore:
+      type: boolean
+      description: Whether more results are available
+
+# -----------------------------------------------------------------------------
+# Audit Logs Response
+# -----------------------------------------------------------------------------
+AuditLogsResponse:
+  type: object
+  required: [ok, data, pagination]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: array
+      items:
+        $ref: '#/AuditLogEntry'
+    pagination:
+      $ref: '#/AuditLogPagination'
+

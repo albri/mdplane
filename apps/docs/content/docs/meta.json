@@ -1,0 +1,31 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "---Start Here---",
+    "index",
+    "---Core Workflows---",
+    "orchestration",
+    "use-cases",
+    "collaboration",
+    "files",
+    "folders",
+    "---Build & Access---",
+    "access-and-auth",
+    "---Operate---",
+    "troubleshooting",
+    "usage-limits",
+    "data-security-model",
+    "content-encryption",
+    "---Deploy---",
+    "hosted-vs-self-host",
+    "deployment-modes",
+    "self-hosting",
+    "local-development",
+    "architecture",
+    "---API Reference---",
+    "api-reference",
+    "---Tools---",
+    "cli",
+    "skills"
+  ]
+}

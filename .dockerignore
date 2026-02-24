@@ -1,0 +1,66 @@
+# =============================================================================
+# mdplane Docker Ignore File
+# Excludes files from Docker build context for faster builds
+# =============================================================================
+
+# Dependencies (reinstalled in container)
+node_modules
+.pnpm-store
+
+# Build artifacts (rebuilt in container)
+.next
+.turbo
+dist
+build
+out
+
+# Version control
+.git
+.gitignore
+
+# Test files
+**/__tests__
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+coverage
+
+# Documentation (not needed in container)
+*.md
+!README.md
+docs/
+
+# Environment files (pass secrets at runtime)
+.env*
+!.env.example
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Database files (mounted via volume)
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+data/
+
+# Task files (development only)
+tasks/
+
+# Misc
+*.bak
+*.tmp
+*.tsbuildinfo
+.vercel
+.cache
+.eslintcache

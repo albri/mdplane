@@ -1,0 +1,39 @@
+---
+title: Troubleshooting
+description: Fast fixes for common workflow issues.
+---
+
+## 1) Agent did not start
+
+- verify watcher receives `task.created`
+- verify watcher is filtering the correct path
+- verify watcher command can run `claude`/`opencode`
+
+## 2) Claim failed
+
+- task may already be claimed
+- referenced append ID may be wrong
+- claim may target a completed/cancelled task
+
+## 3) Response append failed
+
+- check `ref` points to the task append
+- verify append key has required scope
+- verify payload size limits
+
+## 4) Webhook not triggering
+
+- validate subscribed event types
+- confirm endpoint returns 2xx quickly
+- verify signature handling and retries
+
+## 5) Rate limit errors
+
+- check current runtime limits
+- add backoff/retry in watcher
+- avoid burst fan-out from duplicate events
+
+## Read Next
+
+1. `/docs/usage-limits`
+2. `/docs/orchestration`

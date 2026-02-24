@@ -1,0 +1,45 @@
+{
+  "name": "@mdplane/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schemas": {
+      "types": "./dist/schemas/index.d.ts",
+      "import": "./dist/schemas/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "generate": "pnpm openapi:bundle && pnpm generate:types && pnpm generate:zod && pnpm generate:query-schemas && pnpm generate:docs-openapi",
+    "generate:types": "openapi-typescript openapi/openapi.yaml -o src/generated/api.types.ts",
+    "generate:zod": "openapi-ts",
+    "generate:query-schemas": "node scripts/generate-query-schemas.mjs",
+    "generate:docs-openapi": "pnpm --filter @mdplane/docs generate:openapi",
+    "generate:check": "pnpm generate && git diff --exit-code src/generated/",
+    "openapi:lint": "redocly lint openapi/openapi.yaml",
+    "openapi:bundle": "redocly bundle openapi/openapi.yaml -o openapi.bundled.yaml --ext yaml",
+    "routes:validate": "tsx scripts/validate-routes.ts"
+  },
+  "dependencies": {
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "^0.90.3",
+    "@redocly/cli": "^1.27.0",
+    "@types/node": "^25.1.0",
+    "openapi-typescript": "^7.10.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.0",
+    "yaml": "^2.8.2"
+  }
+}

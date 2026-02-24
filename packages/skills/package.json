@@ -1,0 +1,20 @@
+{
+  "name": "@mdplane/skills",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OpenCode-compatible skills for AI agents to interact with mdplane",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/albri/mdplane.git",
+    "directory": "packages/skills"
+  },
+  "license": "MIT",
+  "keywords": [
+    "mdplane",
+    "skills",
+    "ai",
+    "agents",
+    "opencode"
+  ]
+}
+

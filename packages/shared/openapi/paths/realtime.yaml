@@ -1,0 +1,240 @@
+# ==============================================================================
+# REALTIME ENDPOINTS
+# WebSocket subscriptions and agent heartbeat
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# WEBSOCKET SUBSCRIPTION (Read key)
+# ------------------------------------------------------------------------------
+
+/r/{key}/ops/subscribe:
+  get:
+    operationId: subscribeReadKey
+    tags:
+      - Realtime
+    summary: WebSocket subscription (read-only events)
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Get WebSocket subscription credentials for real-time event streaming.
+      
+      Read key subscriptions receive file-level events only:
+      - `append`: Any append added to file
+      - `file.created`: File created in watched folder
+      - `file.deleted`: File deleted
+      - `file.updated`: File content changed
+
+      **WebSocket Message Types:**
+      - `connected`: Initial connection confirmation
+      - `append`: New append event
+      - `heartbeat`: Server keepalive ping
+      - `file.updated`: File content changed
+      - `error`: Error notification
+      
+      Returns 101 Switching Protocols for WebSocket upgrade on successful connection.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+    responses:
+      '101':
+        description: WebSocket connection established (Switching Protocols)
+      '200':
+        description: WebSocket upgrade successful (for OpenAPI compliance)
+        content:
+          application/json:
+            schema:
+              type: object
+              description: This endpoint upgrades to WebSocket. 200 is for OpenAPI compliance only.
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# WEBSOCKET SUBSCRIPTION (Append key)
+# ------------------------------------------------------------------------------
+
+/a/{key}/ops/subscribe:
+  get:
+    operationId: subscribeAppendKey
+    tags:
+      - Realtime
+    summary: WebSocket subscription (append events)
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Get WebSocket subscription credentials for real-time event streaming.
+      
+      Append key subscriptions receive all read events plus task/claim lifecycle events:
+      - `append`: Any append added to file
+      - `file.created`: File created in watched folder
+      - `file.deleted`: File deleted
+      - `file.updated`: File content changed
+      - `task.created`: New task append added
+      - `task.completed`: Task received response
+      - `task.cancelled`: Task was cancelled
+      - `task.blocked`: Agent marked task blocked
+      - `task.unblocked`: Blocked task received answer
+      - `task.overdue`: Task passed due date.
+      - `task.escalated`: Task escalated to human
+      - `task.recurred`: Recurring task created new instance
+      - `claim.created`: Task was claimed
+      - `claim.expired`: Claim not renewed in time
+      - `claim.renewed`: Claim timer extended
+      - `heartbeat`: Agent liveness signal
+
+      **WebSocket Message Types:**
+      - `connected`: Initial connection confirmation
+      - `append`: New append event
+      - `heartbeat`: Server keepalive ping
+      - `file.updated`: File content changed
+      - `error`: Error notification
+      
+      Returns 101 Switching Protocols for WebSocket upgrade on successful connection.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+    responses:
+      '101':
+        description: WebSocket connection established (Switching Protocols)
+      '200':
+        description: WebSocket upgrade successful (for OpenAPI compliance)
+        content:
+          application/json:
+            schema:
+              type: object
+              description: This endpoint upgrades to WebSocket. 200 is for OpenAPI compliance only.
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# WEBSOCKET SUBSCRIPTION (Write key)
+# ------------------------------------------------------------------------------
+
+/w/{key}/ops/subscribe:
+  get:
+    operationId: subscribeWriteKey
+    tags:
+      - Realtime
+    summary: WebSocket subscription (all events including write-level events)
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Get WebSocket subscription credentials for real-time event streaming.
+      
+      Write key subscriptions receive all events including write-level events:
+      - All read events (`append`, `file.created`, `file.deleted`, `file.updated`)
+      - All append events (task/claim lifecycle)
+      - `webhook.failed`: Webhook delivery failed
+      - `settings.changed`: File/folder settings modified
+      
+      **WebSocket Message Types:**
+      - `connected`: Initial connection confirmation
+      - `append`: New append event
+      - `heartbeat`: Server keepalive ping
+      - `file.updated`: File content changed
+      - `error`: Error notification
+
+      Returns 101 Switching Protocols for WebSocket upgrade on successful connection.
+
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+    responses:
+      '101':
+        description: WebSocket connection established (Switching Protocols)
+      '200':
+        description: WebSocket upgrade successful (for OpenAPI compliance)
+        content:
+          application/json:
+            schema:
+              type: object
+              description: This endpoint upgrades to WebSocket. 200 is for OpenAPI compliance only.
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# AGENT HEARTBEAT
+# ------------------------------------------------------------------------------
+
+/a/{key}/heartbeat:
+  post:
+    operationId: recordHeartbeat
+    tags:
+      - Realtime
+    summary: Record agent heartbeat
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Record an agent heartbeat to signal liveness. Updates the agent's "last seen"
+      timestamp without cluttering the file with appends.
+
+      Heartbeats are stored separately from regular appends and do not increment
+      the append counter.
+
+      **Author Identity:**
+      - Default keys (`boundAuthor: null`): Author is self-declared
+      - Scoped keys (`boundAuthor: "agent-alpha"`): Server validates author matches
+        `boundAuthor`. Returns 400 AUTHOR_MISMATCH if mismatched.
+
+      **Rate limiting:** Subject to standard append rate limits (60 req/min per capability URL).
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/realtime.yaml#/HeartbeatRequest'
+          example:
+            author: agent-alpha
+            status: alive
+            currentTask: a42
+            metadata:
+              version: "1.2.0"
+              lastAction: processing
+    responses:
+      '201':
+        description: Heartbeat recorded successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/realtime.yaml#/HeartbeatResponse'
+            example:
+              ok: true
+              data:
+                id: hb_x8k2mP9qL3nR
+                author: agent-alpha
+                ts: "2024-01-10T10:30:00Z"
+                expiresAt: "2024-01-10T10:35:00Z"
+                nextHeartbeatBy: "2024-01-10T10:34:30Z"
+      '400':
+        description: |
+          Invalid request. Possible error codes:
+          - `INVALID_AUTHOR`: Author field fails validation
+          - `AUTHOR_MISMATCH`: Heartbeat author doesn't match scoped key's boundAuthor
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+            examples:
+              authorMismatch:
+                summary: Author mismatch for scoped key
+                value:
+                  ok: false
+                  error:
+                    code: AUTHOR_MISMATCH
+                    message: "Key is bound to author 'agent-alpha', but heartbeat author is 'kai'"
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'

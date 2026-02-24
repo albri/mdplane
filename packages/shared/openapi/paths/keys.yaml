@@ -1,0 +1,207 @@
+# ==============================================================================
+# SCOPED KEYS ENDPOINTS
+# Operations for managing scoped capability keys
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# CAPABILITIES CHECK
+# ------------------------------------------------------------------------------
+
+/capabilities/check:
+  post:
+    operationId: checkCapabilities
+    tags:
+      - Capabilities
+    summary: Validate capability keys
+    security: []
+    description: |
+      Check if given keys are valid and return their permissions.
+
+      This endpoint validates up to 100 keys at once and returns:
+      - Whether each key is valid
+      - The permission level (read/append/write)
+      - The scope type and ID
+      - Error messages for invalid keys
+
+      Keys are truncated in responses for security (only first 8 chars shown).
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/keys.yaml#/CapabilitiesCheckRequest'
+          example:
+            keys:
+              - "keyX8k2mP9qL3nR7mQ2pN4"
+              - "a_x8k2mP9qL3nR7mQ2pN4x"
+    responses:
+      '200':
+        description: Capabilities checked
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/keys.yaml#/CapabilitiesCheckResponse'
+            example:
+              ok: true
+              data:
+                results:
+                  - key: "keyX8k2m..."
+                    valid: true
+                    permission: write
+                    scope: workspace
+                    scopeId: "ws_123"
+                  - key: "a_x8k2mP..."
+                    valid: false
+                    error: "EXPIRED"
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+
+# ------------------------------------------------------------------------------
+# CREATE AND LIST SCOPED KEYS
+# ------------------------------------------------------------------------------
+
+/w/{key}/keys:
+  post:
+    operationId: createScopedKey
+    tags:
+      - Keys
+    summary: Create scoped key
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Create a scoped capability key with specific permissions and restrictions.
+
+      Scoped keys can have:
+      - **boundAuthor**: All appends must use this author name
+      - **wipLimit**: Override WIP limit for this key
+      - **allowedTypes**: Restrict which append types this key can create
+      - **expiresAt**: Key expiration timestamp
+      - **paths**: Restrict key to specific paths
+
+      The response includes the full key (only shown once at creation).
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/keys.yaml#/ScopedKeyCreateRequest'
+          example:
+            permission: append
+            boundAuthor: agent-alpha
+            displayName: Alpha Research Agent
+            wipLimit: 2
+            allowedTypes: [claim, response]
+            expiresAt: '2024-02-01T00:00:00Z'
+    responses:
+      '201':
+        description: Scoped key created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/keys.yaml#/ScopedKeyCreateResponse'
+            example:
+              ok: true
+              data:
+                id: key_abc123def456
+                key: a_x8k2mP9qL3nR7mQ2pN4x
+                permission: append
+                boundAuthor: agent-alpha
+                displayName: Alpha Research Agent
+                wipLimit: 2
+                allowedTypes: [claim, response]
+                expiresAt: '2024-02-01T00:00:00Z'
+                createdAt: '2024-01-10T10:00:00Z'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+  get:
+    operationId: listScopedKeys
+    tags:
+      - Keys
+    summary: List scoped keys
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      List all scoped keys for a file. By default, revoked keys are excluded.
+
+      Use `?includeRevoked=true` to include revoked keys in the response.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - name: includeRevoked
+        in: query
+        description: Include revoked keys in the response
+        schema:
+          type: boolean
+          default: false
+    responses:
+      '200':
+        description: Scoped keys retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/keys.yaml#/ScopedKeyListResponse'
+            example:
+              ok: true
+              data:
+                - id: key_1
+                  key: 'a_x8k2...nR'
+                  permission: append
+                  boundAuthor: agent-alpha
+                  displayName: Alpha Research Agent
+                  wipLimit: 2
+                  createdAt: '2024-01-10T10:00:00Z'
+                  lastUsedAt: '2024-01-10T11:30:00Z'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# REVOKE SCOPED KEY
+# ------------------------------------------------------------------------------
+
+/w/{key}/keys/{keyId}:
+  delete:
+    operationId: revokeScopedKey
+    tags:
+      - Keys
+    summary: Revoke scoped key
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Revoke a scoped key. The key becomes immediately unusable.
+
+      Revoked keys remain in the list (with `revoked: true`) for audit purposes
+      unless explicitly filtered out.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/keyId'
+    responses:
+      '200':
+        description: Scoped key revoked successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/keys.yaml#/KeyRevokeResponse'
+            example:
+              ok: true
+              data:
+                id: key_1
+                revoked: true
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+

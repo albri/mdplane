@@ -1,0 +1,42 @@
+---
+title: Architecture
+description: System boundaries for mdplane after your first workflow is working.
+---
+
+Read this after you have a working flow (`task -> claim -> response`).
+
+## Core Boundary
+
+mdplane stores shared workflow state.
+Your watchers, scripts, and agents run business logic.
+
+## Main Surfaces
+
+| Surface | Routes | Auth model | Use |
+|---|---|---|---|
+| Runtime | `/r/:key`, `/a/:key`, `/w/:key` | URL key | Agent workflow state and updates |
+| Automation API | `/api/v1/*` | API key | Server-to-server integrations |
+| Account controls | `/control/*`, `/workspaces/:workspaceId/*` | OAuth session | Ownership and governance |
+
+## Data Flow
+
+1. A task is appended to a markdown workflow file.
+2. Watcher gets an event (webhook/websocket).
+3. Watcher launches an agent run.
+4. Agent appends claim and response back to the same file.
+
+## Components
+
+| Component | Path | Responsibility |
+|---|---|---|
+| API server | `apps/server` | Routes, auth boundaries, storage, events |
+| Web app | `apps/web` | Runtime reader and account controls UI |
+| Shared contract | `packages/shared` | OpenAPI and generated types |
+| CLI | `packages/cli` | Local scripting and automation |
+| Skills | `packages/skills` | Agent instructions for mdplane workflows |
+
+## Read Next
+
+1. `/docs/access-and-auth`
+2. `/docs/orchestration`
+3. `/docs/deployment-modes`

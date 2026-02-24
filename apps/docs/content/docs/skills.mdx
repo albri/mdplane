@@ -1,0 +1,35 @@
+---
+title: Skills
+description: Give agents mdplane workflow instructions with minimal setup.
+---
+
+Skills let your agent understand how to read, append, and coordinate through mdplane.
+
+## Quick Setup
+
+```bash
+npx skills add albri/mdplane --skill mdplane --skill mdplane-cli --agent claude-code -y
+```
+
+## Minimal Prompt (Task Dispatch and Handoff)
+
+```text
+Use mdplane as a shared worklog:
+1) bootstrap or load workspace keys
+2) write/read one workflow markdown file
+3) append task, claim, and response updates
+If blocked, append blocked with a clear question.
+```
+
+## Watcher-Oriented Prompt
+
+```text
+Create a local watcher that reacts to task.created,
+fetches workflow markdown context, starts a reviewer agent,
+and appends claim and response.
+```
+
+## Read Next
+
+1. `/docs/orchestration`
+2. `/docs`

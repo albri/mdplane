@@ -1,0 +1,56 @@
+# ==============================================================================
+# ADMIN ENDPOINTS
+# System metrics and monitoring for operators
+# All endpoints require ADMIN_SECRET token in Authorization header
+# ==============================================================================
+
+/api/v1/admin/metrics:
+  get:
+    operationId: getAdminMetrics
+    tags:
+      - Admin
+    summary: Get system metrics
+    description: |
+      Returns system-wide metrics including storage usage, entity counts,
+      and health indicators.
+
+      **Authentication:** Requires `Authorization: Bearer <ADMIN_SECRET>` header.
+      The ADMIN_SECRET is set via environment variable on the server.
+
+      **Security:** This endpoint exposes sensitive operational data.
+      Only share the ADMIN_SECRET with trusted operators.
+    security:
+      - adminToken: []
+    responses:
+      '200':
+        description: System metrics retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/AdminMetricsResponse'
+            example:
+              ok: true
+              data:
+                storage:
+                  databaseSizeBytes: 52428800
+                  databaseSizeMB: 50.0
+                  maxSizeBytes: 5368709120
+                  maxSizeMB: 5120.0
+                  usagePercent: 0.98
+                counts:
+                  workspaces: 42
+                  files: 1250
+                  folders: 180
+                  users: 15
+                  activeSessions: 8
+                  capabilityKeys: 126
+                quotas:
+                  maxWorkspaceStorageBytes: 104857600
+                  maxFileSizeBytes: 10485760
+                uptime:
+                  seconds: 86400
+                  formatted: "1d 0h 0m"
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'

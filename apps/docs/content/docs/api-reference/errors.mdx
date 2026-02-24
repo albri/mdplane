@@ -1,0 +1,319 @@
+---
+title: Error Codes
+---
+
+mdplane uses standard HTTP status codes with machine-readable error codes.
+
+---
+
+## Response Format
+
+### Success Response
+
+```json
+{
+  "ok": true,
+  "data": { ... }
+}
+```
+
+### Error Response
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "FILE_NOT_FOUND",
+    "message": "The requested file was not found",
+    "details": {
+      "path": "/nonexistent.md"
+    }
+  }
+}
+```
+
+---
+
+## HTTP Status Codes
+
+| Status | Usage |
+|--------|-------|
+| `200 OK` | Success |
+| `201 Created` | Resource created |
+| `204 No Content` | Success, no content returned |
+| `400 Bad Request` | Invalid request |
+| `401 Unauthorized` | Missing or invalid auth |
+| `403 Forbidden` | Insufficient permissions |
+| `404 Not Found` | Resource not found |
+| `409 Conflict` | Concurrent modification |
+| `412 Precondition Failed` | ETag mismatch |
+| `413 Payload Too Large` | Request too large |
+| `429 Too Many Requests` | Rate limit exceeded |
+| `500 Internal Server Error` | Server error |
+
+---
+
+## Error Codes
+
+### File Errors
+
+| Code | HTTP | Description |
+|------|------|-------------|
+| `FILE_NOT_FOUND` | 404 | File does not exist |
+| `FILE_DELETED` | 410 | File was deleted |
+| `SECTION_NOT_FOUND` | 404 | File section not found |
+
+#### FILE_NOT_FOUND
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "FILE_NOT_FOUND",
+    "message": "File not found: /tasks.md",
+    "details": {
+      "path": "/tasks.md"
+    }
+  }
+}
+```
+
+---
+
+### Folder Errors
+
+| Code | HTTP | Description |
+|------|------|-------------|
+| `FOLDER_NOT_FOUND` | 404 | Folder does not exist |
+
+---
+
+### Append Errors
+
+| Code | HTTP | Description |
+|------|------|-------------|
+| `APPEND_NOT_FOUND` | 404 | Append does not exist |
+| `INVALID_APPEND_TYPE` | 400 | Invalid append type |
+| `INVALID_REF` | 400 | Invalid append reference |
+| `TYPE_NOT_ALLOWED` | 403 | Append type not allowed |
+| `PAYLOAD_TOO_LARGE` | 413 | Append exceeds size limit |
+
+#### INVALID_APPEND_TYPE
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "INVALID_APPEND_TYPE",
+    "message": "Invalid append type: 'not_a_type'",
+    "details": {
+      "validTypes": ["task", "claim", "response", "comment", "blocked", "answer", "renew", "cancel", "vote", "heartbeat"]
+    }
+  }
+}
+```
+
+---
+
+### Task/Claim Errors
+
+| Code | HTTP | Description |
+|------|------|-------------|
+| `TASK_ALREADY_COMPLETE` | 409 | Task already completed |
+| `CLAIM_EXPIRED` | 409 | Claim has expired |
+| `ALREADY_CLAIMED` | 409 | Task already claimed |
+| `WIP_LIMIT_EXCEEDED` | 429 | Agent at WIP limit |
+| `CANNOT_RENEW_OTHERS_CLAIM` | 403 | Can't renew others' claims |
+| `CANNOT_CANCEL_OTHERS_CLAIM` | 403 | Can't cancel others' claims |
+
+#### WIP_LIMIT_EXCEEDED
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "WIP_LIMIT_EXCEEDED",
+    "message": "Agent has reached maximum concurrent claims (3)",
+    "details": {
+      "wipLimit": 3,
+      "currentClaims": 3,
+      "activeClaims": ["a1", "a2", "a3"]
+    }
+  }
+}
+```
+
+---
+
+### Authentication Errors
+
+| Code | HTTP | Description |
+|------|------|-------------|
+| `UNAUTHORIZED` | 401 | Missing or invalid auth |
+| `FORBIDDEN` | 403 | Insufficient permissions |
+| `KEY_EXPIRED` | 401 | API key or capability key expired |
+| `KEY_REVOKED` | 401 | Key was revoked |
+| `KEY_NOT_FOUND` | 404 | Key does not exist |
+| `PERMISSION_DENIED` | 403 | Operation not permitted |
+
+#### UNAUTHORIZED
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Missing Authorization header"
+  }
+}
+```
+
+---
+
+### Validation Errors
+
+| Code | HTTP | Description |
+|------|------|-------------|
+| `INVALID_REQUEST` | 400 | Malformed request |
+| `INVALID_PATH` | 400 | Invalid file/folder path |
+| `INVALID_WEBHOOK_URL` | 400 | Invalid webhook URL |
+| `INVALID_KEY` | 400 | Invalid key format |
+| `INVALID_AUTHOR` | 400 | Invalid author name |
+| `INVALID_VOTE_VALUE` | 400 | Vote must be +1 or -1 |
+
+---
+
+### Rate Limit Errors
+
+| Code | HTTP | Description |
+|------|------|-------------|
+| `RATE_LIMITED` | 429 | Rate limit exceeded |
+| `AUTHOR_RATE_LIMITED` | 429 | Author-specific rate limit |
+| `WORKSPACE_RATE_LIMITED` | 429 | Workspace rate limit |
+
+#### RATE_LIMITED
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "RATE_LIMITED",
+    "message": "Rate limit exceeded. Try again in 30 seconds.",
+    "details": {
+      "limit": 60,
+      "window": 60,
+      "retryAfter": 30
+    }
+  }
+}
+```
+
+---
+
+### Quota Errors
+
+| Code | HTTP | Description |
+|------|------|-------------|
+| `QUOTA_EXCEEDED` | 429 | Workspace quota exceeded |
+| `PAYLOAD_TOO_LARGE` | 413 | Request payload too large |
+
+---
+
+### Concurrency Errors
+
+| Code | HTTP | Description |
+|------|------|-------------|
+| `CONFLICT` | 409 | Concurrent modification |
+| `AUTHOR_MISMATCH` | 403 | Author mismatch in operation |
+
+#### CONFLICT (ETag Mismatch)
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "CONFLICT",
+    "message": "ETag mismatch. File has been modified.",
+    "details": {
+      "currentEtag": "new-etag-value",
+      "providedEtag": "old-etag-value"
+    }
+  }
+}
+```
+
+---
+
+### System Errors
+
+| Code | HTTP | Description |
+|------|------|-------------|
+| `SERVER_ERROR` | 500 | Internal server error |
+| `SERVICE_UNAVAILABLE` | 503 | Service temporarily unavailable |
+| `JOB_NOT_FOUND` | 404 | Export/job not found |
+| `JOB_NOT_READY` | 425 | Export/job not ready for download |
+
+---
+
+## Error Handling Best Practices
+
+### 1. Always Check `ok` Field
+
+```javascript
+const response = await mdplane.cat('/file.md');
+
+if (!response.ok) {
+  // Handle error
+  console.error(response.error.code, response.error.message);
+  return;
+}
+
+// Use data
+const content = response.data.content;
+```
+
+### 2. Use `code` for Conditional Logic
+
+```javascript
+switch (error.code) {
+  case 'FILE_NOT_FOUND':
+    // File doesn't exist, create it
+    break;
+  case 'WIP_LIMIT_EXCEEDED':
+    // Wait and retry
+    break;
+  case 'CONFLICT':
+    // Re-read and retry
+    break;
+  default:
+    // Unknown error
+    break;
+}
+```
+
+### 3. Respect `retryAfter`
+
+```javascript
+if (error.code === 'RATE_LIMITED' && error.details.retryAfter) {
+  await sleep(error.details.retryAfter * 1000);
+  // Retry request
+}
+```
+
+### 4. Log `details` for Debugging
+
+```javascript
+console.error('mdplane Error:', {
+  code: error.code,
+  message: error.message,
+  details: error.details
+});
+```
+
+---
+
+## Next Steps
+
+1. **[Limits](/docs/api-reference/limits)** — Quotas and limits
+2. **[Working with Files](/docs/files)** — ETag handling
+3. **[API Reference](/docs/api-reference)** — Endpoint documentation

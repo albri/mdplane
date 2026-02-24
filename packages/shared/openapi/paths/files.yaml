@@ -1,0 +1,638 @@
+# ==============================================================================
+# FILE ENDPOINTS
+# Operations via capability URLs
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# READ OPERATIONS (Read key - all tiers)
+# ------------------------------------------------------------------------------
+
+/r/{key}:
+  get:
+    operationId: readFile
+    tags:
+      - Files
+    summary: Read file content
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Read file content with optional format and filtering options.
+
+      Supports multiple response formats via the `format` query parameter:
+      - `raw`: Plain markdown content (use /r/{key}/raw endpoint for text/markdown response)
+      - `parsed`: Structured parse with frontmatter, sections, and appends array
+      - `structure`: File headings and metadata only
+
+      Use `since` parameter to get only appends after a sequence number (for WebSocket reconnection catch-up).
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/format'
+      - $ref: '../components/parameters.yaml#/since'
+      - name: appends
+        in: query
+        description: Number of recent appends to include
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000
+      - name: include
+        in: query
+        description: Include additional data (e.g., stats)
+        schema:
+          type: string
+          enum:
+            - stats
+    responses:
+      '200':
+        description: File content retrieved successfully
+        headers:
+          ETag:
+            description: Content version hash for optimistic concurrency
+            schema:
+              type: string
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FileReadResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# NOTE: /a/{key} GET is intentionally not implemented.
+# Append keys should use /r/{key} for reading files.
+# The /a/{key} path is used for append operations only.
+
+/w/{key}:
+  get:
+    operationId: readFileViaWriteKey
+    tags:
+      - Files
+    summary: Read file content (write key)
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Read file content using a write key. Write keys inherit all read capabilities.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/format'
+      - $ref: '../components/parameters.yaml#/since'
+      - name: appends
+        in: query
+        description: Number of recent appends to include
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000
+      - name: include
+        in: query
+        description: Include additional data (e.g., stats)
+        schema:
+          type: string
+          enum:
+            - stats
+    responses:
+      '200':
+        description: File content retrieved successfully
+        headers:
+          ETag:
+            description: Content version hash for optimistic concurrency
+            schema:
+              type: string
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FileReadResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+  put:
+    operationId: updateFile
+    tags:
+      - Files
+    summary: Update file content
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Replace entire file content. Requires write key.
+
+      Use `If-Match` header with ETag for optimistic concurrency control.
+      If omitted, last-write-wins.
+
+      Existing appends are marked stale after content replacement.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - name: If-Match
+        in: header
+        description: ETag from previous read for optimistic concurrency
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas.yaml#/FileUpdateRequest'
+    responses:
+      '200':
+        description: File updated successfully
+        headers:
+          ETag:
+            description: New content version hash
+            schema:
+              type: string
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FileUpdateResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '409':
+        $ref: '../components/responses.yaml#/Conflict'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '412':
+        description: ETag mismatch - file was modified since last read
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+  delete:
+    operationId: deleteFile
+    tags:
+      - Files
+    summary: Delete file
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Delete a file. Soft delete by default (recoverable for 7 days).
+
+      Use `?permanent=true` for hard delete (irreversible).
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - name: permanent
+        in: query
+        description: Hard delete (irreversible)
+        schema:
+          type: boolean
+          default: false
+    responses:
+      '200':
+        description: File deleted successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FileDeleteResponse'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+  patch:
+    operationId: renameFile
+    tags:
+      - Files
+    summary: Rename file
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Rename a file. Capability URLs remain unchanged.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas.yaml#/FileRenameRequest'
+    responses:
+      '200':
+        description: File renamed successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FileRenameResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '409':
+        $ref: '../components/responses.yaml#/Conflict'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+
+
+# ------------------------------------------------------------------------------
+# RAW CONTENT ENDPOINT
+# ------------------------------------------------------------------------------
+
+/r/{key}/raw:
+  get:
+    operationId: readFileRaw
+    tags:
+      - Files
+    summary: Read raw file content
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Returns raw markdown content with `Content-Type: text/markdown`. No JSON envelope.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+    responses:
+      '200':
+        description: Raw markdown content
+        headers:
+          ETag:
+            description: Content version hash
+            schema:
+              type: string
+        content:
+          text/markdown:
+            schema:
+              type: string
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# METADATA ENDPOINT
+# ------------------------------------------------------------------------------
+
+/r/{key}/meta:
+  get:
+    operationId: readFileMeta
+    tags:
+      - Files
+    summary: Read file metadata
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Get file metadata without content. Includes filename, folder, size, timestamps,
+      append count, task stats, and webhook status.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+    responses:
+      '200':
+        description: File metadata retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FileMetaResponse'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# TAIL ENDPOINT
+# ------------------------------------------------------------------------------
+
+/r/{key}/tail:
+  get:
+    operationId: readFileTail
+    tags:
+      - Files
+    summary: Read last N appends
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Get the last N bytes or lines of file content. Efficient for tailing large files.
+
+      **Performance note:** Byte-based tail is O(1) via file seek. Line-based requires
+      reading from end until N newlines found. For files >1MB, prefer `?bytes=`.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - name: bytes
+        in: query
+        description: Last N bytes to return (default 10000, max 100000)
+        schema:
+          type: integer
+          default: 10000
+          maximum: 100000
+      - name: lines
+        in: query
+        description: Last N lines to return (approximate)
+        schema:
+          type: integer
+          maximum: 1000
+    responses:
+      '200':
+        description: Tail content retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FileTailResponse'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# STRUCTURE ENDPOINT
+# ------------------------------------------------------------------------------
+
+/r/{key}/structure:
+  get:
+    operationId: readFileStructure
+    tags:
+      - Files
+    summary: Read file structure/headings
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Get document structure including headings (level, text, line number),
+      append count, and whether file has task appends.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+    responses:
+      '200':
+        description: File structure retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FileStructureResponse'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# SECTION ENDPOINT
+# ------------------------------------------------------------------------------
+
+/r/{key}/section/{heading}:
+  get:
+    operationId: readFileSection
+    tags:
+      - Files
+    summary: Read specific section by heading
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Get content of a specific section identified by its heading text.
+      Returns the section content along with start and end line numbers.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - name: heading
+        in: path
+        required: true
+        description: Heading text to find (URL-encoded)
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Section content retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FileSectionResponse'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+
+# ------------------------------------------------------------------------------
+# SPECIFIC APPEND ENDPOINT
+# ------------------------------------------------------------------------------
+
+/r/{key}/ops/file/append/{appendId}:
+  get:
+    operationId: readAppend
+    tags:
+      - Files
+    summary: Read specific append
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Get a specific append by ID. Returns the full append object including
+      author, timestamp, type, content, and any references.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/appendId'
+    responses:
+      '200':
+        description: Append retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/AppendGetResponse'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# WRITE KEY ONLY OPERATIONS
+# ------------------------------------------------------------------------------
+
+/w/{key}/recover:
+  post:
+    operationId: recoverFile
+    tags:
+      - Files
+    summary: Recover deleted file
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Recover a soft-deleted file within the 7-day recovery window.
+
+      Use `?rotateUrls=true` to generate new capability URLs (invalidates old ones).
+      Useful when recovering after a URL leak.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - name: rotateUrls
+        in: query
+        description: Generate new capability URLs (invalidates old ones)
+        schema:
+          type: boolean
+          default: false
+    responses:
+      '200':
+        description: File recovered successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FileRecoverResponse'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+/w/{key}/move:
+  post:
+    operationId: moveFile
+    tags:
+      - Files
+    summary: Move file to new folder
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Move a file to a different folder. Capability URLs remain unchanged.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas.yaml#/FileMoveRequest'
+    responses:
+      '200':
+        description: File moved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FileMoveResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '409':
+        $ref: '../components/responses.yaml#/Conflict'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+/w/{key}/rotate:
+  post:
+    operationId: rotateCapabilityUrls
+    tags:
+      - Files
+    summary: Rotate capability URLs
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Generate new capability URLs for the file. Old URLs become invalid immediately.
+
+      Use this to revoke access for anyone who has the current URLs.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+    responses:
+      '200':
+        description: URLs rotated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FileRotateUrlsResponse'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+
+# ------------------------------------------------------------------------------
+# FILE SETTINGS ENDPOINTS
+# ------------------------------------------------------------------------------
+
+/w/{key}/settings:
+  get:
+    operationId: getFileSettings
+    tags:
+      - Files
+    summary: Get file settings
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Get file-specific settings including claim duration, max append size,
+      allowed append types, WIP limit, and labels.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+    responses:
+      '200':
+        description: File settings retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FileSettingsResponse'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+  patch:
+    operationId: updateFileSettings
+    tags:
+      - Files
+    summary: Update file settings
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Partially update file settings. Only provided fields are updated.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas.yaml#/FileSettingsUpdateRequest'
+    responses:
+      '200':
+        description: File settings updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FileSettingsResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'

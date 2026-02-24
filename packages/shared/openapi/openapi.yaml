@@ -1,0 +1,335 @@
+openapi: 3.1.0
+info:
+  title: mdplane API
+  version: 1.0.0
+  description: |
+    Markdown-based coordination layer for AI agents.
+
+    ## Authentication
+
+    Most endpoints use capability URLs - the secret is in the URL path.
+    No authentication headers required for `/r/`, `/a/`, `/w/` endpoints.
+
+    Account controls endpoints (`/auth/*`, `/workspaces/*`) use session cookies.
+
+    ## Capability URL Tiers
+
+    | URL Pattern | Permission | Can Do |
+    |-------------|------------|--------|
+    | `/r/:key` | Read | GET file, structure, metadata, appends, search, stats |
+    | `/a/:key` | Append | Everything in Read + POST appends, heartbeats |
+    | `/w/:key` | Write | Everything in Append + PUT, DELETE, webhooks, keys |
+
+    ## Key Formats
+
+    | Key Type | Pattern | Example |
+    |----------|---------|---------|
+    | Root capability key | `^[A-Za-z0-9]{22,}$` | `x8k2mP9qL3nR7mQ2pN4xK9` |
+    | Scoped capability key | `^(r\|a\|w)_[A-Za-z0-9]{20,}$` | `a_x8k2mP9qL3nR7mQ2pN4x` |
+    | API key (live) | `^sk_live_[A-Za-z0-9]{20,}$` | `sk_live_x8k2mP9qL3nR...` |
+    | API key (test) | `^sk_test_[A-Za-z0-9]{20,}$` | `sk_test_y9m3nP0rL4oS...` |
+  contact:
+    name: mdplane Team
+    url: https://mdplane.dev
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.mdplane.dev
+    description: Production
+  - url: http://localhost:3000
+    description: Local development
+
+tags:
+  - name: Bootstrap
+    description: Create new workspaces (no auth required)
+  - name: Files
+    description: File operations via capability URLs
+  - name: Appends
+    description: Append content to files
+  - name: Folders
+    description: Folder operations
+  - name: Keys
+    description: Scoped capability key management
+  - name: Auth
+    description: OAuth authentication via BetterAuth (GitHub/Google)
+  - name: Claiming
+    description: Workspace claiming and recovery
+  - name: Workspaces
+    description: Workspace management (OAuth required)
+  - name: API Keys
+    description: API key management for claimed workspaces
+  - name: Webhooks
+    description: Webhook configuration
+  - name: Search
+    description: Full-text search
+  - name: Real-time
+    description: WebSocket subscription and heartbeat
+  - name: Stats
+    description: File and workspace statistics
+  - name: Jobs
+    description: Background job management
+  - name: Export
+    description: Data export functionality
+  - name: Agents
+    description: Agent management
+  - name: Orchestration
+    description: Multi-agent orchestration
+  - name: System
+    description: System health and status
+  - name: Admin
+    description: Operator-only endpoints (requires ADMIN_SECRET)
+
+# =============================================================================
+# PATHS
+# =============================================================================
+# Use `npx @redocly/cli bundle openapi.yaml -o bundled.yaml` to bundle
+# Or reference individual path files using x-]]- extension and bundler tool
+
+paths:
+  # Bootstrap
+  /bootstrap:
+    $ref: 'paths/bootstrap.yaml#/~1bootstrap'
+
+  # Files - Read endpoints
+  /r/{key}:
+    $ref: 'paths/files.yaml#/~1r~1{key}'
+  # NOTE: /a/{key} GET is intentionally not implemented - use /r/{key} for reading
+  /w/{key}:
+    $ref: 'paths/files.yaml#/~1w~1{key}'
+  /r/{key}/raw:
+    $ref: 'paths/files.yaml#/~1r~1{key}~1raw'
+  /r/{key}/meta:
+    $ref: 'paths/files.yaml#/~1r~1{key}~1meta'
+  /r/{key}/tail:
+    $ref: 'paths/files.yaml#/~1r~1{key}~1tail'
+  /r/{key}/structure:
+    $ref: 'paths/files.yaml#/~1r~1{key}~1structure'
+  /r/{key}/section/{heading}:
+    $ref: 'paths/files.yaml#/~1r~1{key}~1section~1{heading}'
+  /r/{key}/ops/file/append/{appendId}:
+    $ref: 'paths/files.yaml#/~1r~1{key}~1ops~1file~1append~1{appendId}'
+  /w/{key}/recover:
+    $ref: 'paths/files.yaml#/~1w~1{key}~1recover'
+  /w/{key}/move:
+    $ref: 'paths/files.yaml#/~1w~1{key}~1move'
+  /w/{key}/rotate:
+    $ref: 'paths/files.yaml#/~1w~1{key}~1rotate'
+  /w/{key}/settings:
+    $ref: 'paths/files.yaml#/~1w~1{key}~1settings'
+
+  # Appends
+  /a/{key}/append:
+    $ref: 'paths/appends.yaml#/~1a~1{key}~1append'
+  /a/{key}/{path}:
+    $ref: 'paths/appends.yaml#/~1a~1{key}~1{path}'
+
+  # Folders
+  /r/{key}/folders/{path}:
+    $ref: 'paths/folders.yaml#/~1r~1{key}~1folders~1{path}'
+  /a/{key}/folders/{path}:
+    $ref: 'paths/folders.yaml#/~1a~1{key}~1folders~1{path}'
+  /a/{key}/folders/{path}/files:
+    $ref: 'paths/folders.yaml#/~1a~1{key}~1folders~1{path}~1files'
+  /w/{key}/folders/{path}:
+    $ref: 'paths/folders.yaml#/~1w~1{key}~1folders~1{path}'
+  /w/{key}/folders:
+    $ref: 'paths/folders.yaml#/~1w~1{key}~1folders'
+  /a/{key}/folders/{path}/copy:
+    $ref: 'paths/folders.yaml#/~1a~1{key}~1folders~1{path}~1copy'
+  /a/{key}/folders/{path}/bulk:
+    $ref: 'paths/folders.yaml#/~1a~1{key}~1folders~1{path}~1bulk'
+  /w/{key}/folders/{path}/move:
+    $ref: 'paths/folders.yaml#/~1w~1{key}~1folders~1{path}~1move'
+  /w/{key}/folders/{path}/settings:
+    $ref: 'paths/folders.yaml#/~1w~1{key}~1folders~1{path}~1settings'
+  /r/{key}/ops/folders/stats:
+    $ref: 'paths/folders.yaml#/~1r~1{key}~1ops~1folders~1stats'
+  /r/{key}/ops/folders/search:
+    $ref: 'paths/folders.yaml#/~1r~1{key}~1ops~1folders~1search'
+  /r/{key}/ops/folders/tasks:
+    $ref: 'paths/folders.yaml#/~1r~1{key}~1ops~1folders~1tasks'
+  /r/{key}/ops/folders/subscribe:
+    $ref: 'paths/folders.yaml#/~1r~1{key}~1ops~1folders~1subscribe'
+  /a/{key}/ops/folders/subscribe:
+    $ref: 'paths/folders.yaml#/~1a~1{key}~1ops~1folders~1subscribe'
+  /w/{key}/ops/folders/subscribe:
+    $ref: 'paths/folders.yaml#/~1w~1{key}~1ops~1folders~1subscribe'
+  /w/{key}/folders/{path}/webhooks:
+    $ref: 'paths/folders.yaml#/~1w~1{key}~1folders~1{path}~1webhooks'
+  /w/{key}/folders/{path}/webhooks/{webhookId}:
+    $ref: 'paths/folders.yaml#/~1w~1{key}~1folders~1{path}~1webhooks~1{webhookId}'
+  /a/{key}/folders/{path}/claims:
+    $ref: 'paths/folders.yaml#/~1a~1{key}~1folders~1{path}~1claims'
+
+  # Scoped Keys
+  /w/{key}/keys:
+    $ref: 'paths/keys.yaml#/~1w~1{key}~1keys'
+  /w/{key}/keys/{keyId}:
+    $ref: 'paths/keys.yaml#/~1w~1{key}~1keys~1{keyId}'
+
+  # Capabilities Check
+  /capabilities/check:
+    $ref: 'paths/keys.yaml#/~1capabilities~1check'
+
+  # Auth (OAuth via BetterAuth)
+  /api/auth/signin/github:
+    $ref: 'paths/auth.yaml#/~1api~1auth~1signin~1github'
+  /api/auth/signin/google:
+    $ref: 'paths/auth.yaml#/~1api~1auth~1signin~1google'
+  /auth/me:
+    $ref: 'paths/auth.yaml#/~1auth~1me'
+  /auth/logout:
+    $ref: 'paths/auth.yaml#/~1auth~1logout'
+
+  # Claiming
+  /w/{key}/claim:
+    $ref: 'paths/claiming.yaml#/~1w~1{key}~1claim'
+
+  # Workspace Management (Tier 2 - OAuth required)
+  /w/{key}/workspace:
+    $ref: 'paths/workspaces.yaml#/~1w~1{key}~1workspace'
+  /workspaces/{workspaceId}:
+    $ref: 'paths/workspaces.yaml#/~1workspaces~1{workspaceId}'
+  /workspaces/{workspaceId}/name:
+    $ref: 'paths/workspaces.yaml#/~1workspaces~1{workspaceId}~1name'
+  /workspaces/{workspaceId}/rotate-all:
+    $ref: 'paths/workspaces.yaml#/~1workspaces~1{workspaceId}~1rotate-all'
+  # NOTE: /workspaces/{workspaceId}/transfer is a future feature, not implemented
+
+  # API Keys
+  /workspaces/{workspaceId}/api-keys:
+    $ref: 'paths/api-keys.yaml#/~1workspaces~1{workspaceId}~1api-keys'
+  /workspaces/{workspaceId}/api-keys/{keyId}:
+    $ref: 'paths/api-keys.yaml#/~1workspaces~1{workspaceId}~1api-keys~1{keyId}'
+
+  # Webhooks
+  /w/{key}/webhooks:
+    $ref: 'paths/webhooks.yaml#/~1w~1{key}~1webhooks'
+  /w/{key}/webhooks/{webhookId}:
+    $ref: 'paths/webhooks.yaml#/~1w~1{key}~1webhooks~1{webhookId}'
+  /w/{key}/webhooks/{webhookId}/logs:
+    $ref: 'paths/webhooks.yaml#/~1w~1{key}~1webhooks~1{webhookId}~1logs'
+  /w/{key}/webhooks/{webhookId}/test:
+    $ref: 'paths/webhooks.yaml#/~1w~1{key}~1webhooks~1{webhookId}~1test'
+  /workspaces/{workspaceId}/webhooks:
+    $ref: 'paths/workspace-webhooks.yaml#/~1workspaces~1{workspaceId}~1webhooks'
+  /workspaces/{workspaceId}/webhooks/{webhookId}:
+    $ref: 'paths/workspace-webhooks.yaml#/~1workspaces~1{workspaceId}~1webhooks~1{webhookId}'
+  /workspaces/{workspaceId}/webhooks/{webhookId}/test:
+    $ref: 'paths/workspace-webhooks.yaml#/~1workspaces~1{workspaceId}~1webhooks~1{webhookId}~1test'
+
+  # Search
+  /r/{key}/search:
+    $ref: 'paths/search.yaml#/~1r~1{key}~1search'
+  # NOTE: /a/{key}/search is not implemented - use /r/{key}/search instead
+  /api/v1/search:
+    $ref: 'paths/search.yaml#/~1api~1v1~1search'
+
+  # Real-time
+  /r/{key}/ops/subscribe:
+    $ref: 'paths/realtime.yaml#/~1r~1{key}~1ops~1subscribe'
+  /a/{key}/ops/subscribe:
+    $ref: 'paths/realtime.yaml#/~1a~1{key}~1ops~1subscribe'
+  /w/{key}/ops/subscribe:
+    $ref: 'paths/realtime.yaml#/~1w~1{key}~1ops~1subscribe'
+  /a/{key}/heartbeat:
+    $ref: 'paths/realtime.yaml#/~1a~1{key}~1heartbeat'
+
+  # Stats
+  /w/{key}/ops/stats:
+    $ref: 'paths/stats.yaml#/~1w~1{key}~1ops~1stats'
+  /r/{key}/ops/file/stats:
+    $ref: 'paths/stats.yaml#/~1r~1{key}~1ops~1file~1stats'
+  /a/{key}/ops/file/stats:
+    $ref: 'paths/stats.yaml#/~1a~1{key}~1ops~1file~1stats'
+  /api/v1/stats:
+    $ref: 'paths/stats.yaml#/~1api~1v1~1stats'
+
+  # Jobs
+  /j/{key}:
+    $ref: 'paths/jobs.yaml#/~1j~1{key}'
+
+  # Export
+  /api/v1/export:
+    $ref: 'paths/export.yaml#/~1api~1v1~1export'
+  /api/v1/export/jobs:
+    $ref: 'paths/export.yaml#/~1api~1v1~1export~1jobs'
+  /api/v1/export/jobs/{jobId}:
+    $ref: 'paths/export.yaml#/~1api~1v1~1export~1jobs~1{jobId}'
+  /api/v1/export/jobs/{jobId}/download:
+    $ref: 'paths/export.yaml#/~1api~1v1~1export~1jobs~1{jobId}~1download'
+  /api/v1/deleted:
+    $ref: 'paths/export.yaml#/~1api~1v1~1deleted'
+
+  # Agents
+  /api/v1/agents/liveness:
+    $ref: 'paths/agents.yaml#/~1api~1v1~1agents~1liveness'
+  /r/{key}/agents/liveness:
+    $ref: 'paths/agents.yaml#/~1r~1{key}~1agents~1liveness'
+  # NOTE: /a/{key}/claims is not implemented - use /a/{key}/folders/{path}/claims instead
+
+  # Orchestration (capability-based)
+  /r/{key}/orchestration:
+    $ref: 'paths/orchestration.yaml#/~1r~1{key}~1orchestration'
+  /w/{key}/orchestration:
+    $ref: 'paths/orchestration.yaml#/~1w~1{key}~1orchestration'
+
+  # Workspace Orchestration (session-authenticated)
+  /workspaces/{workspaceId}/orchestration:
+    $ref: 'paths/workspace-orchestration.yaml#/~1workspaces~1{workspaceId}~1orchestration'
+  /workspaces/{workspaceId}/orchestration/claims/{claimId}/renew:
+    $ref: 'paths/workspace-orchestration.yaml#/~1workspaces~1{workspaceId}~1orchestration~1claims~1{claimId}~1renew'
+  /workspaces/{workspaceId}/orchestration/claims/{claimId}/complete:
+    $ref: 'paths/workspace-orchestration.yaml#/~1workspaces~1{workspaceId}~1orchestration~1claims~1{claimId}~1complete'
+  /workspaces/{workspaceId}/orchestration/claims/{claimId}/cancel:
+    $ref: 'paths/workspace-orchestration.yaml#/~1workspaces~1{workspaceId}~1orchestration~1claims~1{claimId}~1cancel'
+  /workspaces/{workspaceId}/orchestration/claims/{claimId}/block:
+    $ref: 'paths/workspace-orchestration.yaml#/~1workspaces~1{workspaceId}~1orchestration~1claims~1{claimId}~1block'
+
+  # API v1 (path-based access)
+  /api/v1/files/{path}:
+    $ref: 'paths/api-v1.yaml#/~1api~1v1~1files~1{path}'
+  /api/v1/files/{path}/append:
+    $ref: 'paths/api-v1.yaml#/~1api~1v1~1files~1{path}~1append'
+  /api/v1/folders:
+    $ref: 'paths/api-v1.yaml#/~1api~1v1~1folders'
+  /api/v1/folders/{path}:
+    $ref: 'paths/api-v1.yaml#/~1api~1v1~1folders~1{path}'
+
+  # System
+  /health:
+    $ref: 'paths/system.yaml#/~1health'
+  /openapi.json:
+    $ref: 'paths/system.yaml#/~1openapi.json'
+  /docs:
+    $ref: 'paths/system.yaml#/~1docs'
+  /api/v1/changelog:
+    $ref: 'paths/system.yaml#/~1api~1v1~1changelog'
+  /api/v1/status:
+    $ref: 'paths/system.yaml#/~1api~1v1~1status'
+  /w/{key}/capabilities/check:
+    $ref: 'paths/system.yaml#/~1w~1{key}~1capabilities~1check'
+
+  # Audit
+  /w/{key}/audit:
+    $ref: 'paths/audit.yaml#/~1w~1{key}~1audit'
+
+  # Admin (operator-only, requires ADMIN_SECRET)
+  /api/v1/admin/metrics:
+    $ref: 'paths/admin.yaml#/~1api~1v1~1admin~1metrics'
+
+# =============================================================================
+# COMPONENTS
+# =============================================================================
+components:
+  schemas:
+    $ref: 'components/schemas.yaml'
+  parameters:
+    $ref: 'components/parameters.yaml'
+  responses:
+    $ref: 'components/responses.yaml'
+  securitySchemes:
+    $ref: 'components/security.yaml'
+

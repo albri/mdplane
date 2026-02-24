@@ -1,0 +1,20 @@
+{
+  "name": "@mdplane/status",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm --filter @mdplane/shared build && node ./scripts/build.mjs",
+    "dev": "pnpm --filter @mdplane/shared build && node ./scripts/dev.mjs",
+    "lint": "eslint src --ext .ts",
+    "test": "tsx --test ./test/status-view-model.test.ts",
+    "typecheck": "pnpm --filter @mdplane/shared build && tsc --project tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@mdplane/shared": "workspace:^"
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0",
+    "typescript": "^5"
+  }
+}

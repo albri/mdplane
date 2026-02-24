@@ -1,0 +1,100 @@
+# ==============================================================================
+# ADMIN SCHEMAS
+# Schema definitions for admin/operator endpoints
+# ==============================================================================
+
+AdminMetricsResponse:
+  type: object
+  required:
+    - ok
+    - data
+  properties:
+    ok:
+      type: boolean
+      enum: [true]
+    data:
+      type: object
+      required:
+        - storage
+        - counts
+        - quotas
+        - uptime
+      properties:
+        storage:
+          type: object
+          required:
+            - databaseSizeBytes
+            - databaseSizeMB
+            - usagePercent
+          properties:
+            databaseSizeBytes:
+              type: integer
+              description: Current database file size in bytes
+            databaseSizeMB:
+              type: number
+              format: float
+              description: Current database file size in megabytes
+            maxSizeBytes:
+              type: integer
+              description: Maximum allowed database size (from config or volume)
+            maxSizeMB:
+              type: number
+              format: float
+              description: Maximum allowed database size in megabytes
+            usagePercent:
+              type: number
+              format: float
+              description: Percentage of storage used (0-100)
+        counts:
+          type: object
+          required:
+            - workspaces
+            - files
+            - folders
+            - users
+            - activeSessions
+            - capabilityKeys
+          properties:
+            workspaces:
+              type: integer
+              description: Total number of workspaces (excluding deleted)
+            files:
+              type: integer
+              description: Total number of files (excluding deleted)
+            folders:
+              type: integer
+              description: Total number of folders (excluding deleted)
+            users:
+              type: integer
+              description: Total number of registered users
+            activeSessions:
+              type: integer
+              description: Number of active user sessions
+            capabilityKeys:
+              type: integer
+              description: Total number of capability keys (excluding revoked)
+        quotas:
+          type: object
+          required:
+            - maxWorkspaceStorageBytes
+            - maxFileSizeBytes
+          properties:
+            maxWorkspaceStorageBytes:
+              type: integer
+              description: Maximum storage per workspace in bytes
+            maxFileSizeBytes:
+              type: integer
+              description: Maximum file size in bytes
+        uptime:
+          type: object
+          required:
+            - seconds
+            - formatted
+          properties:
+            seconds:
+              type: integer
+              description: Server uptime in seconds
+            formatted:
+              type: string
+              description: Human-readable uptime (e.g., "1d 2h 30m")
+

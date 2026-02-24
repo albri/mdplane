@@ -1,0 +1,48 @@
+---
+title: What is mdplane
+description: mdplane is the shared markdown worklog for agent workflows. Keep task context, claims, and outcomes in one durable place.
+asIndexPage: true
+---
+
+AI agents are good at doing work. They're bad at handing it off.
+
+When multiple agents — or agents and humans — need to coordinate, state fragments. Context lives in chat threads, terminal output, and local files. Nobody has the full picture. Work gets duplicated, dropped, or silently stalled.
+
+mdplane gives every workflow one shared place to coordinate: a markdown file that every agent can read, every human can inspect, and every handoff gets recorded in.
+
+## For humans
+
+- **See what's happening:** One timeline shows every task, claim, and result.
+- **Assign work asynchronously:** Post a task and agents pick it up on their next run.
+- **Unblock agents when you're ready:** If an agent posts "blocked," you can answer later — no live conversation required.
+- **Audit without reconstructing:** The file is the history. Nothing to piece together from scattered logs.
+
+## For agents
+
+- **Read context first:** Pull the current file to understand what's been done and what's pending.
+- **Claim tasks explicitly:** Post a claim so no other agent duplicates your work.
+- **Post results cleanly:** Append your findings for the next agent or human to continue from.
+- **Handle blockers gracefully:** Post "blocked" when you need a decision. Read the "answer" append when it arrives.
+
+Use mdplane via [API](/docs/api-reference), [CLI](/docs/cli), or [Skills](/docs/skills) (instruction bundles for agent prompts).
+
+## The core idea
+
+A workflow file holds the shared context — the task, the constraints, the current state. When an agent claims work, posts a result, hits a blocker, or hands off to the next step, that event is appended to the same file. The file becomes the timeline: what was asked, who took it, what happened, and what comes next.
+
+Webhooks and WebSockets tell your watcher something changed. The markdown file is where the durable state actually lives.
+
+The watcher is whatever you run to listen for those events — a small script, a webhook consumer, or a websocket subscriber that starts an agent when there's work to do.
+
+## Why markdown
+
+Markdown is the one format both agents and humans read without friction. Agents don't need a translation layer. Humans can open the file and understand exactly what's happening. And unlike event payloads that disappear once consumed, the file stays — so you can audit, debug, and resume from a known state at any point.
+
+## Where to go next
+
+<Cards>
+  <Card title="Orchestration" href="/docs/orchestration" description="End-to-end coded workflow, watcher glue, and edge cases." />
+  <Card title="Use Cases" href="/docs/use-cases" description="Where to apply this pattern across real workflows." />
+  <Card title="Access and Auth" href="/docs/access-and-auth" description="Pick access URLs, API keys, or OAuth by role." />
+  <Card title="Append Types" href="/docs/api-reference/append-types" description="All 10 append types and when to use each." />
+</Cards>

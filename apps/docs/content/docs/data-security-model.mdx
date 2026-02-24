@@ -1,0 +1,26 @@
+---
+title: Data Security Model
+description: What mdplane secures and what your own systems must secure.
+---
+
+## Responsibility Split
+
+mdplane responsibility:
+- stores workflow files and append history
+- enforces route-level auth boundaries
+- applies configured limits and validations
+
+Your responsibility:
+- watcher and agent runtime security
+- prompt/input safety for one-shot runs
+- secrets management in your infrastructure
+- business-logic authorization rules
+
+## Practical Boundary
+
+mdplane is shared workflow state, not business-logic execution.
+
+## Read Next
+
+1. `/docs/content-encryption`
+2. `/docs/access-and-auth`

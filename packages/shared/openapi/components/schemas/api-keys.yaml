@@ -1,0 +1,182 @@
+# API Key schemas for mdplane API
+# Reference: docs/Obsidian Vault/Projects/mdplane/API Design.md
+
+# -----------------------------------------------------------------------------
+# Core API Key Schema
+# -----------------------------------------------------------------------------
+ApiKey:
+  type: object
+  description: API key metadata (returned in list operations)
+  required:
+    - id
+    - name
+    - permissions
+    - createdAt
+    - prefix
+  properties:
+    id:
+      type: string
+      description: Unique key identifier
+    name:
+      type: string
+      description: Human-readable key name
+    permissions:
+      type: array
+      description: Key permission scopes
+      items:
+        type: string
+        enum:
+          - read
+          - append
+          - write
+          - export
+    createdAt:
+      type: string
+      format: date-time
+      description: Key creation timestamp
+    expiresAt:
+      type: string
+      format: date-time
+      description: Key expiration timestamp (optional)
+    lastUsedAt:
+      type: string
+      format: date-time
+      description: Last usage timestamp (optional)
+    prefix:
+      type: string
+      description: Key prefix for identification (sk_live_ or sk_test_)
+      pattern: '^sk_(live|test)_[A-Za-z0-9]{4}\.\.\.$'
+      example: 'sk_live_x8k2...'
+
+# -----------------------------------------------------------------------------
+# Request Schemas
+# -----------------------------------------------------------------------------
+ApiKeyCreateRequest:
+  type: object
+  description: Request to create a new API key
+  required:
+    - name
+    - permissions
+  properties:
+    name:
+      type: string
+      description: Human-readable name for the key
+      maxLength: 64
+    permissions:
+      type: array
+      description: Permission scopes for the key
+      minItems: 1
+      items:
+        type: string
+        enum:
+          - read
+          - append
+          - write
+          - export
+    expiresInSeconds:
+      type: integer
+      description: Time until expiration in seconds (optional)
+      minimum: 3600
+
+# -----------------------------------------------------------------------------
+# Response Schemas
+# -----------------------------------------------------------------------------
+ApiKeyCreateResponse:
+  type: object
+  description: Response from API key creation (key shown only once)
+  required:
+    - ok
+    - data
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required:
+        - id
+        - key
+        - name
+        - permissions
+        - createdAt
+      properties:
+        id:
+          type: string
+          description: Unique key identifier
+        key:
+          type: string
+          description: Full API key (shown only once, store securely)
+          pattern: '^sk_(live|test)_[A-Za-z0-9]{20,}$'
+          example: 'sk_live_demoKey123'
+        name:
+          type: string
+          description: Key name
+        permissions:
+          type: array
+          items:
+            type: string
+            enum:
+              - read
+              - append
+              - write
+              - export
+        createdAt:
+          type: string
+          format: date-time
+          description: Key creation timestamp
+        expiresAt:
+          type: string
+          format: date-time
+          description: Key expiration timestamp (optional)
+        webUrl:
+          type: string
+          format: uri
+          description: URL to manage API keys in the web app
+
+ApiKeyListResponse:
+  type: object
+  description: Response containing list of API keys
+  required:
+    - ok
+    - data
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required:
+        - keys
+      properties:
+        keys:
+          type: array
+          description: List of API keys (without full key values)
+          items:
+            $ref: '#/ApiKey'
+        webUrl:
+          type: string
+          format: uri
+          description: URL to manage API keys in the web app
+
+ApiKeyRevokeResponse:
+  type: object
+  description: Response from API key revocation
+  required:
+    - ok
+    - data
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required:
+        - id
+        - revoked
+      properties:
+        id:
+          type: string
+          description: Key identifier
+        revoked:
+          type: boolean
+          const: true

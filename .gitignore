@@ -1,0 +1,68 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+dist
+build
+.next
+.turbo
+out
+
+# Test & Coverage
+coverage
+*.lcov
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+.DS_Store
+
+# Environment
+.env
+.env.*
+!.env.example
+!.env.selfhost.example
+!apps/**/.env.example
+
+# mdplane CLI config (repo-local override)
+.mdplane
+
+# Logs
+logs
+.logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Database
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+data/
+
+# Cache
+.cache
+.eslintcache
+*.tsbuildinfo
+
+# Misc
+*.bak
+*.tmp
+.tmp/
+.localappdata/
+.vercel
+.env*.local
+
+# AI agent local configs (installed skills symlinked from .agents/skills/)
+/.claude
+/.opencode
+/.agents
+/.agent-browser

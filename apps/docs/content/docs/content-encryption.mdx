@@ -1,0 +1,26 @@
+---
+title: Content Encryption
+description: Using client-side encryption and understanding feature tradeoffs.
+---
+
+mdplane does not provide built-in end-to-end encryption for markdown content.
+
+If needed, encrypt content in your own client/workflow before sending it.
+
+## Tradeoffs
+
+When content is encrypted client-side, features that need plaintext degrade:
+- full-text search quality
+- snippet extraction
+- content-aware automation logic
+
+## Practical Pattern
+
+Encrypt sensitive fields, keep minimal workflow metadata plaintext.
+
+This keeps core handoff automation usable while protecting sensitive content.
+
+## Read Next
+
+1. `/docs/data-security-model`
+2. `/docs/usage-limits`

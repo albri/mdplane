@@ -1,0 +1,145 @@
+# ==============================================================================
+# API KEYS ENDPOINTS
+# API key management for claimed workspaces
+# ==============================================================================
+
+/workspaces/{workspaceId}/api-keys:
+  post:
+    operationId: createApiKey
+    tags:
+      - API Keys
+    summary: Create API key
+    description: |
+      Create a new API key for programmatic workspace access.
+      
+      **Requires:** Session cookie (verified email) and workspace ownership.
+      
+      **Key format:** API keys start with `sk_` prefix:
+      - `sk_live_...` for production
+      - `sk_test_...` for test environments
+      
+      **Important:** The full key is only shown once at creation time. Store it securely.
+      Keys are hashed before storage — we cannot recover lost keys.
+    security:
+      - oauthSession: []  # Requires OAuth session (GitHub/Google)
+    parameters:
+      - $ref: '../components/parameters.yaml#/workspaceId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas.yaml#/ApiKeyCreateRequest'
+          example:
+            name: "CI Pipeline"
+            permissions:
+              - read
+              - append
+            expiresInSeconds: 31536000
+    responses:
+      '201':
+        description: API key created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/api-keys.yaml#/ApiKeyCreateResponse'
+            example:
+              ok: true
+              data:
+                id: "key_1"
+                key: "sk_live_demoKey123"
+                name: "CI Pipeline"
+                permissions:
+                  - read
+                  - append
+                createdAt: "2024-01-08T09:00:00Z"
+                expiresAt: "2025-01-08T09:00:00Z"
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '500':
+        $ref: '../components/responses.yaml#/ServerError'
+
+  get:
+    operationId: listApiKeys
+    tags:
+      - API Keys
+    summary: List API keys
+    description: |
+      List all API keys for a workspace.
+      
+      **Requires:** Session cookie (verified email) and workspace ownership.
+      
+      **Note:** Full key values are never returned after creation — only the prefix
+      for identification.
+    security:
+      - oauthSession: []  # Requires OAuth session (GitHub/Google)
+    parameters:
+      - $ref: '../components/parameters.yaml#/workspaceId'
+    responses:
+      '200':
+        description: API keys retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/ApiKeyListResponse'
+            example:
+              ok: true
+              data:
+                keys:
+                  - id: "key_1"
+                    name: "CI Pipeline"
+                    prefix: "sk_live_x8k2..."
+                    permissions:
+                      - read
+                      - append
+                    createdAt: "2024-01-08T09:00:00Z"
+                    expiresAt: "2025-01-08T09:00:00Z"
+                    lastUsedAt: "2024-01-10T14:30:00Z"
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+
+/workspaces/{workspaceId}/api-keys/{keyId}:
+  delete:
+    operationId: revokeApiKey
+    tags:
+      - API Keys
+    summary: Revoke API key
+    description: |
+      Revoke (delete) an API key.
+      
+      **Requires:** Session cookie (verified email) and workspace ownership.
+      
+      Deletion is immediate. Any requests using this key will fail.
+    security:
+      - oauthSession: []  # Requires OAuth session (GitHub/Google)
+    parameters:
+      - $ref: '../components/parameters.yaml#/workspaceId'
+      - $ref: '../components/parameters.yaml#/keyId'
+    responses:
+      '200':
+        description: API key revoked successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/ApiKeyRevokeResponse'
+            example:
+              ok: true
+              data:
+                id: "key_1"
+                revoked: true
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'

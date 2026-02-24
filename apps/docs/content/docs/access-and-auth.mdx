@@ -1,0 +1,83 @@
+---
+title: Access and Auth
+description: Choose URL keys, API keys, or OAuth based on workflow role and operation.
+---
+
+Use this page when deciding who can do what in a workflow.
+
+If you are building your first workflow, start with URL keys.
+
+## Access Types
+
+| Type | Routes | Best for |
+|---|---|---|
+| URL key | `/r/:key`, `/a/:key`, `/w/:key` | Runtime workflow operations |
+| API key | `/api/v1/*` | Backend automation |
+| OAuth session | `/control/*`, `/workspaces/:workspaceId/*` | Human governance actions |
+
+## Surfaces
+
+| Surface | Auth | Purpose |
+|---|---|---|
+| Runtime (`/r`, `/a`, `/w`) | URL key | Shared workflow state and appends |
+| Automation API (`/api/v1/*`) | API key | Service-to-service jobs |
+| Control surfaces (`/control/*`) | OAuth session | Ownership and destructive controls |
+
+## Workflow-Oriented Matrix
+
+| Action | URL key | API key | OAuth session |
+|---|---|---|---|
+| Read workflow files | Yes | Yes | No |
+| Append task/claim/response | Yes | Yes | No |
+| Trigger watcher automation | Yes (via events) | Yes (via events) | No |
+| Manage API keys | No | No | Yes |
+| Manage webhooks in UI | No | No | Yes |
+| Rotate URL keys | Partial | No | Yes |
+| Rename/delete workspace | No | No | Yes |
+
+## Quick Rules
+
+- Start with URL keys for your first workflow.
+- Use API keys for stable service-to-service jobs.
+- Use OAuth for ownership and destructive controls.
+
+<Callout type="warning">
+Use least privilege by default: start with read/append for watcher flows. Reserve write keys and OAuth actions for trusted governance paths.
+</Callout>
+
+## Bootstrap Reminder
+
+Root URL keys are shown once at bootstrap. Store them immediately.
+
+## Control Dashboard
+
+The control dashboard at `app.mdplane.dev/control` is where you manage workspaces you've claimed.
+
+### Claiming a workspace
+
+Anonymous workspaces can be claimed by signing in and visiting the workspace with a write key. Once claimed, you can:
+
+- Rename or delete the workspace
+- Rotate capability URLs
+- Manage webhooks
+- Create API keys
+
+### Rotating keys
+
+If a key is compromised:
+
+1. Go to **Control → [Workspace] → Settings**
+2. Click **Rotate URLs**
+3. All existing read/append/write URLs are invalidated immediately
+4. New URLs are shown once — store them immediately
+
+Or via API: `POST /workspaces/{workspaceId}/rotate-all`
+
+### Lost keys
+
+If you lose your keys but still have access to a claimed workspace, you can rotate to get new ones. If you lose keys to an unclaimed workspace, there is no recovery — the workspace is inaccessible.
+
+## Read Next
+
+1. `/docs/orchestration`
+2. `/docs/usage-limits`

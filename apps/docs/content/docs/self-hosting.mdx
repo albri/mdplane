@@ -1,0 +1,36 @@
+---
+title: Self-Hosting
+description: Operator guide for teams that must run mdplane in their own infrastructure.
+---
+
+Self-hosting is for advanced operators.
+
+## Start (Minimal Profile)
+
+```bash
+cp .env.selfhost.example .env.selfhost
+pnpm run selfhost:min:up
+```
+
+## Optional Full Profile
+
+```bash
+pnpm run selfhost:full:up
+```
+
+## What You Own
+
+- secrets management
+- upgrade cadence
+- backups and recovery
+- observability and incident response
+
+## Runtime vs Governance
+
+You can run runtime URL-key workflows without full governance mode.
+Enable governance only when OAuth/account controls are required.
+
+## Read Next
+
+1. `/docs/hosted-vs-self-host`
+2. `/docs/deployment-modes`

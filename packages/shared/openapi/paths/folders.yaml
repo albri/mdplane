@@ -1,0 +1,1101 @@
+# ==============================================================================
+# FOLDER ENDPOINTS
+# Operations via capability URLs for folder management
+# Reference: docs/Obsidian Vault/Projects/mdplane/API Design.md
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# READ OPERATIONS (Read key - all tiers)
+# ------------------------------------------------------------------------------
+
+/r/{key}/folders/{path}:
+  get:
+    operationId: listFolderContents
+    tags:
+      - Folders
+    summary: List folder contents
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      List contents of a folder including files and subfolders.
+
+      Supports pagination and sorting.
+
+      **Permission inheritance:** Returned file URLs respect the folder's permission level:
+      - Folder read key → returns file read URLs only
+      - Folder append key → returns file append URLs
+      - Folder write key → returns file write URLs
+
+      **Export mode:** Use `?action=export` to download folder contents as an archive.
+      Same query params as workspace export, but scoped to this folder.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/folderPath'
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/cursor'
+      - name: action
+        in: query
+        description: |
+          Special action to perform. When set to `export`, returns folder contents as
+          a downloadable archive instead of JSON listing.
+        schema:
+          type: string
+          enum:
+            - export
+      - name: format
+        in: query
+        description: Archive format (only used when action=export)
+        schema:
+          type: string
+          enum:
+            - zip
+            - tar.gz
+          default: zip
+      - name: recursive
+        in: query
+        description: Include all nested contents recursively
+        schema:
+          type: boolean
+          default: false
+      - name: sort
+        in: query
+        description: Sort field
+        schema:
+          type: string
+          enum:
+            - name
+            - modified
+            - size
+          default: name
+      - name: order
+        in: query
+        description: Sort order
+        schema:
+          type: string
+          enum:
+            - asc
+            - desc
+          default: asc
+      - name: includeAppends
+        in: query
+        description: Include append history in export metadata (only used when action=export)
+        schema:
+          type: boolean
+          default: false
+    responses:
+      '200':
+        description: |
+          Folder contents retrieved successfully.
+
+          When `action=export`, returns binary archive with Content-Disposition header.
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/folders.yaml#/FolderListResponse'
+          application/zip:
+            schema:
+              type: string
+              format: binary
+          application/gzip:
+            schema:
+              type: string
+              format: binary
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+/a/{key}/folders/{path}:
+  get:
+    operationId: listFolderContentsViaAppendKey
+    tags:
+      - Folders
+    summary: List folder contents (append key)
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      List folder contents using an append key. Append keys inherit all read capabilities.
+      Returns file append URLs in response.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/folderPath'
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/cursor'
+      - name: recursive
+        in: query
+        description: Include all nested contents recursively
+        schema:
+          type: boolean
+          default: false
+      - name: sort
+        in: query
+        description: Sort field
+        schema:
+          type: string
+          enum:
+            - name
+            - modified
+            - size
+          default: name
+      - name: order
+        in: query
+        description: Sort order
+        schema:
+          type: string
+          enum:
+            - asc
+            - desc
+          default: asc
+    responses:
+      '200':
+        description: Folder contents retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/folders.yaml#/FolderListResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# CREATE FILE IN FOLDER (separate /files endpoint per API Design doc)
+# ------------------------------------------------------------------------------
+
+/a/{key}/folders/{path}/files:
+  post:
+    operationId: createFileInFolder
+    tags:
+      - Folders
+    summary: Create file in folder
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Create a new file in the specified folder. Uses folder append key.
+
+      Creating files is a safe additive operation. The creator receives all 3 file URLs
+      regardless of which folder key they used.
+
+      **Atomic creation:** If two clients attempt to create a file with the same name
+      simultaneously, exactly one succeeds (409 FILE_ALREADY_EXISTS for the other).
+
+      Use `Idempotency-Key` header to safely retry file creation.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/folderPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/folders.yaml#/CreateFileRequest'
+    responses:
+      '201':
+        description: File created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/folders.yaml#/CreateFileResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '409':
+        $ref: '../components/responses.yaml#/Conflict'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+/w/{key}/folders/{path}:
+  get:
+    operationId: listFolderContentsViaWriteKey
+    tags:
+      - Folders
+    summary: List folder contents (write key)
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      List folder contents using a write key. Write keys inherit all read capabilities.
+      Returns file write URLs in response.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/folderPath'
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/cursor'
+      - name: recursive
+        in: query
+        description: Include all nested contents recursively
+        schema:
+          type: boolean
+          default: false
+      - name: sort
+        in: query
+        description: Sort field
+        schema:
+          type: string
+          enum:
+            - name
+            - modified
+            - size
+          default: name
+      - name: order
+        in: query
+        description: Sort order
+        schema:
+          type: string
+          enum:
+            - asc
+            - desc
+          default: asc
+    responses:
+      '200':
+        description: Folder contents retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/folders.yaml#/FolderListResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+  patch:
+    operationId: renameFolder
+    tags:
+      - Folders
+    summary: Rename folder
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Rename a folder. Capability URLs remain unchanged.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/folderPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/folders.yaml#/FolderRenameRequest'
+    responses:
+      '200':
+        description: Folder renamed successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/folders.yaml#/FolderMoveResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '409':
+        $ref: '../components/responses.yaml#/Conflict'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+  delete:
+    operationId: deleteFolder
+    tags:
+      - Folders
+    summary: Delete folder
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Delete a folder. Empty folders are deleted directly.
+
+      For non-empty folders, use cascade delete with confirmation:
+      - Set `cascade: true` in request body
+      - Set `confirmPath` to match the folder path exactly (without leading slash)
+
+      Cascade delete is **soft delete only** — all files remain recoverable for 7 days.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/folderPath'
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/folders.yaml#/FolderDeleteRequest'
+    responses:
+      '200':
+        description: Folder deleted successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/folders.yaml#/FolderDeleteResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '409':
+        description: Folder not empty (use cascade delete)
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# FOLDER STATS ENDPOINT
+# ------------------------------------------------------------------------------
+
+/r/{key}/ops/folders/stats:
+  get:
+    operationId: getFolderStats
+    tags:
+      - Folders
+    summary: Get folder statistics
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Get aggregate statistics for a folder including file count, folder count,
+      total size, last modified timestamp, and task statistics.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/folderPathQuery'
+    responses:
+      '200':
+        description: Folder statistics retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/folders.yaml#/FolderStatsResponse'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# FOLDER SEARCH ENDPOINT
+# ------------------------------------------------------------------------------
+
+/r/{key}/ops/folders/search:
+  get:
+    operationId: searchInFolder
+    tags:
+      - Folders
+    summary: Search within folder
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Full-text search within a folder and its contents.
+
+      Supports filtering by labels, priority, status, and author.
+
+      **Performance note:** If search hits timeout, returns partial results with
+      `truncated: true`. Increase `limit` or add filters to reduce search scope.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/folderPathQuery'
+      - name: q
+        in: query
+        description: Full-text search query
+        schema:
+          type: string
+          maxLength: 500
+      - name: type
+        in: query
+        description: Filter by append type
+        schema:
+          type: string
+          enum:
+            - task
+            - comment
+            - response
+            - claim
+      - name: status
+        in: query
+        description: Filter by task status (comma-separated for multiple)
+        schema:
+          type: string
+          enum:
+            - pending
+            - claimed
+            - completed
+            - failed
+      - $ref: '../components/parameters.yaml#/author'
+      - name: labels
+        in: query
+        description: Filter by labels (comma-separated, OR matching)
+        schema:
+          type: string
+      - name: priority
+        in: query
+        description: Filter by priority (comma-separated for multiple)
+        schema:
+          type: string
+      - name: since
+        in: query
+        description: Modified after this date (ISO 8601)
+        schema:
+          type: string
+          format: date-time
+      - name: timeout
+        in: query
+        description: Max search duration (default 5s, max 30s)
+        schema:
+          type: string
+          default: '5s'
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/cursor'
+    responses:
+      '200':
+        description: Search results
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/search.yaml#/FolderSearchResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# FOLDER TASKS ENDPOINT
+# ------------------------------------------------------------------------------
+
+/r/{key}/ops/folders/tasks:
+  get:
+    operationId: queryFolderTasks
+    tags:
+      - Folders
+    summary: Query tasks across folder
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Aggregate tasks across all files in a folder. Returns tasks with their
+      file context and current status.
+
+      Useful for account controls views and orchestration views.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/folderPathQuery'
+      - name: status
+        in: query
+        description: Filter by task status (comma-separated for multiple)
+        schema:
+          type: string
+          enum:
+            - pending
+            - claimed
+            - completed
+            - cancelled
+      - $ref: '../components/parameters.yaml#/author'
+      - name: priority
+        in: query
+        description: Filter by priority (comma-separated for multiple)
+        schema:
+          type: string
+      - name: labels
+        in: query
+        description: Filter by labels (comma-separated, OR matching)
+        schema:
+          type: string
+      - name: claimedBy
+        in: query
+        description: Filter by claiming agent identifier
+        schema:
+          type: string
+      - name: claimable
+        in: query
+        description: Only return unclaimed tasks when true
+        schema:
+          type: boolean
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/cursor'
+    responses:
+      '200':
+        description: Tasks retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/search.yaml#/TaskQueryResponse'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# FOLDER SUBSCRIBE ENDPOINT (WebSocket)
+# ------------------------------------------------------------------------------
+
+/r/{key}/ops/folders/subscribe:
+  get:
+    operationId: subscribeFolderEvents
+    tags:
+      - Folders
+    summary: Subscribe to folder events (WebSocket)
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      WebSocket endpoint for real-time folder events.
+
+      **Connection:** Upgrade to WebSocket protocol.
+
+      **Events received:**
+      - `file_created` - New file created in folder
+      - `file_deleted` - File deleted from folder
+      - `file_moved` - File moved into/out of folder
+      - `folder_created` - Subfolder created
+      - `folder_deleted` - Subfolder deleted
+      - `append` - New append on any file in folder (if subscribed)
+
+      **Query parameters:**
+      - `includeAppends=true` - Also receive append events for files
+      - `recursive=true` - Include events from nested subfolders
+
+      **Heartbeat:** Server sends ping every 30s. Client must respond with pong
+      within 10s or connection is closed.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/folderPathQuery'
+      - name: includeAppends
+        in: query
+        description: Include append events for files in folder
+        schema:
+          type: boolean
+          default: false
+      - name: recursive
+        in: query
+        description: Include events from nested subfolders
+        schema:
+          type: boolean
+          default: false
+    responses:
+      '101':
+        description: WebSocket connection established (Switching Protocols)
+      '200':
+        description: WebSocket upgrade successful (for OpenAPI compliance)
+        content:
+          application/json:
+            schema:
+              type: object
+              description: This endpoint upgrades to WebSocket. 200 is for OpenAPI compliance only.
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+
+/a/{key}/ops/folders/subscribe:
+  get:
+    operationId: subscribeFolderEventsViaAppendKey
+    tags:
+      - Folders
+    summary: Subscribe to folder events with append key (WebSocket)
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      WebSocket endpoint for real-time folder events using an append key.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/folderPathQuery'
+      - name: includeAppends
+        in: query
+        description: Include append events for files in folder
+        schema:
+          type: boolean
+          default: false
+      - name: recursive
+        in: query
+        description: Include events from nested subfolders
+        schema:
+          type: boolean
+          default: false
+    responses:
+      '101':
+        description: WebSocket connection established (Switching Protocols)
+      '200':
+        description: WebSocket upgrade successful (for OpenAPI compliance)
+        content:
+          application/json:
+            schema:
+              type: object
+              description: This endpoint upgrades to WebSocket. 200 is for OpenAPI compliance only.
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+
+/w/{key}/ops/folders/subscribe:
+  get:
+    operationId: subscribeFolderEventsViaWriteKey
+    tags:
+      - Folders
+    summary: Subscribe to folder events with write key (WebSocket)
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      WebSocket endpoint for real-time folder events using a write key.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/folderPathQuery'
+      - name: includeAppends
+        in: query
+        description: Include append events for files in folder
+        schema:
+          type: boolean
+          default: false
+      - name: recursive
+        in: query
+        description: Include events from nested subfolders
+        schema:
+          type: boolean
+          default: false
+    responses:
+      '101':
+        description: WebSocket connection established (Switching Protocols)
+      '200':
+        description: WebSocket upgrade successful (for OpenAPI compliance)
+        content:
+          application/json:
+            schema:
+              type: object
+              description: This endpoint upgrades to WebSocket. 200 is for OpenAPI compliance only.
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+
+# ------------------------------------------------------------------------------
+# CREATE FOLDER ENDPOINT
+# ------------------------------------------------------------------------------
+
+/w/{key}/folders:
+  post:
+    operationId: createFolder
+    tags:
+      - Folders
+    summary: Create new folder
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Create a new folder within the workspace or parent folder.
+
+      Returns capability URLs for the new folder.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/folders.yaml#/FolderCreateRequest'
+    responses:
+      '201':
+        description: Folder created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/folders.yaml#/FolderCreateResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '409':
+        $ref: '../components/responses.yaml#/Conflict'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# COPY FILE ENDPOINT
+# ------------------------------------------------------------------------------
+
+/a/{key}/folders/{path}/copy:
+  post:
+    operationId: copyFileToFolder
+    tags:
+      - Folders
+    summary: Copy file to folder
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Copy a file from another location into this folder.
+
+      Requires a source file key (read access to source file).
+      Optionally specify a new filename.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/folderPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas.yaml#/CopyFileToFolderRequest'
+    responses:
+      '201':
+        description: File copied successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/folders.yaml#/CreateFileResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '409':
+        $ref: '../components/responses.yaml#/Conflict'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# BULK CREATE FILES ENDPOINT
+# ------------------------------------------------------------------------------
+
+/a/{key}/folders/{path}/bulk:
+  post:
+    operationId: bulkCreateFiles
+    tags:
+      - Folders
+    summary: Bulk create files in folder
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Create multiple files in a folder in a single request.
+
+      **Async mode:** Use `?async=true` to return immediately with a job ID.
+      Poll the job status endpoint to check completion.
+
+      **Limits:** Maximum 100 files per request.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/folderPath'
+      - name: async
+        in: query
+        description: Return immediately with job ID for async processing
+        schema:
+          type: boolean
+          default: false
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/folders.yaml#/FolderBulkCreateRequest'
+    responses:
+      '201':
+        description: Files created successfully (sync mode)
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/folders.yaml#/FolderBulkCreateResponse'
+      '202':
+        description: Job accepted (async mode)
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FolderBulkCreateJobResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# MOVE FOLDER ENDPOINT
+# ------------------------------------------------------------------------------
+
+/w/{key}/folders/{path}/move:
+  post:
+    operationId: moveFolder
+    tags:
+      - Folders
+    summary: Move folder to new location
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Move a folder to a new destination path.
+
+      Capability URLs remain unchanged after move.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/folderPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/folders.yaml#/FolderMoveRequest'
+    responses:
+      '200':
+        description: Folder moved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/folders.yaml#/FolderMoveResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '409':
+        $ref: '../components/responses.yaml#/Conflict'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# FOLDER SETTINGS ENDPOINTS
+# ------------------------------------------------------------------------------
+
+/w/{key}/folders/{path}/settings:
+  get:
+    operationId: getFolderSettings
+    tags:
+      - Folders
+    summary: Get folder settings
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Get settings for a folder including WIP limits, claim duration,
+      and other coordination settings.
+
+      Settings are inherited by files in the folder unless overridden.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/folderPath'
+    responses:
+      '200':
+        description: Folder settings retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FolderSettingsResponse'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+  patch:
+    operationId: updateFolderSettings
+    tags:
+      - Folders
+    summary: Update folder settings
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Update settings for a folder. Only provided fields are updated.
+
+      **Inheritance:** Files inherit folder settings. File-level settings
+      override folder settings.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/folderPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/folders.yaml#/FolderSettingsUpdateRequest'
+    responses:
+      '200':
+        description: Folder settings updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FolderSettingsResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# FOLDER WEBHOOK ENDPOINTS
+# ------------------------------------------------------------------------------
+
+/w/{key}/folders/{path}/webhooks:
+  post:
+    operationId: createFolderWebhook
+    tags:
+      - Folders
+    summary: Create folder webhook
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Register a webhook for folder events.
+
+      **Events:**
+      - `file_created` - New file created in folder
+      - `file_deleted` - File deleted from folder
+      - `file_moved` - File moved into/out of folder
+      - `folder_created` - Subfolder created
+      - `folder_deleted` - Subfolder deleted
+      - `append` - New append on any file in folder
+
+      **Limits:** Maximum 10 webhooks per folder.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/folderPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/webhooks.yaml#/WebhookCreateRequest'
+    responses:
+      '201':
+        description: Webhook created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhooks.yaml#/WebhookCreateResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        description: Webhook limit exceeded
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+
+  get:
+    operationId: listFolderWebhooks
+    tags:
+      - Folders
+    summary: List folder webhooks
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      List all webhooks registered for a folder.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/folderPath'
+    responses:
+      '200':
+        description: Webhooks retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhooks.yaml#/WebhookListResponse'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+/w/{key}/folders/{path}/webhooks/{webhookId}:
+  delete:
+    operationId: deleteFolderWebhook
+    tags:
+      - Folders
+    summary: Delete folder webhook
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Delete a webhook registered for a folder.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/folderPath'
+      - name: webhookId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Webhook ID to delete
+    responses:
+      '200':
+        description: Webhook deleted successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhooks.yaml#/WebhookDeleteResponse'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+  patch:
+    operationId: updateFolderWebhook
+    tags:
+      - Folders
+    summary: Update folder webhook
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Update a webhook registered for a folder.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/folderPath'
+      - name: webhookId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Webhook ID to update
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/webhooks.yaml#/WebhookUpdateRequest'
+    responses:
+      '200':
+        description: Webhook updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhooks.yaml#/WebhookUpdateResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# FOLDER CLAIMS ENDPOINT
+# ------------------------------------------------------------------------------
+
+/a/{key}/folders/{path}/claims:
+  get:
+    operationId: listFolderClaims
+    tags:
+      - Folders
+    summary: List claims in folder
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      List active claims for an author across all files in a folder.
+
+      Useful for agents to track their active work across multiple files.
+
+      **Performance:** Claims are indexed by `(author, fileId)` for fast lookups.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/folderPath'
+      - $ref: '../components/parameters.yaml#/author'
+    responses:
+      '200':
+        description: Claims retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FolderClaimsResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+

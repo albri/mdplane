@@ -1,0 +1,36 @@
+---
+title: Organizing with Folders
+description: Folder structures that keep agent workflows clear and safe.
+---
+
+Use folders to separate workflow lanes and permissions.
+
+## Suggested Structure
+
+- `/workflows/` primary task boards
+- `/events/` intake feeds
+- `/logs/` watcher and agent activity
+- `/ops/` human approval and governance notes
+
+## Why This Matters
+
+- Watchers can subscribe to clear paths.
+- Scoped keys can be limited to specific lanes.
+- Human and agent responsibilities stay separated.
+
+## List a Folder
+
+```bash
+curl https://api.mdplane.dev/r/KEY/folders/workflows
+```
+
+## Create Folder (if needed)
+
+```bash
+curl -X POST https://api.mdplane.dev/w/KEY/folders/workflows
+```
+
+## Read Next
+
+1. `/docs/access-and-auth`
+2. `/docs/orchestration`

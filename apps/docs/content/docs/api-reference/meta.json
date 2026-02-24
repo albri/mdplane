@@ -1,0 +1,38 @@
+{
+  "title": "API Reference",
+  "pages": [
+    "---Overview---",
+    "index",
+    "---Capability API (Default)---",
+    "bootstrap",
+    "files",
+    "folders",
+    "appends",
+    "keys",
+    "capabilities",
+    "search",
+    "realtime",
+    "orchestration",
+    "jobs",
+    "stats",
+    "---Advanced API (Authenticated)---",
+    "auth",
+    "workspaces",
+    "api-keys",
+    "claiming",
+    "export",
+    "webhooks",
+    "api",
+    "---System---",
+    "system",
+    "admin",
+    "---Reference---",
+    "append-types",
+    "webhook-events",
+    "frontmatter",
+    "errors",
+    "idempotency",
+    "limits"
+  ]
+}
+

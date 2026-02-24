@@ -1,0 +1,15 @@
+.shiki:not(.not-fumadocs-codeblock *) code span {
+  color: var(--shiki-light);
+}
+
+.dark .shiki:not(.not-fumadocs-codeblock *) code span {
+  color: var(--shiki-dark);
+}
+
+.line:is(pre *):is(.shiki *):not(.not-fumadocs-codeblock *) {
+  display: block;
+  min-height: 1lh;
+  padding-left: var(--padding-left);
+  padding-right: var(--padding-right);
+  position: relative;
+}

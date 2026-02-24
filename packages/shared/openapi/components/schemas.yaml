@@ -1,0 +1,269 @@
+# ==============================================================================
+# SCHEMAS AGGREGATOR
+# Imports all schema definitions from individual files
+# ==============================================================================
+
+# Core schemas (Error, SuccessResponse, File*, etc.)
+Error:
+  $ref: 'schemas/core.yaml#/Error'
+SuccessResponse:
+  $ref: 'schemas/core.yaml#/SuccessResponse'
+PaginatedResponse:
+  $ref: 'schemas/core.yaml#/PaginatedResponse'
+CapabilityUrls:
+  $ref: 'schemas/core.yaml#/CapabilityUrls'
+FolderUrls:
+  $ref: 'schemas/core.yaml#/FolderUrls'
+WorkspaceContext:
+  $ref: 'schemas/core.yaml#/WorkspaceContext'
+FileReadResponse:
+  $ref: 'schemas/core.yaml#/FileReadResponse'
+FileUpdateRequest:
+  $ref: 'schemas/core.yaml#/FileUpdateRequest'
+FileUpdateResponse:
+  $ref: 'schemas/core.yaml#/FileUpdateResponse'
+FileDeleteResponse:
+  $ref: 'schemas/core.yaml#/FileDeleteResponse'
+FileRecoverResponse:
+  $ref: 'schemas/core.yaml#/FileRecoverResponse'
+FileMoveRequest:
+  $ref: 'schemas/core.yaml#/FileMoveRequest'
+FileMoveResponse:
+  $ref: 'schemas/core.yaml#/FileMoveResponse'
+FileRenameRequest:
+  $ref: 'schemas/core.yaml#/FileRenameRequest'
+FileMetaResponse:
+  $ref: 'schemas/core.yaml#/FileMetaResponse'
+FileStructureResponse:
+  $ref: 'schemas/core.yaml#/FileStructureResponse'
+FileSectionResponse:
+  $ref: 'schemas/core.yaml#/FileSectionResponse'
+FileSettings:
+  $ref: 'schemas/core.yaml#/FileSettings'
+FileSettingsUpdateRequest:
+  $ref: 'schemas/core.yaml#/FileSettingsUpdateRequest'
+FileTailResponse:
+  $ref: 'schemas/core.yaml#/FileTailResponse'
+FileRenameResponse:
+  $ref: 'schemas/core.yaml#/FileRenameResponse'
+AppendGetResponse:
+  $ref: 'schemas/core.yaml#/AppendGetResponse'
+FileRotateUrlsResponse:
+  $ref: 'schemas/core.yaml#/FileRotateUrlsResponse'
+FileSettingsResponse:
+  $ref: 'schemas/core.yaml#/FileSettingsResponse'
+FileStats:
+  $ref: 'schemas/core.yaml#/FileStats'
+TaskStats:
+  $ref: 'schemas/core.yaml#/TaskStats'
+
+# Bootstrap schemas
+BootstrapRequest:
+  $ref: 'schemas/bootstrap.yaml#/BootstrapRequest'
+BootstrapResponse:
+  $ref: 'schemas/bootstrap.yaml#/BootstrapResponse'
+
+# Append schemas
+Append:
+  $ref: 'schemas/appends.yaml#/Append'
+AppendRequest:
+  $ref: 'schemas/appends.yaml#/AppendRequest'
+AppendResponse:
+  $ref: 'schemas/appends.yaml#/AppendResponse'
+
+# Folder schemas
+FolderListResponse:
+  $ref: 'schemas/folders.yaml#/FolderListResponse'
+FolderCreateRequest:
+  $ref: 'schemas/folders.yaml#/FolderCreateRequest'
+FolderCreateResponse:
+  $ref: 'schemas/folders.yaml#/FolderCreateResponse'
+CopyFileToFolderRequest:
+  $ref: 'schemas/folders.yaml#/CopyFileToFolderRequest'
+FolderSettingsResponse:
+  $ref: 'schemas/folders.yaml#/FolderSettingsResponse'
+FolderBulkCreateJobResponse:
+  $ref: 'schemas/folders.yaml#/FolderBulkCreateJobResponse'
+FolderClaimsResponse:
+  $ref: 'schemas/folders.yaml#/FolderClaimsResponse'
+
+# Auth schemas (OAuth via BetterAuth)
+MeResponse:
+  $ref: 'schemas/auth.yaml#/MeResponse'
+User:
+  $ref: 'schemas/auth.yaml#/User'
+Workspace:
+  $ref: 'schemas/auth.yaml#/Workspace'
+LogoutResponse:
+  $ref: 'schemas/auth.yaml#/LogoutResponse'
+
+# Claiming schemas
+ClaimWorkspaceRequest:
+  $ref: 'schemas/claiming.yaml#/ClaimWorkspaceRequest'
+ClaimWorkspaceResponse:
+  $ref: 'schemas/claiming.yaml#/ClaimWorkspaceResponse'
+
+# Keys schemas
+ScopedKeyCreateRequest:
+  $ref: 'schemas/keys.yaml#/ScopedKeyCreateRequest'
+ScopedKeyCreateResponse:
+  $ref: 'schemas/keys.yaml#/ScopedKeyCreateResponse'
+ScopedKey:
+  $ref: 'schemas/keys.yaml#/ScopedKey'
+ScopedKeyListResponse:
+  $ref: 'schemas/keys.yaml#/ScopedKeyListResponse'
+KeyRevokeResponse:
+  $ref: 'schemas/keys.yaml#/KeyRevokeResponse'
+KeyPermission:
+  $ref: 'schemas/keys.yaml#/KeyPermission'
+
+# API Keys schemas
+ApiKeyCreateRequest:
+  $ref: 'schemas/api-keys.yaml#/ApiKeyCreateRequest'
+ApiKeyCreateResponse:
+  $ref: 'schemas/api-keys.yaml#/ApiKeyCreateResponse'
+ApiKey:
+  $ref: 'schemas/api-keys.yaml#/ApiKey'
+ApiKeyListResponse:
+  $ref: 'schemas/api-keys.yaml#/ApiKeyListResponse'
+
+# Webhook schemas
+WebhookCreateRequest:
+  $ref: 'schemas/webhooks.yaml#/WebhookCreateRequest'
+WebhookCreateResponse:
+  $ref: 'schemas/webhooks.yaml#/WebhookCreateResponse'
+Webhook:
+  $ref: 'schemas/webhooks.yaml#/Webhook'
+WebhookListResponse:
+  $ref: 'schemas/webhooks.yaml#/WebhookListResponse'
+WebhookUpdateRequest:
+  $ref: 'schemas/webhooks.yaml#/WebhookUpdateRequest'
+WebhookUpdateResponse:
+  $ref: 'schemas/webhooks.yaml#/WebhookUpdateResponse'
+WebhookDeleteResponse:
+  $ref: 'schemas/webhooks.yaml#/WebhookDeleteResponse'
+WebhookEvent:
+  $ref: 'schemas/webhooks.yaml#/WebhookEvent'
+WebhookStatus:
+  $ref: 'schemas/webhooks.yaml#/WebhookStatus'
+
+# Search schemas
+SearchResponse:
+  $ref: 'schemas/search.yaml#/SearchResponse'
+SearchResult:
+  $ref: 'schemas/search.yaml#/SearchResult'
+SearchResultType:
+  $ref: 'schemas/search.yaml#/SearchResultType'
+
+# Realtime schemas
+SubscribeMessage:
+  $ref: 'schemas/realtime.yaml#/SubscribeMessage'
+SubscribeMessageType:
+  $ref: 'schemas/realtime.yaml#/SubscribeMessageType'
+HeartbeatRequest:
+  $ref: 'schemas/realtime.yaml#/HeartbeatRequest'
+HeartbeatResponse:
+  $ref: 'schemas/realtime.yaml#/HeartbeatResponse'
+HeartbeatStatus:
+  $ref: 'schemas/realtime.yaml#/HeartbeatStatus'
+AgentLiveness:
+  $ref: 'schemas/realtime.yaml#/AgentLiveness'
+AgentLivenessResponse:
+  $ref: 'schemas/realtime.yaml#/AgentLivenessResponse'
+
+# Job schemas
+JobResponse:
+  $ref: 'schemas/jobs.yaml#/JobResponse'
+
+# Stats schemas
+StatsViaWriteKeyResponse:
+  $ref: 'schemas/stats.yaml#/StatsViaWriteKeyResponse'
+FileStatsResponse:
+  $ref: 'schemas/stats.yaml#/FileStatsResponse'
+WorkspaceStatsResponse:
+  $ref: 'schemas/stats.yaml#/WorkspaceStatsResponse'
+StatsErrorResponse:
+  $ref: 'schemas/stats.yaml#/StatsErrorResponse'
+
+# System schemas
+HealthResponse:
+  $ref: 'schemas/system.yaml#/HealthResponse'
+
+# Workspace management schemas
+RotateAllResponse:
+  $ref: 'schemas/workspaces.yaml#/RotateAllResponse'
+WorkspaceRenameRequest:
+  $ref: 'schemas/workspaces.yaml#/WorkspaceRenameRequest'
+WorkspaceRenameResponse:
+  $ref: 'schemas/workspaces.yaml#/WorkspaceRenameResponse'
+TransferWorkspaceRequest:
+  $ref: 'schemas/workspaces.yaml#/TransferWorkspaceRequest'
+
+# Admin schemas
+AdminMetricsResponse:
+  $ref: 'schemas/admin.yaml#/AdminMetricsResponse'
+
+# Audit schemas
+AuditLogEntry:
+  $ref: 'schemas/audit.yaml#/AuditLogEntry'
+AuditLogPagination:
+  $ref: 'schemas/audit.yaml#/AuditLogPagination'
+AuditLogsResponse:
+  $ref: 'schemas/audit.yaml#/AuditLogsResponse'
+
+# Orchestration schemas
+OrchestrationTask:
+  $ref: 'schemas/orchestration.yaml#/OrchestrationTask'
+OrchestrationClaim:
+  $ref: 'schemas/orchestration.yaml#/OrchestrationClaim'
+OrchestrationAgentStatus:
+  $ref: 'schemas/orchestration.yaml#/OrchestrationAgentStatus'
+OrchestrationWorkload:
+  $ref: 'schemas/orchestration.yaml#/OrchestrationWorkload'
+OrchestrationSummary:
+  $ref: 'schemas/orchestration.yaml#/OrchestrationSummary'
+OrchestrationReadOnlyResponse:
+  $ref: 'schemas/orchestration.yaml#/OrchestrationReadOnlyResponse'
+OrchestrationAdminResponse:
+  $ref: 'schemas/orchestration.yaml#/OrchestrationAdminResponse'
+
+# Export schemas
+ExportJobCreateResponse:
+  $ref: 'schemas/export.yaml#/ExportJobCreateResponse'
+ExportJobStatusResponse:
+  $ref: 'schemas/export.yaml#/ExportJobStatusResponse'
+DeletedFileEntry:
+  $ref: 'schemas/export.yaml#/DeletedFileEntry'
+DeletedFilesListResponse:
+  $ref: 'schemas/export.yaml#/DeletedFilesListResponse'
+
+# Additional claiming schemas
+FolderClaimEntry:
+  $ref: 'schemas/claiming.yaml#/FolderClaimEntry'
+FolderClaimsViaAppendKeyResponse:
+  $ref: 'schemas/claiming.yaml#/FolderClaimsViaAppendKeyResponse'
+
+# Additional core schemas
+FileCreateResponse:
+  $ref: 'schemas/core.yaml#/FileCreateResponse'
+
+# Additional API key schemas
+ApiKeyRevokeResponse:
+  $ref: 'schemas/api-keys.yaml#/ApiKeyRevokeResponse'
+
+# Control claims schemas (used by workspace orchestration endpoints)
+ControlClaim:
+  $ref: 'schemas/control-claims.yaml#/ControlClaim'
+RenewClaimRequest:
+  $ref: 'schemas/control-claims.yaml#/RenewClaimRequest'
+CompleteClaimRequest:
+  $ref: 'schemas/control-claims.yaml#/CompleteClaimRequest'
+CancelClaimRequest:
+  $ref: 'schemas/control-claims.yaml#/CancelClaimRequest'
+BlockClaimRequest:
+  $ref: 'schemas/control-claims.yaml#/BlockClaimRequest'
+ClaimMutationResponse:
+  $ref: 'schemas/control-claims.yaml#/ClaimMutationResponse'
+ListWorkspaceClaimsResponse:
+  $ref: 'schemas/control-claims.yaml#/ListWorkspaceClaimsResponse'
+

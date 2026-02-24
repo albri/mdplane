@@ -1,0 +1,569 @@
+# ==============================================================================
+# API V1 ENDPOINTS
+# Path-based access for authenticated API key users
+# All endpoints require bearerAuth (API key in Authorization header)
+# Reference: docs/Obsidian Vault/Projects/mdplane/API Design.md
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# FILE OPERATIONS BY PATH
+# ------------------------------------------------------------------------------
+
+/api/v1/files/{path}:
+  get:
+    operationId: apiReadFileByPath
+    tags:
+      - API
+    summary: Read file by path
+    description: |
+      Read file content by workspace-relative path.
+
+      Requires API key with `read` scope.
+
+      The path is URL-encoded (e.g., `/api/v1/files/projects%2Falpha%2Fnotes.md`).
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: path
+        in: path
+        required: true
+        description: URL-encoded file path (e.g., projects/alpha/notes.md)
+        schema:
+          type: string
+      - $ref: '../components/parameters.yaml#/format'
+    responses:
+      '200':
+        description: File content retrieved successfully
+        headers:
+          ETag:
+            description: Content version hash for optimistic concurrency
+            schema:
+              type: string
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FileReadResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+  post:
+    operationId: apiCreateFileByPath
+    tags:
+      - API
+    summary: Create file by path
+    description: |
+      Create a new file at the specified path.
+
+      Requires API key with `append` or `write` scope.
+
+      If parent folders don't exist, they are created automatically.
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: path
+        in: path
+        required: true
+        description: URL-encoded file path for the new file
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [content]
+            properties:
+              content:
+                type: string
+                description: Initial file content (markdown)
+              initialAppends:
+                type: array
+                description: Optional initial appends to add after file creation
+                items:
+                  $ref: '../components/schemas/appends.yaml#/AppendRequest'
+    responses:
+      '201':
+        description: File created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FileCreateResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '409':
+        $ref: '../components/responses.yaml#/Conflict'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+  put:
+    operationId: apiUpdateFileByPath
+    tags:
+      - API
+    summary: Update file by path
+    description: |
+      Replace entire file content at the specified path.
+
+      Requires API key with `write` scope.
+
+      Use `If-Match` header with ETag for optimistic concurrency control.
+      If omitted, last-write-wins.
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: path
+        in: path
+        required: true
+        description: URL-encoded file path
+        schema:
+          type: string
+      - name: If-Match
+        in: header
+        description: ETag from previous read for optimistic concurrency
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas.yaml#/FileUpdateRequest'
+    responses:
+      '200':
+        description: File updated successfully
+        headers:
+          ETag:
+            description: New content version hash
+            schema:
+              type: string
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FileUpdateResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '412':
+        description: ETag mismatch - file was modified since last read
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+  delete:
+    operationId: apiDeleteFileByPath
+    tags:
+      - API
+    summary: Delete file by path
+    description: |
+      Delete a file at the specified path.
+
+      Requires API key with `write` scope.
+
+      Soft delete by default (recoverable for 7 days).
+      Use `?permanent=true` for hard delete (irreversible).
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: path
+        in: path
+        required: true
+        description: URL-encoded file path
+        schema:
+          type: string
+      - name: permanent
+        in: query
+        description: Hard delete (irreversible)
+        schema:
+          type: boolean
+          default: false
+    responses:
+      '200':
+        description: File deleted successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FileDeleteResponse'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# APPEND TO FILE BY PATH
+# ------------------------------------------------------------------------------
+
+/api/v1/files/{path}/append:
+  post:
+    operationId: apiAppendToFileByPath
+    tags:
+      - API
+    summary: Append to file by path
+    description: |
+      Append content to a file at the specified path.
+
+      Requires API key with `append` or `write` scope.
+
+      Supports all append types: task, claim, response, comment, blocked, answer, renew, cancel, vote.
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: path
+        in: path
+        required: true
+        description: URL-encoded file path
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/appends.yaml#/AppendRequest'
+          examples:
+            task:
+              summary: Create a task
+              value:
+                author: ci-bot
+                type: task
+                content: Review PR #42 - Add user authentication
+                priority: high
+                labels: [bug, backend]
+            comment:
+              summary: Add a comment
+              value:
+                author: ci-bot
+                type: comment
+                content: Build passed ✓
+            claim:
+              summary: Claim a task
+              value:
+                author: agent-alpha
+                type: claim
+                ref: a1
+                content: Starting work on this task
+    responses:
+      '201':
+        description: Append created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/appends.yaml#/AppendResponse'
+      '400':
+        description: |
+          Invalid request. Possible error codes:
+          - `INVALID_APPEND_TYPE`: Unknown type value
+          - `INVALID_REF`: ref points to wrong append type or doesn't exist
+          - `INVALID_AUTHOR`: Author field fails validation
+          - `TASK_ALREADY_COMPLETE`: Trying to claim a completed task
+          - `ALREADY_CLAIMED`: Task already has active claim
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        description: |
+          Rate limited. Possible error codes:
+          - `RATE_LIMITED`: Too many requests
+          - `WIP_LIMIT_EXCEEDED`: Author at max concurrent claims
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+
+
+# ------------------------------------------------------------------------------
+# FOLDER OPERATIONS BY PATH
+# ------------------------------------------------------------------------------
+
+/api/v1/folders:
+  get:
+    operationId: apiListRootFolder
+    tags:
+      - API
+    summary: List root folder
+    description: |
+      List contents of the workspace root folder.
+
+      Requires API key with `read` scope.
+
+      Returns files and subfolders at the workspace root.
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: recursive
+        in: query
+        description: Include all nested contents recursively
+        schema:
+          type: boolean
+          default: false
+      - name: depth
+        in: query
+        description: Return nested tree structure up to N levels deep (default 1, max 5)
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 5
+          default: 1
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/cursor'
+    responses:
+      '200':
+        description: Folder contents retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/folders.yaml#/FolderListResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+  post:
+    operationId: apiCreateRootFolder
+    tags:
+      - API
+    summary: Create folder at root
+    description: |
+      Create a new folder at the workspace root.
+
+      Requires API key with `write` scope.
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [name]
+            properties:
+              name:
+                type: string
+                description: New folder name
+                maxLength: 255
+    responses:
+      '201':
+        description: Folder created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/folders.yaml#/FolderCreateResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '409':
+        $ref: '../components/responses.yaml#/Conflict'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+/api/v1/folders/{path}:
+  get:
+    operationId: apiListFolderByPath
+    tags:
+      - API
+    summary: List folder by path
+    description: |
+      List contents of a folder at the specified path.
+
+      Requires API key with `read` scope.
+
+      Returns files and subfolders with their metadata.
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: path
+        in: path
+        required: true
+        description: URL-encoded folder path (use empty string or "/" for root)
+        schema:
+          type: string
+      - name: recursive
+        in: query
+        description: Include all nested contents recursively
+        schema:
+          type: boolean
+          default: false
+      - name: depth
+        in: query
+        description: Return nested tree structure up to N levels deep (default 1, max 5)
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 5
+          default: 1
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/cursor'
+    responses:
+      '200':
+        description: Folder contents retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/folders.yaml#/FolderListResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+  post:
+    operationId: apiCreateFolderByPath
+    tags:
+      - API
+    summary: Create folder by path
+    description: |
+      Create a new folder at the specified path.
+
+      Requires API key with `write` scope.
+
+      Parent folders are created automatically if they don't exist.
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: path
+        in: path
+        required: true
+        description: URL-encoded parent folder path
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [name]
+            properties:
+              name:
+                type: string
+                description: New folder name
+                maxLength: 255
+    responses:
+      '201':
+        description: Folder created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/folders.yaml#/FolderCreateResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '409':
+        $ref: '../components/responses.yaml#/Conflict'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+  delete:
+    operationId: apiDeleteFolderByPath
+    tags:
+      - API
+    summary: Delete folder by path
+    description: |
+      Delete a folder at the specified path.
+
+      Requires API key with `write` scope.
+
+      Empty folders are deleted directly. For non-empty folders, use cascade delete
+      with confirmation by setting `cascade: true` and `confirmPath` matching the
+      folder path exactly.
+
+      Cascade delete is soft delete only — all files remain recoverable for 7 days.
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: path
+        in: path
+        required: true
+        description: URL-encoded folder path
+        schema:
+          type: string
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              cascade:
+                type: boolean
+                description: Delete folder and all contents
+              confirmPath:
+                type: string
+                description: Must match folder path exactly (without leading slash) for cascade delete
+    responses:
+      '200':
+        description: Folder deleted successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/folders.yaml#/FolderDeleteResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '409':
+        description: Folder not empty (use cascade delete)
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+

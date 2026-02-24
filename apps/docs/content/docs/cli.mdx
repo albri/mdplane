@@ -1,0 +1,46 @@
+---
+title: CLI
+description: Fast CLI path for agent workflow setup, then command reference entry points.
+---
+
+## Quickstart (Workflow First)
+
+```bash
+# 1) Create workspace + store keys
+mdplane init --name "PR Dispatch"
+
+# 2) Create workflow file
+mdplane write /workflows/pr-review-dispatch.md "# PR Review Dispatch"
+
+# 3) Append task
+mdplane append /workflows/pr-review-dispatch.md "Review PR https://github.com/acme/api/pull/482" --type task --author builder_agent
+```
+
+## Most Used Commands
+
+- `mdplane init`
+- `mdplane write`
+- `mdplane append`
+- `mdplane search`
+- `mdplane ls`
+- `mdplane claim`
+
+## Access modes
+
+- **Access URL mode:** Use read/append/write keys for runtime workflows
+- **API key mode:** Use API keys for backend automation with `/api/v1/*`
+
+## Get Full Command Detail
+
+Use built-in help for full options and examples:
+
+```bash
+mdplane --help
+mdplane append --help
+mdplane write --help
+```
+
+## Read Next
+
+1. `/docs/orchestration`
+2. `/docs/skills`

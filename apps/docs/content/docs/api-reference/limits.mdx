@@ -1,0 +1,185 @@
+---
+title: Limits & Quotas
+---
+
+mdplane enforces limits to ensure fair usage and system stability.
+
+---
+
+## Content Limits
+
+| Limit | Value | Description |
+|-------|-------|-------------|
+| Max file size | 10 MB | Single file size limit |
+| Max append size | 1 MB | Single append size limit |
+| Max appends per file | 10,000 | Total appends per file |
+| Max filename length | 255 characters | Filename only |
+| Max path length | 1024 characters | Full path including folders |
+| Max folder depth | 10 levels | Folder nesting limit |
+
+<Callout type="warning">
+**Binary files not supported.** mdplane is text/markdown only.
+</Callout>
+
+---
+
+## Rate Limits
+
+### Capability URLs
+
+| Operation | Limit | Window |
+|-----------|-------|--------|
+| Read | 300 requests/minute | 1 minute |
+| Append | 60 requests/minute | 1 minute |
+| Write | 30 requests/minute | 1 minute |
+| Bootstrap | 10 requests/minute | 1 minute |
+
+### API Keys
+
+| Tier | Limit | Window |
+|-----|-------|--------|
+| Standard | 100 requests/minute | 1 minute |
+| Search | 60 requests/minute | 1 minute |
+| Export | 10 requests/hour | 1 hour |
+
+### Rate Limit Response
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "RATE_LIMITED",
+    "message": "Rate limit exceeded. Try again in 30 seconds.",
+    "details": {
+      "limit": 60,
+      "remaining": 0,
+      "resetAt": "2024-01-15T10:31:00Z"
+    }
+  }
+}
+```
+
+---
+
+## Workspace Limits
+
+| Limit | Value | Description |
+|-------|-------|-------------|
+| Max workspace size | 10 GB | Total content across all files |
+| Max files per workspace | 100,000 | Total file count |
+| Max folders per workspace | 10,000 | Total folder count |
+| Max webhooks per workspace | 100 | Total webhooks |
+
+---
+
+## WebSocket Limits
+
+| Limit | Value | Description |
+|-------|-------|-------------|
+| Max connections per workspace | 50 | Concurrent WebSocket connections |
+| Max subscriptions per connection | 20 | Event subscriptions |
+| Message size limit | 1 MB | Per WebSocket message |
+| Connection timeout | 1 hour | Inactive connections |
+
+---
+
+## Export Limits
+
+| Limit | Value | Description |
+|-------|-------|-------------|
+| Max synchronous export | 500 MB | Immediate download |
+| Max asynchronous export | 10 GB | Background processing |
+| Export link expiry | 24 hours | Download links expire |
+| Concurrent export jobs | 3 | Per workspace |
+
+---
+
+## Webhook Limits
+
+| Limit | Value | Description |
+|-------|-------|-------------|
+| Max webhooks per file | 10 | File-level webhooks |
+| Max webhooks per folder | 10 | Folder-level webhooks |
+| Retry attempts | 5 | Per webhook delivery |
+| Retry duration | 24 hours | Total retry period |
+
+---
+
+## Search Limits
+
+| Limit | Value | Description |
+|-------|-------|-------------|
+| Max query length | 500 characters | Search query string |
+| Max results per request | 200 | Results returned |
+| Default results | 50 | Default limit |
+| Max offset | 10,000 | Pagination offset |
+
+---
+
+## Append Limits
+
+| Limit | Value | Description |
+|-------|-------|-------------|
+| Max append size | 1 MB | Per append |
+| Max appends per file | 10,000 | Total appends |
+| Append types | 10 | Total types available |
+
+---
+
+## Claim Limits
+
+| Limit | Value | Description |
+|-------|-------|-------------|
+| Min claim duration | 60 seconds | 1 minute |
+| Max claim duration | 3600 seconds | 1 hour |
+| Default claim duration | 300 seconds | 5 minutes |
+| WIP limit | No default | Set in frontmatter |
+
+---
+
+## Path Limits
+
+| Limit | Value | Description |
+|-------|-------|-------------|
+| Max path length | 1024 characters | Full path |
+| Max filename length | 255 characters | Filename only |
+| Max folder depth | 10 levels | Nesting depth |
+
+**Valid characters:** Letters, numbers, `-`, `_`, `.`, `/`
+
+---
+
+## Quota Exceeded Response
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "QUOTA_EXCEEDED",
+    "message": "Workspace quota exceeded",
+    "details": {
+      "limit": "10 GB",
+      "current": "10.5 GB",
+      "type": "storage"
+    }
+  }
+}
+```
+
+---
+
+## Best Practices
+
+1. **Use pagination** — Don't fetch all results at once
+2. **Cache aggressively** — Reduce redundant requests
+3. **Use webhooks** — Instead of polling
+4. **Export selectively** — Use paths filter
+5. **Monitor usage** — Check remaining quota
+
+---
+
+## Next Steps
+
+1. **[Error Codes](/docs/api-reference/errors)** — Error handling
+2. **[Export API](/docs/api-reference/export)** — Large workspace exports
+3. **[Real-time API](/docs/api-reference/realtime)** — Real-time alternative to polling

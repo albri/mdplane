@@ -1,0 +1,33 @@
+---
+title: Local Development
+description: Contributor setup for working on mdplane itself.
+---
+
+This path is for contributors. It is not required to use mdplane workflows.
+
+## Prerequisites
+
+- Node.js (current LTS)
+- pnpm
+- Bun
+
+## Setup
+
+```bash
+pnpm install
+cp .env.example .env
+pnpm dev
+```
+
+Typical local URLs:
+- Web: `http://127.0.0.1:3000`
+- API: `http://127.0.0.1:3001`
+
+## Recommended Local Posture
+
+Keep governance mode off unless you are testing account-control flows.
+
+## Read Next
+
+1. `/docs/self-hosting`
+2. `/docs/deployment-modes`

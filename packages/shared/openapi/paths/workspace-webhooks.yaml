@@ -1,0 +1,147 @@
+/workspaces/{workspaceId}/webhooks:
+  get:
+    operationId: listWorkspaceWebhooks
+    tags:
+      - Webhooks
+    summary: List workspace webhooks
+    security:
+      - oauthSession: []
+    description: |
+      List webhooks configured for a workspace from account controls.
+      Requires an authenticated session and workspace ownership.
+    parameters:
+      - $ref: '../components/parameters.yaml#/workspaceId'
+    responses:
+      '200':
+        description: Webhooks retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhooks.yaml#/WebhookListResponse'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+
+  post:
+    operationId: createWorkspaceWebhook
+    tags:
+      - Webhooks
+    summary: Create workspace webhook
+    security:
+      - oauthSession: []
+    description: |
+      Create a workspace webhook from account controls.
+      Requires workspace ownership.
+    parameters:
+      - $ref: '../components/parameters.yaml#/workspaceId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/webhooks.yaml#/WebhookCreateRequest'
+    responses:
+      '201':
+        description: Webhook created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhooks.yaml#/WebhookCreateResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+
+/workspaces/{workspaceId}/webhooks/{webhookId}:
+  patch:
+    operationId: updateWorkspaceWebhook
+    tags:
+      - Webhooks
+    summary: Update workspace webhook
+    security:
+      - oauthSession: []
+    description: |
+      Update a workspace webhook from account controls.
+      Requires workspace ownership.
+    parameters:
+      - $ref: '../components/parameters.yaml#/workspaceId'
+      - $ref: '../components/parameters.yaml#/webhookId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/webhooks.yaml#/WebhookUpdateRequest'
+    responses:
+      '200':
+        description: Webhook updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhooks.yaml#/WebhookUpdateResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+
+  delete:
+    operationId: deleteWorkspaceWebhook
+    tags:
+      - Webhooks
+    summary: Delete workspace webhook
+    security:
+      - oauthSession: []
+    description: |
+      Delete a workspace webhook from account controls.
+      Requires workspace ownership.
+    parameters:
+      - $ref: '../components/parameters.yaml#/workspaceId'
+      - $ref: '../components/parameters.yaml#/webhookId'
+    responses:
+      '200':
+        description: Webhook deleted successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhooks.yaml#/WebhookDeleteResponse'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+
+/workspaces/{workspaceId}/webhooks/{webhookId}/test:
+  post:
+    operationId: testWorkspaceWebhook
+    tags:
+      - Webhooks
+    summary: Test workspace webhook
+    security:
+      - oauthSession: []
+    description: |
+      Send a test delivery to a workspace webhook.
+      Requires workspace ownership.
+    parameters:
+      - $ref: '../components/parameters.yaml#/workspaceId'
+      - $ref: '../components/parameters.yaml#/webhookId'
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/webhooks.yaml#/WebhookTestRequest'
+    responses:
+      '200':
+        description: Test delivery attempted
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhooks.yaml#/WebhookTestResponse'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'

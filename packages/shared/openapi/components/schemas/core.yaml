@@ -1,0 +1,687 @@
+# Core schemas for mdplane OpenAPI specification
+# These are the foundational schemas used across the API
+
+# ==============================================================================
+# Error & Response Wrappers
+# ==============================================================================
+
+Error:
+  type: object
+  required: [ok, error]
+  properties:
+    ok:
+      type: boolean
+      const: false
+    error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code
+          enum:
+            - FILE_NOT_FOUND
+            - FOLDER_NOT_FOUND
+            - FOLDER_ALREADY_EXISTS
+            - FOLDER_EXISTS
+            - SOURCE_NOT_FOUND
+            - APPEND_NOT_FOUND
+            - WEBHOOK_NOT_FOUND
+            - WORKSPACE_NOT_FOUND
+            - FILE_DELETED
+            - FILE_ALREADY_EXISTS
+            - FOLDER_NOT_EMPTY
+            - INVALID_REQUEST
+            - SERVER_ERROR
+            - INVALID_APPEND_TYPE
+            - INVALID_REF
+            - INVALID_VOTE_VALUE
+            - INVALID_AUTHOR
+            - INVALID_TOKEN
+            - INVALID_WEBHOOK_URL
+            - INVALID_PATH
+            - INVALID_CONTENT
+            - INVALID_TARGET
+            - INVALID_KEY
+            - INVALID_FILENAME
+            - INVALID_APPEND_ID
+            - SECTION_NOT_FOUND
+            - UNSUPPORTED_MEDIA_TYPE
+            - TASK_ALREADY_COMPLETE
+            - TASK_CANCELLED
+            - CLAIM_EXPIRED
+            - ALREADY_CLAIMED
+            - AUTHOR_MISMATCH
+            - CANNOT_RENEW_OTHERS_CLAIM
+            - CANNOT_CANCEL_OTHERS_CLAIM
+            - TYPE_NOT_ALLOWED
+            - KEY_EXPIRED
+            - KEY_REVOKED
+            - KEY_NOT_FOUND
+            - NOT_FOUND
+            - PERMISSION_DENIED
+            - FORBIDDEN
+            - NOT_ASSIGNED
+            - CONFLICT
+            - PAYLOAD_TOO_LARGE
+            - WORKSPACE_TOO_LARGE
+            - QUOTA_EXCEEDED
+            - RATE_LIMITED
+            - WIP_LIMIT_EXCEEDED
+            - AUTHOR_RATE_LIMITED
+            - BULK_LIMIT_EXCEEDED
+            - WEBHOOK_LIMIT_EXCEEDED
+            - WEBHOOK_SUSPENDED
+            - UNAUTHORIZED
+            - CONFIRM_PATH_MISMATCH
+            - JOB_NOT_FOUND
+            - JOB_NOT_READY
+            # Search-related error codes
+            - INVALID_PATTERN
+            - QUERY_TOO_LONG
+            - QUERY_TOO_BROAD
+            - INVALID_TIMEOUT
+            - SCOPE_DENIED
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          additionalProperties: true
+          description: Additional error context
+
+SuccessResponse:
+  type: object
+  required: [ok]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      description: Optional success data
+      properties:
+        message:
+          type: string
+          description: Success message
+
+PaginatedResponse:
+  type: object
+  properties:
+    cursor:
+      type: string
+      description: Opaque cursor for next page
+    hasMore:
+      type: boolean
+      description: Whether more results are available
+    total:
+      type: integer
+      description: Total count of items (when available)
+
+# ==============================================================================
+# URL Schemas
+# ==============================================================================
+
+CapabilityUrls:
+  type: object
+  required: [read, append, write]
+  description: |
+    Capability URLs for different permission levels.
+    URL fields are nullable - null indicates the current key lacks permission for that tier.
+  properties:
+    read:
+      type:
+        - string
+        - 'null'
+      format: uri
+      description: Read-only capability URL (null if key lacks read permission)
+    append:
+      type:
+        - string
+        - 'null'
+      format: uri
+      description: Append capability URL (null if key lacks append permission)
+    write:
+      type:
+        - string
+        - 'null'
+      format: uri
+      description: Admin/write capability URL (null if key lacks write permission)
+
+FolderUrls:
+  type: object
+  required: [path, urls]
+  properties:
+    path:
+      type: string
+      description: Folder path
+    urls:
+      $ref: '#/CapabilityUrls'
+
+# ==============================================================================
+# Workspace Context (for capability URL responses)
+# ==============================================================================
+
+WorkspaceContext:
+  type: object
+  description: Workspace metadata included in capability URL responses
+  required: [id, claimed]
+  properties:
+    id:
+      type: string
+      pattern: '^ws_[A-Za-z0-9_]{12,}$'
+      description: Workspace ID
+    name:
+      type: string
+      description: Workspace name (if set)
+    claimed:
+      type: boolean
+      description: Whether workspace has been claimed by a user
+
+# ==============================================================================
+# File Schemas
+# ==============================================================================
+
+FileReadResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [id, filename, content, etag, createdAt, updatedAt, appendCount, size]
+      properties:
+        id:
+          type: string
+          description: File ID
+        filename:
+          type: string
+          description: File name
+        content:
+          type: string
+          description: File content (markdown)
+        etag:
+          type: string
+          description: Content version hash for optimistic concurrency
+        createdAt:
+          type: string
+          format: date-time
+          description: File creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last modification timestamp
+        appendCount:
+          type: integer
+          description: Total number of appends
+        size:
+          type: integer
+          description: File size in bytes
+        frontmatter:
+          type: object
+          additionalProperties: true
+          description: Parsed YAML frontmatter (when format=parsed)
+        appends:
+          type: array
+          items:
+            $ref: 'appends.yaml#/Append'
+          description: Parsed appends (when format=parsed or appends param specified)
+        stats:
+          $ref: '#/FileStats'
+        webUrl:
+          type: string
+          format: uri
+          description: URL to view this file in the web app
+        workspace:
+          $ref: '#/WorkspaceContext'
+          description: Workspace context for capability URL UI
+
+FileUpdateRequest:
+  type: object
+  required: [content]
+  properties:
+    content:
+      type: string
+      description: New file content (replaces everything)
+
+FileUpdateResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [id, etag, updatedAt, size]
+      properties:
+        id:
+          type: string
+          description: File ID
+        etag:
+          type: string
+          description: New content version hash
+        updatedAt:
+          type: string
+          format: date-time
+          description: New modification timestamp
+        size:
+          type: integer
+          description: New file size in bytes
+        appendsStale:
+          type: integer
+          description: Number of appends marked stale after content replacement
+        webUrl:
+          type: string
+          format: uri
+          description: URL to view this file in the web app
+
+FileDeleteResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [id, deleted]
+      properties:
+        id:
+          type: string
+          description: File ID
+        deleted:
+          type: boolean
+          const: true
+        recoverable:
+          type: boolean
+          description: Whether file can be recovered (soft delete)
+        expiresAt:
+          type: string
+          format: date-time
+          description: When soft-deleted file will be permanently deleted
+
+FileRecoverResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [id, recovered, path, urls]
+      properties:
+        id:
+          type: string
+          description: File ID
+        recovered:
+          type: boolean
+          const: true
+        path:
+          type: string
+          description: File path after recovery
+        urls:
+          $ref: '#/CapabilityUrls'
+        webUrl:
+          type: string
+          format: uri
+          description: URL to view this file in the web app
+
+FileMoveRequest:
+  type: object
+  required: [source, destination]
+  properties:
+    source:
+      type: string
+      description: Source file path (absolute from workspace root)
+    destination:
+      type: string
+      description: Destination folder path (absolute from workspace root)
+
+FileMoveResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [id, previousPath, newPath]
+      properties:
+        id:
+          type: string
+          description: File ID
+        previousPath:
+          type: string
+          description: Original file path
+        newPath:
+          type: string
+          description: New file path after move
+        webUrl:
+          type: string
+          format: uri
+          description: URL to view this file in the web app at the new path
+
+FileRenameRequest:
+  type: object
+  required: [filename]
+  properties:
+    filename:
+      type: string
+      description: New filename
+      maxLength: 255
+
+FileMetaResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [id, filename, folder, size, createdAt, updatedAt, appendCount, taskStats, hasWebhook]
+      properties:
+        id:
+          type: string
+          description: File ID
+        filename:
+          type: string
+          description: File name
+        folder:
+          type: string
+          description: Parent folder path
+        size:
+          type: integer
+          description: File size in bytes
+        createdAt:
+          type: string
+          format: date-time
+          description: File creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last modification timestamp
+        appendCount:
+          type: integer
+          description: Total number of appends
+        taskStats:
+          $ref: '#/TaskStats'
+        hasWebhook:
+          type: boolean
+          description: Whether file has active webhooks
+        webUrl:
+          type: string
+          format: uri
+          description: URL to view this file in the web app
+
+FileStructureResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [headings, appendCount, hasTaskAppends]
+      properties:
+        headings:
+          type: array
+          items:
+            type: object
+            required: [level, text, line]
+            properties:
+              level:
+                type: integer
+                minimum: 1
+                maximum: 6
+                description: Heading level (1-6)
+              text:
+                type: string
+                description: Heading text content
+              line:
+                type: integer
+                minimum: 1
+                description: Line number in file
+        appendCount:
+          type: integer
+          description: Total number of appends in the file
+        hasTaskAppends:
+          type: boolean
+          description: Whether file has any task appends
+
+FileSectionResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [heading, level, content, startLine, endLine]
+      properties:
+        heading:
+          type: string
+          description: Heading text that was matched
+        level:
+          type: integer
+          minimum: 1
+          maximum: 6
+          description: Heading level (1-6)
+        content:
+          type: string
+          description: Section content
+        startLine:
+          type: integer
+          minimum: 1
+          description: Starting line number
+        endLine:
+          type: integer
+          minimum: 1
+          description: Ending line number
+
+FileSettings:
+  type: object
+  properties:
+    claimDurationSeconds:
+      type: integer
+      minimum: 60
+      description: Default claim duration in seconds
+
+    maxAppendSize:
+      type: integer
+      minimum: 1
+      maximum: 1048576
+      description: Maximum append size in bytes
+    allowedAppendTypes:
+      type: array
+      items:
+        $ref: 'appends.yaml#/UserAppendType'
+      description: Allowed append types for this file
+    wipLimit:
+      type: integer
+      minimum: 1
+      description: Work-in-progress limit for claims
+    labels:
+      type: array
+      items:
+        type: string
+      description: Allowed labels for this file
+
+FileSettingsUpdateRequest:
+  type: object
+  description: Partial update for file settings
+  properties:
+    claimDurationSeconds:
+      type: integer
+      minimum: 60
+      description: Default claim duration in seconds
+
+    maxAppendSize:
+      type: integer
+      minimum: 1
+      maximum: 1048576
+      description: Maximum append size in bytes
+    allowedAppendTypes:
+      type: array
+      items:
+        $ref: 'appends.yaml#/UserAppendType'
+      description: Allowed append types for this file
+    wipLimit:
+      type: integer
+      minimum: 1
+      description: Work-in-progress limit for claims
+    labels:
+      type: array
+      items:
+        type: string
+      description: Allowed labels for this file
+
+# ==============================================================================
+# Stats Schemas
+# ==============================================================================
+
+FileStats:
+  type: object
+  properties:
+    appendCount:
+      type: integer
+      description: Total number of appends
+    taskStats:
+      $ref: '#/TaskStats'
+
+TaskStats:
+  type: object
+  properties:
+    pending:
+      type: integer
+      description: Number of pending tasks
+    claimed:
+      type: integer
+      description: Number of claimed tasks
+    completed:
+      type: integer
+      description: Number of completed tasks
+    activeClaims:
+      type: integer
+      description: Number of currently active claims
+
+FileTailResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [content, bytesReturned, truncated]
+      properties:
+        content:
+          type: string
+          description: Tail content (last N bytes/lines)
+        bytesReturned:
+          type: integer
+          description: Number of bytes returned
+        truncated:
+          type: boolean
+          description: Whether content was truncated (file larger than requested)
+
+FileRenameResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [id, filename]
+      properties:
+        id:
+          type: string
+          description: File ID
+        filename:
+          type: string
+          description: New filename after rename
+
+AppendGetResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      $ref: 'appends.yaml#/Append'
+
+FileRotateUrlsResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [id, urls, previousUrlsInvalidated]
+      properties:
+        id:
+          type: string
+          description: File ID
+        urls:
+          $ref: '#/CapabilityUrls'
+        previousUrlsInvalidated:
+          type: boolean
+          const: true
+        webUrl:
+          type: string
+          format: uri
+          description: URL to view this file in the web app
+
+FileSettingsResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      $ref: '#/FileSettings'
+
+# -----------------------------------------------------------------------------
+# File Create Response (for path-based file creation)
+# -----------------------------------------------------------------------------
+FileCreateResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [id, path, urls, createdAt]
+      properties:
+        id:
+          type: string
+          description: File ID
+        path:
+          type: string
+          description: Full file path
+        urls:
+          $ref: '#/CapabilityUrls'
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        webUrl:
+          type: string
+          format: uri
+          description: URL to view this file in the web app

@@ -1,0 +1,83 @@
+{
+  "name": "@mdplane/ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./lib/utils": {
+      "types": "./dist/lib/utils.d.ts",
+      "import": "./dist/lib/utils.js"
+    },
+    "./brand/logo": {
+      "types": "./dist/brand/logo.d.ts",
+      "import": "./dist/brand/logo.js"
+    },
+    "./ui/code-block": {
+      "types": "./dist/ui/code-block.d.ts",
+      "import": "./dist/ui/code-block.js"
+    },
+    "./ui/bordered-icon": {
+      "types": "./dist/ui/bordered-icon.d.ts",
+      "import": "./dist/ui/bordered-icon.js"
+    },
+    "./ui/button": {
+      "types": "./dist/ui/button.d.ts",
+      "import": "./dist/ui/button.js"
+    },
+    "./ui/popover": {
+      "types": "./dist/ui/popover.d.ts",
+      "import": "./dist/ui/popover.js"
+    },
+    "./ui/tooltip": {
+      "types": "./dist/ui/tooltip.d.ts",
+      "import": "./dist/ui/tooltip.js"
+    },
+    "./ui/theme-toggle": {
+      "types": "./dist/ui/theme-toggle.d.ts",
+      "import": "./dist/ui/theme-toggle.js"
+    },
+    "./styles/code-block.css": {
+      "style": "./src/styles/code-block.css",
+      "default": "./src/styles/code-block.css"
+    },
+    "./styles/status-tokens.css": {
+      "style": "./src/styles/status-tokens.css",
+      "default": "./src/styles/status-tokens.css"
+    },
+    "./ui/shiki": {
+      "types": "./dist/ui/shiki.d.ts",
+      "import": "./dist/ui/shiki.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@base-ui/react": "^1.1.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.563.0",
+    "next-themes": "^0.4.6",
+    "shiki": "^3.22.0",
+    "tailwind-merge": "^3.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.1.0",
+    "@types/react": "^19.2.10",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  }
+}

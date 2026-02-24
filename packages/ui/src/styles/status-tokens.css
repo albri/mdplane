@@ -1,0 +1,31 @@
+:root {
+  --status-pending: hsl(217 91.2% 59.8%);
+  --status-claimed: hsl(38 92.1% 50.2%);
+  --status-completed: hsl(142 70.6% 45.3%);
+  --status-expired: hsl(220 8.9% 46.1%);
+  --status-blocked: hsl(0 84.2% 60.2%);
+  --accent-answer: #7c3aed;
+
+  --color-status-pending: var(--status-pending);
+  --color-status-claimed: var(--status-claimed);
+  --color-status-completed: var(--status-completed);
+  --color-status-expired: var(--status-expired);
+  --color-status-blocked: var(--status-blocked);
+  --color-accent-answer: var(--accent-answer);
+}
+
+.dark {
+  --status-pending: hsl(217 91.2% 59.8%);
+  --status-claimed: hsl(38 92.1% 50.2%);
+  --status-completed: hsl(142 70.6% 45.3%);
+  --status-expired: hsl(220 8.9% 46.1%);
+  --status-blocked: hsl(0 84.2% 60.2%);
+  --accent-answer: #7c3aed;
+
+  --color-status-pending: var(--status-pending);
+  --color-status-claimed: var(--status-claimed);
+  --color-status-completed: var(--status-completed);
+  --color-status-expired: var(--status-expired);
+  --color-status-blocked: var(--status-blocked);
+  --color-accent-answer: var(--accent-answer);
+}

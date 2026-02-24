@@ -1,0 +1,227 @@
+# Realtime/WebSocket schemas for mdplane API
+# Reference: docs/Obsidian Vault/Projects/mdplane/API Design.md
+
+# -----------------------------------------------------------------------------
+# Enums
+# -----------------------------------------------------------------------------
+HeartbeatStatus:
+  type: string
+  description: Agent liveness status
+  enum:
+    - alive
+    - idle
+    - busy
+    - error
+    - stale
+
+SubscribeMessageType:
+  type: string
+  description: Type of WebSocket message type
+  enum:
+    - connected
+    - error
+
+# WebSocket event names (payload `event` field)
+WebSocketEvent:
+  type: string
+  description: Event names emitted by the server over websocket (dot notation)
+  enum:
+    - append
+    - heartbeat
+    - file.created
+    - file.updated
+    - file.deleted
+    - task.created
+    - task.completed
+    - task.cancelled
+    - task.blocked
+    - task.unblocked
+    - task.overdue
+    - task.escalated
+    - task.recurred
+    - claim.created
+    - claim.expired
+    - claim.renewed
+    - claim.released
+    - webhook.failed
+    - settings.changed
+
+# -----------------------------------------------------------------------------
+# Request Schemas
+# -----------------------------------------------------------------------------
+HeartbeatRequest:
+  type: object
+  description: Request to send agent heartbeat
+  required:
+    - author
+    - status
+  properties:
+    author:
+      type: string
+      description: Agent identifier
+      pattern: '^[a-zA-Z0-9_-]{1,64}$'
+    status:
+      $ref: '#/HeartbeatStatus'
+    currentTask:
+      type: string
+      description: Currently active task reference (optional)
+      pattern: '^[a-zA-Z0-9_-]{1,64}$'
+    metadata:
+      type: object
+      additionalProperties: true
+      description: Additional agent metadata (optional)
+
+# -----------------------------------------------------------------------------
+# Response Schemas
+# -----------------------------------------------------------------------------
+HeartbeatResponse:
+  type: object
+  description: Response from heartbeat endpoint
+  required:
+    - ok
+    - data
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required:
+        - id
+        - author
+        - ts
+        - expiresAt
+        - nextHeartbeatBy
+      properties:
+        id:
+          type: string
+          description: Heartbeat ID
+        author:
+          type: string
+          description: Agent identifier
+          pattern: '^[a-zA-Z0-9_-]{1,64}$'
+        ts:
+          type: string
+          format: date-time
+          description: Heartbeat timestamp
+        expiresAt:
+          type: string
+          format: date-time
+          description: When this heartbeat expires
+        nextHeartbeatBy:
+          type: string
+          format: date-time
+          description: Deadline for next heartbeat to maintain liveness
+
+# -----------------------------------------------------------------------------
+# WebSocket Message Schemas
+# -----------------------------------------------------------------------------
+SubscribeMessage:
+  type: object
+  description: WebSocket control message
+  required:
+    - type
+    - data
+  properties:
+    type:
+      $ref: '#/SubscribeMessageType'
+    data:
+      type: object
+      additionalProperties: true
+      description: Control message payload (structure varies by type)
+
+WebSocketEventMessage:
+  type: object
+  description: WebSocket event message emitted by the server
+  required:
+    - eventId
+    - sequence
+    - event
+    - timestamp
+    - file
+    - data
+  properties:
+    eventId:
+      type: string
+      description: Unique event identifier
+    sequence:
+      type: integer
+      description: Monotonic sequence number per workspace
+    event:
+      $ref: '#/WebSocketEvent'
+    timestamp:
+      type: string
+      format: date-time
+    file:
+      type: object
+      required: [path]
+      properties:
+        path:
+          type: string
+    data:
+      type: object
+      additionalProperties: true
+      description: Event payload (structure varies by event)
+
+# -----------------------------------------------------------------------------
+# Agent Liveness Schemas
+# -----------------------------------------------------------------------------
+AgentLiveness:
+  type: object
+  description: Current liveness state of an agent
+  required:
+    - author
+    - status
+    - lastSeen
+  properties:
+    author:
+      type: string
+      description: Agent identifier
+      pattern: '^[a-zA-Z0-9_-]{1,64}$'
+    status:
+      $ref: '#/HeartbeatStatus'
+    lastSeen:
+      type: string
+      format: date-time
+      description: Last heartbeat timestamp
+    stale:
+      type: boolean
+      description: Whether agent is considered stale
+    currentTask:
+      type: string
+      description: Currently active task reference (optional)
+      pattern: '^[a-zA-Z0-9_-]{1,64}$'
+    metadata:
+      type: object
+      additionalProperties: true
+      description: Additional agent metadata (optional)
+
+AgentLivenessResponse:
+  type: object
+  description: Response containing agent liveness information
+  required:
+    - ok
+    - data
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required:
+        - agents
+        - staleThresholdSeconds
+      properties:
+        agents:
+          type: array
+          description: List of agents with their liveness status
+          items:
+            $ref: '#/AgentLiveness'
+        staleThresholdSeconds:
+          type: integer
+          description: Seconds after which an agent is considered stale
+          example: 30
+        webUrl:
+          type: string
+          format: uri
+          description: URL to view agents in the web interface

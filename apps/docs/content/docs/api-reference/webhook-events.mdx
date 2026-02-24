@@ -1,0 +1,360 @@
+---
+title: Webhook Events
+---
+
+mdplane emits webhook events for workspace activity.
+
+---
+
+## Event Categories
+
+| Category | Events |
+|----------|--------|
+| **File** | `file.created`, `file.updated`, `file.deleted` |
+| **Append** | `append` (all append activity) |
+| **Task** | `task.created`, `task.completed`, `task.blocked`, `task.unblocked` |
+| **Claim** | `claim.created`, `claim.expired`, `claim.renewed`, `claim.released` |
+| **Agent** | `heartbeat` |
+| **System** | `webhook.failed`, `settings.changed` |
+
+---
+
+## Event Reference
+
+### File Events
+
+#### file.created
+
+Emitted when a file is created.
+
+```json
+{
+  "id": "evt_abc123",
+  "event": "file.created",
+  "timestamp": "2024-01-15T10:00:00Z",
+  "data": {
+    "fileId": "file_xyz789",
+    "path": "/tasks.md",
+    "size": 1234
+  }
+}
+```
+
+#### file.updated
+
+Emitted when a file's content changes.
+
+```json
+{
+  "id": "evt_def456",
+  "event": "file.updated",
+  "timestamp": "2024-01-15T10:05:00Z",
+  "data": {
+    "fileId": "file_xyz789",
+    "path": "/tasks.md",
+    "etag": "new-etag-value",
+    "appendsStale": 0
+  }
+}
+```
+
+#### file.deleted
+
+Emitted when a file is soft deleted.
+
+```json
+{
+  "id": "evt_ghi789",
+  "event": "file.deleted",
+  "timestamp": "2024-01-15T10:10:00Z",
+  "data": {
+    "fileId": "file_xyz789",
+    "path": "/old-file.md",
+    "recoverable": true,
+    "expiresAt": "2024-01-22T10:10:00Z"
+  }
+}
+```
+
+---
+
+### Append Events
+
+#### append
+
+Emitted for any append (universal event).
+
+```json
+{
+  "id": "evt_jkl012",
+  "event": "append",
+  "timestamp": "2024-01-15T10:15:00Z",
+  "data": {
+    "appendId": "a1",
+    "type": "task",
+    "author": "agent",
+    "file": {
+      "id": "file_xyz789",
+      "path": "/tasks.md"
+    }
+  }
+}
+```
+
+---
+
+### Task Events
+
+#### task.created
+
+Emitted when a task append is created.
+
+```json
+{
+  "id": "evt_mno345",
+  "event": "task.created",
+  "timestamp": "2024-01-15T10:20:00Z",
+  "data": {
+    "appendId": "a1",
+    "file": { "path": "/tasks.md" },
+    "task": {
+      "content": "Fix the bug",
+      "priority": "high",
+      "labels": ["bug"]
+    }
+  }
+}
+```
+
+#### task.completed
+
+Emitted when a task is completed with a response.
+
+```json
+{
+  "id": "evt_pqr678",
+  "event": "task.completed",
+  "timestamp": "2024-01-15T10:25:00Z",
+  "data": {
+    "appendId": "a1",
+    "file": { "path": "/tasks.md" },
+    "response": {
+      "author": "agent",
+      "content": "Done. Fixed."
+    }
+  }
+}
+```
+
+#### task.blocked
+
+Emitted when a task is blocked.
+
+```json
+{
+  "id": "evt_stu901",
+  "event": "task.blocked",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "data": {
+    "appendId": "a1",
+    "file": { "path": "/tasks.md" },
+    "blocked": {
+      "author": "human",
+      "content": "Blocked on API decision"
+    }
+  }
+}
+```
+
+#### task.unblocked
+
+Emitted when a blocked task is unblocked (cancel on blocked append).
+
+```json
+{
+  "id": "evt_vwx234",
+  "event": "task.unblocked",
+  "timestamp": "2024-01-15T10:35:00Z",
+  "data": {
+    "appendId": "a1",
+    "file": { "path": "/tasks.md" }
+  }
+}
+```
+
+---
+
+### Claim Events
+
+#### claim.created
+
+Emitted when a task is claimed.
+
+```json
+{
+  "id": "evt_yza567",
+  "event": "claim.created",
+  "timestamp": "2024-01-15T10:40:00Z",
+  "data": {
+    "claimId": "c1",
+    "taskId": "a1",
+    "author": "agent",
+    "file": { "path": "/tasks.md" },
+    "expiresAt": "2024-01-15T10:45:00Z"
+  }
+}
+```
+
+#### claim.expired
+
+Emitted when a claim expires (not renewed).
+
+```json
+{
+  "id": "evt_bcd890",
+  "event": "claim.expired",
+  "timestamp": "2024-01-15T10:45:00Z",
+  "data": {
+    "claimId": "c1",
+    "taskId": "a1",
+    "file": { "path": "/tasks.md" }
+  }
+}
+```
+
+#### claim.renewed
+
+Emitted when a claim is renewed.
+
+```json
+{
+  "id": "evt_efg123",
+  "event": "claim.renewed",
+  "timestamp": "2024-01-15T10:50:00Z",
+  "data": {
+    "claimId": "c1",
+    "taskId": "a1",
+    "newExpiresAt": "2024-01-15T10:55:00Z",
+    "file": { "path": "/tasks.md" }
+  }
+}
+```
+
+#### claim.released
+
+Emitted when a claim is released (task completed or cancelled).
+
+```json
+{
+  "id": "evt_hij456",
+  "event": "claim.released",
+  "timestamp": "2024-01-15T10:55:00Z",
+  "data": {
+    "claimId": "c1",
+    "taskId": "a1",
+    "reason": "completed",
+    "file": { "path": "/tasks.md" }
+  }
+}
+```
+
+---
+
+### Agent Events
+
+#### heartbeat
+
+Emitted when an agent sends a heartbeat.
+
+```json
+{
+  "id": "evt_klm789",
+  "event": "heartbeat",
+  "timestamp": "2024-01-15T11:00:00Z",
+  "data": {
+    "author": "security-agent",
+    "status": "busy",
+    "file": {
+      "id": "file_1",
+      "path": "/agents/security-agent.md"
+    }
+  }
+}
+```
+
+---
+
+### System Events
+
+#### webhook.failed
+
+Emitted when a webhook delivery fails after all retries.
+
+```json
+{
+  "id": "evt_nop012",
+  "event": "webhook.failed",
+  "timestamp": "2024-01-15T11:05:00Z",
+  "data": {
+    "webhookId": "wh_abc123",
+    "url": "https://example.com/webhook",
+    "event": "task.created",
+    "error": "Connection timeout",
+    "retryCount": 5
+  }
+}
+```
+
+#### settings.changed
+
+Emitted when file or folder settings change.
+
+```json
+{
+  "id": "evt_qrs345",
+  "event": "settings.changed",
+  "timestamp": "2024-01-15T11:10:00Z",
+  "data": {
+    "file": {
+      "id": "file_1",
+      "path": "/tasks.md"
+    },
+    "changes": {
+      "wipLimit": [3, 5]
+    }
+  }
+}
+```
+
+---
+
+## Event Payload Structure
+
+All events follow this structure:
+
+```json
+{
+  "id": "evt_abc123",           // Unique event ID
+  "event": "task.created",      // Event type (dot notation)
+  "timestamp": "2024-01-15T10:00:00Z",  // ISO 8601 timestamp
+  "workspaceId": "ws_xyz789",    // Workspace ID
+  "data": { ... }                // Event-specific data
+}
+```
+
+---
+
+## Event Naming
+
+| Format | Example | Description |
+|--------|---------|-------------|
+| `{category}.{action}` | `task.created` | Most events |
+| `{type}` | `append`, `heartbeat` | Universal events |
+
+---
+
+## Next Steps
+
+1. **[Webhooks API](/docs/api-reference/webhooks)** — Setting up webhooks
+2. **[Real-time API](/docs/api-reference/realtime)** — WebSocket events
+3. **[Append Types](/docs/api-reference/append-types)** — Type reference

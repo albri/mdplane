@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mdplane Status</title>
+    <meta name="description" content="Live service status for mdplane." />
+    <meta name="application-name" content="mdplane" />
+    <meta name="robots" content="index,follow" />
+    <meta name="theme-color" content="#191919" />
+    <link rel="canonical" href="https://status.mdplane.dev/" />
+
+    <link rel="icon" href="./favicon.ico" sizes="any" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./apple-icon.png" />
+    <link rel="manifest" href="./site.webmanifest" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="site-header">
+        <div class="site-header-inner">
+          <p class="wordmark"><span>md</span>plane</p>
+          <nav class="top-nav" aria-label="Primary">
+            <a href="https://mdplane.dev">Home</a>
+            <a href="https://app.mdplane.dev">App</a>
+            <a href="https://docs.mdplane.dev">Docs</a>
+          </nav>
+        </div>
+      </header>
+
+      <div class="content-shell">
+        <main class="content-main">
+          <section class="hero hero-compact">
+            <h1>Status</h1>
+            <p id="api-origin" class="meta" hidden></p>
+            <div class="hero-actions">
+              <button id="refresh-button" class="refresh" type="button">
+                <span id="refresh-label">Refresh</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="section overall-section" aria-live="polite">
+            <div id="overall-callout" class="headline-banner tone-neutral">
+              <div class="headline-row">
+                <span id="headline-icon" class="headline-icon" aria-hidden="true">...</span>
+                <p id="headline-status" class="headline-status">Checking current platform status...</p>
+              </div>
+              <div class="headline-meta">
+                <p id="updated-at" class="updated-at">Last fetched: -</p>
+                <p id="stale-pill" class="stale-note" hidden>Data may be stale</p>
+              </div>
+            </div>
+          </section>
+
+          <div class="section-divider" role="presentation"></div>
+
+          <section class="section card">
+            <h2 class="section-heading">Services</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Service</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Core API</td>
+                  <td id="service-api"></td>
+                </tr>
+                <tr>
+                  <td>File storage</td>
+                  <td id="service-storage"></td>
+                </tr>
+                <tr>
+                  <td>Realtime updates</td>
+                  <td id="service-realtime"></td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

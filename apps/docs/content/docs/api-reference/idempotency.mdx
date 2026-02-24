@@ -1,0 +1,295 @@
+---
+title: Idempotency
+---
+
+mdplane supports idempotency keys to prevent duplicate operations.
+
+---
+
+## How It Works
+
+Include an `Idempotency-Key` header with your request:
+
+```bash
+POST /api/v1/files/tasks.md/append
+Idempotency-Key: v1-abc123
+Authorization: Bearer sk_live_KEY
+```
+
+If the request is retried with the same key:
+- **First request:** Processes normally, returns result
+- **Retry request:** Skips processing, returns cached result
+
+<Callout type="info">
+**Idempotency keys expire after 24 hours.** After that, the same key can be used again.
+</Callout>
+
+---
+
+## Use Cases
+
+### Retry Safety
+
+```javascript
+async function createTask(content) {
+  const key = `task-${Date.now()}-${hash(content)}`;
+
+  return await fetch('/api/v1/files/tasks.md/append', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Idempotency-Key': key,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      type: 'task',
+      content: content
+    })
+  });
+}
+```
+
+If the network fails and you retry, mdplane ensures only one task is created.
+
+### Payment-Like Operations
+
+```bash
+# Claim a task (idempotent)
+Idempotency-Key: claim-a1-2024-01-15
+```
+
+Prevents duplicate claims if the request is sent multiple times.
+
+---
+
+## Key Format
+
+Idempotency keys are strings up to 255 characters.
+
+**Recommended formats:**
+
+```bash
+# UUID
+v4-uuid-here
+
+# Timestamp + hash
+{timestamp}-{content_hash}
+
+# Operation + ID
+claim-{task_id}-{timestamp}
+
+# Random
+random-string-here
+```
+
+<Callout type="warning">
+**Don't use sensitive data** in keys. Keys are stored for 24 hours.
+</Callout>
+
+---
+
+## Request/Response Pattern
+
+### First Request
+
+```bash
+POST /api/v1/files/tasks.md/append
+Idempotency-Key: task-12345
+Authorization: Bearer sk_live_KEY
+
+{
+  "type": "task",
+  "content": "Fix the bug"
+}
+```
+
+**Response:**
+
+```json
+{
+  "ok": true,
+  "data": {
+    "id": "a1",
+    "type": "task",
+    "content": "Fix the bug"
+  }
+}
+```
+
+### Retry Request
+
+```bash
+POST /api/v1/files/tasks.md/append
+Idempotency-Key: task-12345  # Same key
+Authorization: Bearer sk_live_KEY
+
+{
+  "type": "task",
+  "content": "Fix the bug"
+}
+```
+
+**Response:**
+
+```json
+{
+  "ok": true,
+  "data": {
+    "id": "a1",  # Same ID as first request
+    "type": "task",
+    "content": "Fix the bug"
+  }
+}
+```
+
+No new task is created. The cached result is returned.
+
+---
+
+## Idempotency-Key Header
+
+| Property | Value |
+|----------|-------|
+| Format | String |
+| Max length | 255 characters |
+| Expiration | 24 hours after first use |
+| Scope | Per workspace |
+
+---
+
+## Responses
+
+### First Request (Original)
+
+```json
+{
+  "ok": true,
+  "data": { ... }
+}
+```
+
+### Retry Request (Cached)
+
+```json
+{
+  "ok": true,
+  "data": { ... },
+  "idempotent": true,
+  "idempotencyKey": "task-12345"
+}
+```
+
+The `idempotent: true` flag indicates this was a cached response.
+
+---
+
+## Errors
+
+### Conflicting Operations
+
+If two requests with different content use the same key:
+
+```bash
+# Request 1
+Idempotency-Key: task-12345
+{ "type": "task", "content": "Fix bug A" }
+
+# Request 2 (same key, different content)
+Idempotency-Key: task-12345
+{ "type": "task", "content": "Fix bug B" }
+```
+
+**Request 2 response:**
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "CONFLICT",
+    "message": "Idempotency key in use with different content"
+  }
+}
+```
+
+---
+
+## Best Practices
+
+1. **Use unique keys per operation** — Don't reuse keys
+2. **Include timestamp** — Ensures uniqueness over time
+3. **Include content hash** — Detects content changes
+4. **Handle cached responses** — Check `idempotent` flag
+5. **Don't include secrets** — Keys are stored
+
+---
+
+## Examples
+
+### Node.js
+
+```javascript
+import crypto from 'crypto';
+
+function createIdempotencyKey(content) {
+  const hash = crypto.createHash('sha256')
+    .update(content)
+    .digest('hex')
+    .substring(0, 16);
+  return `task-${Date.now()}-${hash}`;
+}
+
+async function createTask(content) {
+  const key = createIdempotencyKey(content);
+
+  const response = await fetch('/api/v1/files/tasks.md/append', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Idempotency-Key': key,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      type: 'task',
+      content: content
+    })
+  });
+
+  return response.json();
+}
+```
+
+### Python
+
+```python
+import hashlib
+import time
+
+def create_idempotency_key(content):
+    hash_val = hashlib.sha256(content.encode()).hexdigest()[:16]
+    return f"task-{int(time.time())}-{hash_val}"
+
+def create_task(content):
+    key = create_idempotency_key(content)
+
+    response = requests.post(
+        f"{API_URL}/files/tasks.md/append",
+        headers={
+            "Authorization": f"Bearer {API_KEY}",
+            "Idempotency-Key": key
+        },
+        json={
+            "type": "task",
+            "content": content
+        }
+    )
+
+    return response.json()
+```
+
+---
+
+## Next Steps
+
+1. **[API Reference](/docs/api-reference)** — Endpoint documentation
+2. **[Error Codes](/docs/api-reference/errors)** — Error handling
+3. **[Limits](/docs/api-reference/limits)** — Usage guidelines

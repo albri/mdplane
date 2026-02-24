@@ -1,0 +1,145 @@
+# ==============================================================================
+# STATS ENDPOINTS
+# File and workspace statistics
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# STATS (via Write key)
+# ------------------------------------------------------------------------------
+
+/w/{key}/ops/stats:
+  get:
+    operationId: getStatsViaWriteKey
+    tags:
+      - Stats
+    summary: Get file/folder/workspace statistics (write key)
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Returns statistics for the scope of the write key.
+
+      Provides scope-aware statistics including:
+      - Scope info (type and id)
+      - Counts (files, appends, tasks, claims, agents)
+      - Activity (last append, appends today/this week)
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+    responses:
+      '200':
+        description: Statistics retrieved
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/StatsViaWriteKeyResponse'
+      '403':
+        description: Invalid or insufficient permissions
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/StatsErrorResponse'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# FILE STATS (via Read key)
+# ------------------------------------------------------------------------------
+
+/r/{key}/ops/file/stats:
+  get:
+    operationId: getFileStatsViaReadKey
+    tags:
+      - Stats
+    summary: Get file statistics (read key)
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Returns statistics for a specific file including append counts and task statistics.
+
+      Provides:
+      - Total append count
+      - Task statistics (pending, claimed, completed, active claims)
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+    responses:
+      '200':
+        description: File statistics retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FileStatsResponse'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# FILE STATS (via Append key)
+# ------------------------------------------------------------------------------
+
+/a/{key}/ops/file/stats:
+  get:
+    operationId: getFileStats
+    tags:
+      - Stats
+    summary: Get file statistics
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Returns statistics for a specific file including append counts and task statistics.
+
+      Provides:
+      - Total append count
+      - Task statistics (pending, claimed, completed, active claims)
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+    responses:
+      '200':
+        description: File statistics retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FileStatsResponse'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# WORKSPACE STATS (via API key)
+# ------------------------------------------------------------------------------
+
+/api/v1/stats:
+  get:
+    operationId: getWorkspaceStats
+    tags:
+      - Stats
+    summary: Get workspace statistics
+    description: |
+      Returns comprehensive statistics for the entire workspace.
+      
+      Requires API key authentication via Bearer token.
+      
+      Provides:
+      - File and folder counts
+      - Total storage usage and limits
+      - Append counts and task statistics
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: Workspace statistics retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/WorkspaceStatsResponse'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+

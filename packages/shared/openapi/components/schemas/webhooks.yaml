@@ -1,0 +1,367 @@
+# Webhook schemas for mdplane API
+# Reference: docs/Obsidian Vault/Projects/mdplane/API Design.md
+
+# -----------------------------------------------------------------------------
+# Webhook Event Types
+# -----------------------------------------------------------------------------
+WebhookEvent:
+  type: string
+  description: Event types that can trigger webhooks
+  enum:
+    - append
+    - append.created
+    - task.created
+    - task.claimed
+    - task.completed
+    - task.cancelled
+    - task.blocked
+    - task.unblocked
+    - task.overdue
+    - task.escalated
+    - task.recurred
+    - task.expired
+    - claim.created
+    - claim.expired
+    - claim.renewed
+    - claim.released
+    - file.created
+    - file.updated
+    - file.deleted
+    - heartbeat
+    - webhook.failed
+    - settings.changed
+
+WebhookStatus:
+  type: string
+  description: Webhook status
+  enum:
+    - active
+    - paused
+    - suspended
+    - disabled
+
+# -----------------------------------------------------------------------------
+# Create Webhook
+# -----------------------------------------------------------------------------
+WebhookCreateRequest:
+  type: object
+  description: Request to register a new webhook
+  required: [url, events]
+  properties:
+    url:
+      type: string
+      format: uri
+      description: HTTPS URL to receive webhook payloads
+    events:
+      type: array
+      items:
+        $ref: '#/WebhookEvent'
+      description: Events to subscribe to
+    secret:
+      type: string
+      minLength: 32
+      description: HMAC-SHA256 signing secret (min 32 chars). If omitted, server generates one.
+    headers:
+      type: object
+      additionalProperties:
+        type: string
+      description: Custom headers to include in webhook requests
+    includeUrls:
+      type: boolean
+      default: true
+      description: Whether to include capability URLs in payloads
+    filters:
+      type: object
+      description: Optional filters to narrow which events trigger the webhook
+      properties:
+        types:
+          type: array
+          items:
+            type: string
+          description: Filter by append types
+        labels:
+          type: array
+          items:
+            type: string
+          description: Filter by labels
+        priority:
+          type: array
+          items:
+            type: string
+          description: Filter by priority levels
+    recursive:
+      type: boolean
+      description: Whether the webhook should trigger for changes in subfolders (folder webhooks only)
+
+WebhookCreateResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [id, url, events, status, createdAt]
+      properties:
+        id:
+          type: string
+          description: Webhook ID
+        url:
+          type: string
+          format: uri
+          description: Webhook URL
+        events:
+          type: array
+          items:
+            $ref: '#/WebhookEvent'
+        status:
+          $ref: '#/WebhookStatus'
+        secret:
+          type: string
+          description: Generated secret (only returned once at creation if not provided)
+        includeUrls:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        webUrl:
+          type: string
+          format: uri
+          description: URL to manage webhooks in the web interface
+
+# -----------------------------------------------------------------------------
+# Webhook Object
+# -----------------------------------------------------------------------------
+Webhook:
+  type: object
+  description: Webhook configuration
+  required: [id, url, events, status, createdAt]
+  properties:
+    id:
+      type: string
+      description: Webhook ID
+    url:
+      type: string
+      format: uri
+      description: Webhook URL
+    events:
+      type: array
+      items:
+        $ref: '#/WebhookEvent'
+    status:
+      $ref: '#/WebhookStatus'
+    includeUrls:
+      type: boolean
+      description: Whether capability URLs are included in payloads
+    createdAt:
+      type: string
+      format: date-time
+      description: Creation timestamp
+    lastTriggeredAt:
+      type: string
+      format: date-time
+      description: Last successful delivery timestamp
+    failureCount:
+      type: integer
+      description: Consecutive failure count
+    successRate:
+      type: number
+      format: float
+      minimum: 0
+      maximum: 1
+      description: Success rate (0.0 to 1.0)
+
+# -----------------------------------------------------------------------------
+# List Webhooks
+# -----------------------------------------------------------------------------
+WebhookListResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: array
+      items:
+        $ref: '#/Webhook'
+    webUrl:
+      type: string
+      format: uri
+      description: URL to manage webhooks in the web interface
+
+# -----------------------------------------------------------------------------
+# Update Webhook
+# -----------------------------------------------------------------------------
+WebhookUpdateRequest:
+  type: object
+  description: Partial update for webhook configuration
+  properties:
+    url:
+      type: string
+      format: uri
+      description: New webhook URL
+    events:
+      type: array
+      items:
+        $ref: '#/WebhookEvent'
+      description: Updated event subscriptions
+    active:
+      type: boolean
+      description: Enable/disable webhook
+    secret:
+      type: string
+      minLength: 32
+      description: New signing secret
+    headers:
+      type: object
+      additionalProperties:
+        type: string
+      description: Updated custom headers
+    includeUrls:
+      type: boolean
+      description: Whether to include capability URLs in payloads
+    filters:
+      type: object
+      description: Updated filters
+      properties:
+        types:
+          type: array
+          items:
+            type: string
+        labels:
+          type: array
+          items:
+            type: string
+        priority:
+          type: array
+          items:
+            type: string
+    recursive:
+      type: boolean
+      description: Whether the webhook should trigger for changes in subfolders (folder webhooks only)
+
+WebhookUpdateResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      $ref: '#/Webhook'
+
+# -----------------------------------------------------------------------------
+# Delete Webhook
+# -----------------------------------------------------------------------------
+WebhookDeleteResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [id, deleted]
+      properties:
+        id:
+          type: string
+          description: Deleted webhook ID
+        deleted:
+          type: boolean
+          const: true
+
+# -----------------------------------------------------------------------------
+# Webhook Logs
+# -----------------------------------------------------------------------------
+WebhookLogStatus:
+  type: string
+  description: Delivery status
+  enum:
+    - ok
+    - failed
+    - timeout
+    - error
+
+WebhookLogEntry:
+  type: object
+  description: Single webhook delivery log entry
+  required: [id, event, status, timestamp]
+  properties:
+    id:
+      type: string
+      description: Log entry ID
+    event:
+      $ref: '#/WebhookEvent'
+    status:
+      $ref: '#/WebhookLogStatus'
+    responseCode:
+      type: integer
+      description: HTTP response code from webhook endpoint
+    timestamp:
+      type: string
+      format: date-time
+      description: Delivery attempt timestamp
+    durationMs:
+      type: integer
+      description: Request duration in milliseconds
+    error:
+      type: string
+      description: Error message if delivery failed
+
+WebhookLogsResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [logs]
+      properties:
+        logs:
+          type: array
+          items:
+            $ref: '#/WebhookLogEntry'
+        pagination:
+          $ref: 'core.yaml#/PaginatedResponse'
+
+# -----------------------------------------------------------------------------
+# Webhook Test
+# -----------------------------------------------------------------------------
+WebhookTestRequest:
+  type: object
+  description: Request to send a test webhook
+  properties:
+    event:
+      $ref: '#/WebhookEvent'
+      description: Event type to simulate (defaults to 'append')
+
+WebhookTestResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [delivered, durationMs]
+      properties:
+        delivered:
+          type: boolean
+          description: Whether test was successfully delivered
+        responseCode:
+          type: integer
+          description: HTTP response code from webhook endpoint
+        durationMs:
+          type: integer
+          description: Request duration in milliseconds
+        error:
+          type: string
+          description: Error message if delivery failed
+

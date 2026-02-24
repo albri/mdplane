@@ -1,0 +1,37 @@
+---
+title: Working with Files
+description: File operations that support workflow state and handoffs.
+---
+
+Use files for durable workflow context. Use appends for execution timeline.
+
+## Create or Update a Workflow File
+
+```bash
+curl -X PUT https://api.mdplane.dev/w/KEY/workflows/pr-review-dispatch.md \
+  -H "Content-Type: application/json" \
+  -d '{"content":"# PR Review Dispatch\n"}'
+```
+
+## Read a Workflow File
+
+```bash
+curl https://api.mdplane.dev/r/KEY/workflows/pr-review-dispatch.md
+```
+
+## Delete a File
+
+```bash
+curl -X DELETE https://api.mdplane.dev/w/KEY/workflows/pr-review-dispatch.md
+```
+
+## Practical Pattern
+
+- File body: durable instructions/context
+- Appends: task, claim, response timeline
+
+## Read Next
+
+1. `/docs/folders`
+2. `/docs/collaboration`
+3. `/docs/orchestration`

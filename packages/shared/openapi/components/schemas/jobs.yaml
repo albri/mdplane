@@ -1,0 +1,135 @@
+# Job-related schemas for mdplane API
+# Reference: docs/Obsidian Vault/Projects/mdplane/API Design.md
+
+# -----------------------------------------------------------------------------
+# Enums
+# -----------------------------------------------------------------------------
+JobStatus:
+  type: string
+  description: Status of an async job
+  enum:
+    - pending
+    - processing
+    - completed
+    - failed
+
+ExportFormat:
+  type: string
+  description: Export file format
+  enum:
+    - zip
+    - tar.gz
+
+# -----------------------------------------------------------------------------
+# Request Schemas
+# -----------------------------------------------------------------------------
+ExportRequest:
+  type: object
+  description: Request to create an export job
+  required:
+    - format
+  properties:
+    format:
+      $ref: '#/ExportFormat'
+    includeAppends:
+      type: boolean
+      description: Include appends in export (default true)
+      default: true
+    includeDeleted:
+      type: boolean
+      description: Include soft-deleted files (default false)
+      default: false
+    paths:
+      type: array
+      description: Specific paths to export (optional, exports all if not specified)
+      items:
+        type: string
+
+# -----------------------------------------------------------------------------
+# Response Schemas
+# -----------------------------------------------------------------------------
+JobResponse:
+  type: object
+  description: Response containing job status and details
+  required:
+    - ok
+    - data
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required:
+        - id
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          description: Unique job identifier
+          example: 'job_xyz'
+        status:
+          $ref: '#/JobStatus'
+        progress:
+          type: object
+          description: Progress information (for processing jobs)
+          properties:
+            current:
+              type: integer
+              description: Items processed so far
+            total:
+              type: integer
+              description: Total items to process
+            message:
+              type: string
+              description: Human-readable progress message
+        result:
+          type: object
+          additionalProperties: true
+          description: Job result data (for completed jobs)
+        error:
+          type: object
+          description: Error details (for failed jobs)
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+        createdAt:
+          type: string
+          format: date-time
+          description: Job creation timestamp
+        completedAt:
+          type: string
+          format: date-time
+          description: Job completion timestamp (optional)
+
+ExportResponse:
+  type: object
+  description: Response from export job creation
+  required:
+    - ok
+    - data
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required:
+        - jobId
+      properties:
+        jobId:
+          type: string
+          description: Export job identifier
+          example: 'exp_abc123'
+        estimatedSize:
+          type: string
+          description: Estimated export size (human-readable)
+          example: '2.3GB'
+        downloadUrl:
+          type: string
+          format: uri
+          description: Download URL (available when export is complete)
+

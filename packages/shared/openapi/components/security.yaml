@@ -1,0 +1,95 @@
+# ==============================================================================
+# SECURITY SCHEMES
+# ==============================================================================
+#
+# mdplane uses a 2-tier authentication model:
+#
+# TIER 1: Capability URLs (95% of operations)
+# - Zero friction, anonymous access
+# - All read operations, all create operations
+# - Destructive ops use "type name to confirm" dialogs
+#
+# TIER 2: OAuth Sessions (nuclear operations only)
+# - Required for: rotate all URLs, delete workspace, transfer ownership
+# - Uses BetterAuth with GitHub/Google OAuth providers
+#
+# ==============================================================================
+
+# Capability URL authentication - documented via x-security-type extension
+# OpenAPI 3.x doesn't support in:path for apiKey, so we use a custom approach.
+# The {key} path parameter contains the cryptographic credential.
+capabilityKeyAuth:
+  type: apiKey
+  in: header
+  name: X-Capability-Key
+  x-security-type: capability-url
+  description: |
+    Capability URL authentication (Tier 1). The `key` path parameter contains a
+    cryptographic token that grants specific permissions (read, append, or write)
+    to a file or folder.
+
+    **Note**: Authentication is via the URL path parameter `{key}`, not a header.
+    This security scheme exists for documentation purposes only.
+
+    Key formats:
+    - Root capability key: `^[A-Za-z0-9]{22,}$` (e.g., x8k2mP9qL3nR7mQ2pN4xK9)
+    - Scoped capability key: `^(r|a|w)_[A-Za-z0-9]{20,}$` (e.g., a_x8k2mP9qL3nR7mQ2pN4x)
+
+    Capability URLs handle 95% of operations including:
+    - All read operations
+    - All create operations (appends, webhooks, scoped keys)
+    - Destructive operations (with "type name to confirm" UI dialogs)
+
+# API Key authentication for workspace-level operations
+bearerAuth:
+  type: http
+  scheme: bearer
+  description: |
+    API key authentication for programmatic access.
+
+    Key formats:
+    - Live mode: `sk_live_[A-Za-z0-9]{20,}` (e.g., sk_live_x8k2mP9qL3nR7mQ2pN4x)
+    - Test mode: `sk_test_[A-Za-z0-9]{20,}` (e.g., sk_test_demoKey123)
+
+    Include in Authorization header:
+    `Authorization: Bearer sk_live_...`
+
+    API keys can be created with a write capability URL (no OAuth required).
+
+# OAuth session cookie for nuclear operations (Tier 2)
+# Uses BetterAuth with GitHub/Google OAuth providers
+oauthSession:
+  type: apiKey
+  in: cookie
+  name: better-auth.session_token
+  description: |
+    OAuth session cookie from GitHub/Google authentication via BetterAuth.
+
+    **Tier 2 operations only** - required for nuclear operations:
+    - Rotate ALL capability URLs (would invalidate all access)
+    - Delete workspace (permanent, unrecoverable)
+    - Transfer ownership (changes who controls the workspace)
+
+    Most operations do NOT require OAuth - use capability URLs instead.
+
+# Admin token for operator-only endpoints (Tier 3)
+# Set via ADMIN_SECRET environment variable
+adminToken:
+  type: http
+  scheme: bearer
+  description: |
+    Admin token for operator-only endpoints.
+
+    **Set via ADMIN_SECRET environment variable on the server.**
+
+    Include in Authorization header:
+    `Authorization: Bearer <ADMIN_SECRET>`
+
+    Used for:
+    - System metrics and health monitoring
+    - Storage usage monitoring
+    - Entity counts (workspaces, files, users)
+
+    **Security:** Never expose the ADMIN_SECRET in client-side code.
+    Only use from secure operator tools or monitoring systems.
+

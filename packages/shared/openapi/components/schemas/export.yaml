@@ -1,0 +1,143 @@
+# Export-related schemas for mdplane API
+# Reference: docs/Obsidian Vault/Projects/mdplane/API Design.md
+
+# -----------------------------------------------------------------------------
+# Create Export Job Response
+# -----------------------------------------------------------------------------
+ExportJobCreateResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [jobId, status, statusUrl]
+      properties:
+        jobId:
+          type: string
+          description: Export job identifier
+        status:
+          type: string
+          enum: [queued, processing]
+        statusUrl:
+          type: string
+          description: URL to poll for job status
+        estimatedSize:
+          type: string
+          description: Estimated export size
+        position:
+          type: integer
+          description: Position in queue (if queued)
+
+# -----------------------------------------------------------------------------
+# Export Job Status Response
+# -----------------------------------------------------------------------------
+ExportJobStatusResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [id, status]
+      properties:
+        id:
+          type: string
+          description: Export job identifier
+        status:
+          type: string
+          enum: [queued, processing, ready, failed, expired]
+        progress:
+          type: object
+          properties:
+            filesProcessed:
+              type: integer
+            totalFiles:
+              type: integer
+            bytesWritten:
+              type: string
+        startedAt:
+          type: string
+          format: date-time
+        downloadUrl:
+          type: string
+          description: URL to download export (only when status is ready)
+        expiresAt:
+          type: string
+          format: date-time
+          description: When the download URL expires
+        checksum:
+          type: string
+          description: SHA-256 checksum (only when status is ready)
+        size:
+          type: string
+          description: Final export size (only when status is ready)
+        error:
+          type: object
+          description: Error details (only when status is failed)
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+
+# -----------------------------------------------------------------------------
+# Deleted File Entry
+# -----------------------------------------------------------------------------
+DeletedFileEntry:
+  type: object
+  required: [id, path, deletedAt, expiresAt]
+  properties:
+    id:
+      type: string
+      description: File identifier
+    path:
+      type: string
+      description: Original file path
+    deletedAt:
+      type: string
+      format: date-time
+      description: When the file was deleted
+    expiresAt:
+      type: string
+      format: date-time
+      description: When the file becomes unrecoverable
+    deletedBy:
+      type: string
+      description: Author who deleted the file (if known)
+    size:
+      type: integer
+      description: File size in bytes
+
+# -----------------------------------------------------------------------------
+# List Deleted Files Response
+# -----------------------------------------------------------------------------
+DeletedFilesListResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [files]
+      properties:
+        files:
+          type: array
+          items:
+            $ref: '#/DeletedFileEntry'
+    pagination:
+      type: object
+      properties:
+        cursor:
+          type: string
+        hasMore:
+          type: boolean
+        total:
+          type: integer
+

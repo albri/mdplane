@@ -1,0 +1,158 @@
+# ==============================================================================
+# AUTH ENDPOINTS
+# OAuth authentication via BetterAuth (GitHub/Google)
+#
+# 2-TIER AUTHENTICATION MODEL:
+# - Tier 1: Capability URLs (95% of operations) - no auth endpoints needed
+# - Tier 2: OAuth Sessions (nuclear operations only) - this file
+#
+# OAuth is only required for nuclear operations:
+# - Rotate ALL capability URLs
+# - Delete workspace
+# - Transfer ownership
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# OAuth endpoints are handled by BetterAuth at /api/auth/*
+# These are documented here for reference but implemented by BetterAuth
+# ------------------------------------------------------------------------------
+
+/api/auth/signin/github:
+  get:
+    operationId: signInWithGitHub
+    tags:
+      - Auth
+    summary: Sign in with GitHub
+    security: []
+    description: |
+      Initiate GitHub OAuth flow.
+
+      Redirects to GitHub for authorization. On success, redirects back with
+      session cookie set automatically.
+
+      **When to use:** Only for Tier 2 (nuclear) operations:
+      - Rotate ALL capability URLs
+      - Delete workspace
+      - Transfer ownership
+
+      Most operations do NOT require OAuth - use capability URLs instead.
+    responses:
+      '200':
+        description: OAuth flow initiated (for OpenAPI compliance - actual response is 302 redirect)
+        content:
+          application/json:
+            schema:
+              type: object
+              description: This endpoint redirects to OAuth provider. 200 is for OpenAPI compliance only.
+      '302':
+        description: Redirect to GitHub OAuth
+        headers:
+          Location:
+            description: GitHub OAuth authorization URL
+            schema:
+              type: string
+              example: "https://github.com/login/oauth/authorize?client_id=..."
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+/api/auth/signin/google:
+  get:
+    operationId: signInWithGoogle
+    tags:
+      - Auth
+    summary: Sign in with Google
+    security: []
+    description: |
+      Initiate Google OAuth flow.
+
+      Redirects to Google for authorization. On success, redirects back with
+      session cookie set automatically.
+
+      **When to use:** Only for Tier 2 (nuclear) operations:
+      - Rotate ALL capability URLs
+      - Delete workspace
+      - Transfer ownership
+
+      Most operations do NOT require OAuth - use capability URLs instead.
+    responses:
+      '200':
+        description: OAuth flow initiated (for OpenAPI compliance - actual response is 302 redirect)
+        content:
+          application/json:
+            schema:
+              type: object
+              description: This endpoint redirects to OAuth provider. 200 is for OpenAPI compliance only.
+      '302':
+        description: Redirect to Google OAuth
+        headers:
+          Location:
+            description: Google OAuth authorization URL
+            schema:
+              type: string
+              example: "https://accounts.google.com/o/oauth2/v2/auth?client_id=..."
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+/auth/me:
+  get:
+    operationId: getCurrentUser
+    tags:
+      - Auth
+    summary: Get current user
+    description: |
+      Get the current authenticated user's information.
+
+      Requires a valid OAuth session cookie (from GitHub/Google sign-in).
+    security:
+      - oauthSession: []
+    responses:
+      '200':
+        description: User information retrieved
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/MeResponse'
+            example:
+              ok: true
+              data:
+                id: "user_x8k2mP9qL3nR"
+                email: "user@example.com"
+                name: "Alex Developer"
+                image: "https://avatars.githubusercontent.com/u/12345"
+                workspaces:
+                  - id: "ws_x8k2mP9qL3nR"
+                    name: "My Project"
+                createdAt: "2024-01-08T09:00:00Z"
+                webUrl: "https://app.mdplane.dev/control"
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+
+/auth/logout:
+  post:
+    operationId: logout
+    tags:
+      - Auth
+    summary: Logout
+    description: |
+      Logout and clear the OAuth session cookie.
+    security:
+      - oauthSession: []
+    responses:
+      '200':
+        description: Logged out successfully
+        headers:
+          Set-Cookie:
+            description: Clears session cookie
+            schema:
+              type: string
+              example: "better-auth.session_token=; Secure; HttpOnly; SameSite=Lax; Path=/; Max-Age=0"
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/LogoutResponse'
+            example:
+              ok: true
+              data:
+                status: "logged_out"
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'

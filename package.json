@@ -1,0 +1,60 @@
+{
+  "name": "@mdplane/monorepo",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "test": "turbo test",
+    "test:server": "pnpm --filter @mdplane/server test",
+    "test:cli": "pnpm --filter @mdplane/cli test",
+    "test:e2e": "pnpm --filter @mdplane/web test:e2e",
+    "test:integration": "bun run apps/server/src/integration-tests/run.ts",
+    "lint": "turbo lint",
+    "lint:fix": "turbo lint -- --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\"",
+    "typecheck": "turbo typecheck",
+    "clean": "turbo clean && node -e \"const fs=require('node:fs'); fs.rmSync('node_modules',{recursive:true,force:true}); fs.rmSync('.turbo',{recursive:true,force:true});\"",
+    "check:route-coverage": "bun scripts/check-route-coverage.ts",
+    "check:route-db-usage": "bun scripts/check-route-db-usage.ts",
+    "check:domain-route-imports": "bun scripts/check-domain-route-imports.ts",
+    "check:enum-sync": "bun scripts/check-enum-sync.ts",
+    "check:query-params": "bun scripts/check-query-params.ts",
+    "check:docs-routes": "bun scripts/check-docs-routes.ts",
+    "db:backup": "node scripts/sqlite-backup.mjs",
+    "db:restore": "node scripts/sqlite-restore.mjs",
+    "selfhost:min:up": "docker compose --env-file .env.selfhost -f docker-compose.selfhost.minimal.yml up -d --build",
+    "selfhost:min:down": "docker compose --env-file .env.selfhost -f docker-compose.selfhost.minimal.yml down --remove-orphans",
+    "selfhost:min:logs": "docker compose --env-file .env.selfhost -f docker-compose.selfhost.minimal.yml logs -f",
+    "selfhost:full:up": "docker compose --env-file .env.selfhost -f docker-compose.selfhost.full.yml up -d --build",
+    "selfhost:full:down": "docker compose --env-file .env.selfhost -f docker-compose.selfhost.full.yml down --remove-orphans",
+    "selfhost:full:logs": "docker compose --env-file .env.selfhost -f docker-compose.selfhost.full.yml logs -f"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "@typescript-eslint/eslint-plugin": "^8.20.0",
+    "@typescript-eslint/parser": "^8.20.0",
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.2",
+    "prettier": "^3.4.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.20.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "react": "19.2.3",
+      "react-dom": "19.2.3",
+      "fast-xml-parser": "5.3.6",
+      "lodash-es": "4.17.23",
+      "js-yaml": "4.1.1",
+      "esbuild": "0.25.12"
+    }
+  }
+}

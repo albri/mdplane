@@ -1,0 +1,184 @@
+@import "tailwindcss";
+@import "@mdplane/ui/styles/code-block.css";
+@source "../../../../packages/ui/src/**/*.{ts,tsx}";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-background-content: var(--background-content);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist), -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: var(--font-geist-mono), "SF Mono", Consolas, monospace;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 2px);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-status-pending: var(--status-pending);
+  --color-status-claimed: var(--status-claimed);
+  --color-status-completed: var(--status-completed);
+  --color-status-expired: var(--status-expired);
+  --color-status-blocked: var(--status-blocked);
+  --color-accent-answer: var(--accent-answer);
+
+}
+
+:root {
+  --radius: 0.5rem;
+  --background: hsl(0 0% 96.1%);
+  --background-content: hsl(0 0% 98%);
+  --foreground: hsl(0 0% 5.1%);
+  --muted: hsl(0 0% 92.9%);
+  --muted-foreground: hsl(0 0% 32.2%);
+  --popover: hsl(0 0% 98%);
+  --popover-foreground: hsl(0 0% 14.9%);
+  --border: hsl(0 0% 83.1%);
+  --input: hsl(0 0% 83.1%);
+  --ring: hsl(0 0% 63.9%);
+  --destructive: hsl(0 72.2% 62%);
+  --card: hsl(0 0% 96.1%);
+  --card-foreground: hsl(0 0% 5.1%);
+  --secondary: hsl(0 0% 92.9%);
+  --secondary-foreground: hsl(0 0% 5.1%);
+  --primary: hsl(85 85.2% 34.5%);
+  --primary-foreground: hsl(0 0% 100%);
+
+  --accent: hsl(0 0% 82% / 0.55);
+  --accent-foreground: hsl(0 0% 5.1%);
+
+  --status-pending: hsl(217 91.2% 59.8%);
+  --status-claimed: hsl(38 92.1% 50.2%);
+  --status-completed: hsl(142 70.6% 45.3%);
+  --status-expired: hsl(220 8.9% 46.1%);
+  --status-blocked: hsl(0 84.2% 60.2%);
+  --accent-answer: #7c3aed;
+
+}
+
+.dark {
+  --background: hsl(0 0% 5.1%);
+  --background-content: hsl(0 0% 9%);
+  --foreground: hsl(0 0% 98%);
+  --muted: hsl(0 0% 12.2%);
+  --muted-foreground: hsl(0 0% 63.9%);
+  --popover: hsl(0 0% 11.4%);
+  --popover-foreground: hsl(0 0% 89.8%);
+  --border: hsl(0 0% 18%);
+  --input: hsl(0 0% 18%);
+  --ring: hsl(0 0% 54.1%);
+  --destructive: hsl(0 72.2% 62%);
+  --card: hsl(0 0% 9.8%);
+  --card-foreground: hsl(0 0% 98%);
+  --secondary: hsl(0 0% 12.2%);
+  --secondary-foreground: hsl(0 0% 98%);
+  --primary: hsl(84 80.5% 44.3%);
+  --primary-foreground: hsl(83 72.4% 11.4%);
+
+  --accent: hsl(0 0% 41.2% / 0.3);
+  --accent-foreground: hsl(0 0% 90.2%);
+
+  --status-pending: hsl(217 91.2% 59.8%);
+  --status-claimed: hsl(38 92.1% 50.2%);
+  --status-completed: hsl(142 70.6% 45.3%);
+  --status-expired: hsl(220 8.9% 46.1%);
+  --status-blocked: hsl(0 84.2% 60.2%);
+  --accent-answer: #7c3aed;
+
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-[15px] leading-6 text-foreground antialiased;
+  }
+
+  h1 {
+    @apply text-3xl font-semibold tracking-tight;
+  }
+
+  h2 {
+    @apply text-2xl font-semibold tracking-tight;
+  }
+
+  h3 {
+    @apply text-xl font-semibold tracking-tight;
+  }
+
+  h4 {
+    @apply text-lg font-medium tracking-tight;
+  }
+
+  p {
+    @apply leading-7;
+  }
+
+  .font-mono {
+    font-feature-settings: "calt" 1, "liga" 1, "ss01" 1;
+  }
+}
+
+@layer utilities {
+  .bg-stripes-left {
+    background-image: linear-gradient(45deg,
+      color-mix(in oklch, var(--foreground) 10%, transparent) 14.29%,
+      color-mix(in oklch, var(--background) 10%, transparent) 14.29%,
+      color-mix(in oklch, var(--background) 10%, transparent) 50%,
+      color-mix(in oklch, var(--foreground) 10%, transparent) 50%,
+      color-mix(in oklch, var(--foreground) 10%, transparent) 64.29%,
+      color-mix(in oklch, var(--background) 10%, transparent) 64.29%,
+      color-mix(in oklch, var(--background) 10%, transparent) 100%);
+    background-size: 5px 5px;
+  }
+  .bg-stripes-right {
+    background-image: linear-gradient(135deg,
+      color-mix(in oklch, var(--foreground) 10%, transparent) 14.29%,
+      color-mix(in oklch, var(--background) 10%, transparent) 14.29%,
+      color-mix(in oklch, var(--background) 10%, transparent) 50%,
+      color-mix(in oklch, var(--foreground) 10%, transparent) 50%,
+      color-mix(in oklch, var(--foreground) 10%, transparent) 64.29%,
+      color-mix(in oklch, var(--background) 10%, transparent) 64.29%,
+      color-mix(in oklch, var(--background) 10%, transparent) 100%);
+    background-size: 5px 5px;
+  }
+}
+
+@layer components {
+  .hero-logo-slot {
+    @apply relative mx-auto aspect-square w-[92%] overflow-visible;
+    background: transparent;
+  }
+
+  .hero-logo-frame {
+    @apply absolute inset-[6%];
+  }
+
+  .hero-logo-canvas {
+    @apply h-full w-full;
+    transform: translateZ(0);
+  }
+
+  .hero-logo-source {
+    @apply pointer-events-none absolute inset-0 opacity-0;
+  }
+}

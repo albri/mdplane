@@ -1,0 +1,74 @@
+# ==============================================================================
+# CLAIMING ENDPOINTS
+# Workspace claiming and recovery
+# ==============================================================================
+
+/w/{key}/claim:
+  post:
+    operationId: claimWorkspace
+    tags:
+      - Claiming
+    summary: Claim workspace
+    description: |
+      Claim ownership of a workspace. Requires the workspace's **write key** AND an OAuth session.
+
+      **Requirements:**
+      - Must be logged in via GitHub or Google OAuth
+      - Must have the workspace's write key
+
+      **Claiming rules:**
+      - A workspace can only be claimed once
+      - Claiming is optional — workspaces never expire
+      - The claimer becomes the workspace owner
+      - OAuth identity is used for ownership (no email verification needed)
+    security:
+      - oauthSession: []  # Requires OAuth session (GitHub/Google)
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            type: object
+            description: Empty body - OAuth session provides identity
+          example: {}
+    responses:
+      '200':
+        description: Workspace claimed successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/ClaimWorkspaceResponse'
+            example:
+              ok: true
+              data:
+                workspaceId: "ws_x8k2mP9qL3nR"
+                claimed: true
+                message: "claimed"
+      '400':
+        description: Workspace already claimed
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+            example:
+              ok: false
+              error:
+                code: "ALREADY_CLAIMED"
+                message: "Workspace is already claimed by another user"
+      '401':
+        description: OAuth session required
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+            example:
+              ok: false
+              error:
+                code: "UNAUTHORIZED"
+                message: "OAuth session required. Login via GitHub or Google first."
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'

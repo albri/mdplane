@@ -1,0 +1,142 @@
+# ==============================================================================
+# STANDARD RESPONSES
+# ==============================================================================
+
+NotFound:
+  description: Resource not found
+  content:
+    application/json:
+      schema:
+        $ref: 'schemas.yaml#/Error'
+      example:
+        ok: false
+        error:
+          code: "FILE_NOT_FOUND"
+          message: "File not found"
+
+Gone:
+  description: Resource deleted (recoverable)
+  content:
+    application/json:
+      schema:
+        $ref: 'schemas.yaml#/Error'
+      example:
+        ok: false
+        error:
+          code: "FILE_DELETED"
+          message: "File is soft-deleted"
+          details:
+            recoverable: true
+            expiresAt: "2024-01-15T11:00:00Z"
+
+Unauthorized:
+  description: Authentication required
+  content:
+    application/json:
+      schema:
+        $ref: 'schemas.yaml#/Error'
+      example:
+        ok: false
+        error:
+          code: "UNAUTHORIZED"
+          message: "Authentication required"
+
+Forbidden:
+  description: Permission denied
+  content:
+    application/json:
+      schema:
+        $ref: 'schemas.yaml#/Error'
+      example:
+        ok: false
+        error:
+          code: "PERMISSION_DENIED"
+          message: "You do not have permission to access this resource"
+
+RateLimited:
+  description: Rate limit exceeded
+  headers:
+    Retry-After:
+      description: Seconds to wait before retrying
+      schema:
+        type: integer
+    X-RateLimit-Limit:
+      description: Request limit per window
+      schema:
+        type: integer
+    X-RateLimit-Remaining:
+      description: Remaining requests in current window
+      schema:
+        type: integer
+    X-RateLimit-Reset:
+      description: Unix timestamp when limit resets
+      schema:
+        type: integer
+  content:
+    application/json:
+      schema:
+        $ref: 'schemas.yaml#/Error'
+      example:
+        ok: false
+        error:
+          code: "RATE_LIMITED"
+          message: "Too many requests"
+          details:
+            retryAfterSeconds: 60
+
+Conflict:
+  description: Conflict (e.g., concurrent edit, already claimed)
+  content:
+    application/json:
+      schema:
+        $ref: 'schemas.yaml#/Error'
+      example:
+        ok: false
+        error:
+          code: "CONFLICT"
+          message: "File was modified since last read"
+          details:
+            currentEtag: "x9y0z1a2"
+            providedEtag: "a1b2c3d4"
+
+BadRequest:
+  description: Invalid request
+  content:
+    application/json:
+      schema:
+        $ref: 'schemas.yaml#/Error'
+      example:
+        ok: false
+        error:
+          code: "INVALID_REQUEST"
+          message: "Request validation failed"
+          details:
+            field: "content"
+            reason: "Content exceeds maximum length"
+
+ServerError:
+  description: Internal server error
+  content:
+    application/json:
+      schema:
+        $ref: 'schemas.yaml#/Error'
+      example:
+        ok: false
+        error:
+          code: "SERVER_ERROR"
+          message: "Internal server error"
+
+PayloadTooLarge:
+  description: Request payload exceeds size limit
+  content:
+    application/json:
+      schema:
+        $ref: 'schemas.yaml#/Error'
+      example:
+        ok: false
+        error:
+          code: "PAYLOAD_TOO_LARGE"
+          message: "Request body exceeds maximum size of 10MB"
+          details:
+            maxSize: 10485760
+            receivedSize: 15728640

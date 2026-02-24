@@ -1,0 +1,29 @@
+---
+title: Usage Limits
+description: Runtime limits that affect workflows and how operators can tune them.
+---
+
+## Day-1 Limits to Know
+
+- request rate limits by endpoint class
+- file and append payload size caps
+- claim expiry bounds
+- search/query size caps
+
+## Operator Tuning
+
+Self-host operators can tune limits via server configuration and env vars.
+
+Keep docs and runtime values in sync. Drift causes workflow failures and confusion.
+
+## Practical Check
+
+When debugging unexpected 429/400 responses:
+1. verify current runtime config
+2. verify docs values
+3. update whichever is stale
+
+## Read Next
+
+1. `/docs/troubleshooting`
+2. `/docs/access-and-auth`

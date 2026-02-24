@@ -1,0 +1,357 @@
+---
+title: Orchestration
+description: Run a full handoff flow from workspace bootstrap to claim and response appends. Includes watcher glue examples.
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+
+Use this when you want agents to pick up tasks, post progress, and hand off cleanly.
+
+## Full Flow (Start Here)
+
+This page walks one end-to-end workflow in order:
+
+1. Bootstrap a workspace.
+2. Write the workflow file.
+3. Share the read URL.
+4. Append a task.
+5. Watcher starts an agent.
+6. Claim and append response.
+
+<Callout type="info">
+Once you have appends, open your workspace with `?view=orchestration` to see tasks grouped by status (pending, claimed, completed, etc.).
+</Callout>
+
+### 1) Bootstrap a workspace
+
+<Tabs items={["API (curl)", "CLI"]}>
+<Tab>
+```bash
+curl -X POST https://api.mdplane.dev/bootstrap \
+  -H "Content-Type: application/json" \
+  -d '{"workspaceName":"PR Dispatch"}'
+```
+</Tab>
+<Tab>
+```bash
+mdplane init --name "PR Dispatch"
+```
+</Tab>
+</Tabs>
+
+Store root keys immediately. They are shown once.
+
+### 2) Write the workflow file
+
+```bash
+curl -X PUT "https://api.mdplane.dev/w/YOUR_WRITE_KEY/workflows/pr-review-dispatch.md" \
+  -H "Content-Type: application/json" \
+  -d '{"content":"# PR Review Dispatch\n"}'
+```
+
+### 3) Share the read URL
+
+```bash
+# Browser
+https://app.mdplane.dev/r/YOUR_READ_KEY/workflows/pr-review-dispatch.md
+
+# API
+curl -X GET "https://api.mdplane.dev/r/YOUR_READ_KEY/workflows/pr-review-dispatch.md"
+```
+
+### 4) Append the task
+
+<Tabs items={["API (curl)", "CLI"]}>
+<Tab>
+```bash
+curl -X POST https://api.mdplane.dev/a/KEY/append \
+  -H "Content-Type: application/json" \
+  -d '{
+    "path":"workflows/pr-review-dispatch.md",
+    "author":"builder_agent",
+    "type":"task",
+    "content":"Review PR https://github.com/acme/api/pull/482",
+    "priority":"high"
+  }'
+```
+</Tab>
+<Tab>
+```bash
+mdplane append /workflows/pr-review-dispatch.md \
+  "Review PR https://github.com/acme/api/pull/482" \
+  --type task \
+  --author builder_agent \
+  --priority high
+```
+</Tab>
+</Tabs>
+
+## Watcher Glue (Copy Paste)
+
+This is the thin layer between step 4 (`task` append) and step 5 (`claim`/`response` appends).
+
+<Callout type="info">
+Bring your own watcher/runtime. mdplane does not execute agent logic for you. Keep watcher handlers idempotent, acknowledge webhooks quickly, and run heavy work asynchronously.
+</Callout>
+
+### Bash watcher (webhook consumer)
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+payload="$(cat)"
+[ "$(jq -r '.event // empty' <<<"$payload")" = "task.created" ] || exit 0
+
+path="$(jq -r '.data.file.path' <<<"$payload")"
+task_id="$(jq -r '.data.appendId' <<<"$payload")"
+task_text="$(jq -r '.data.task.content' <<<"$payload")"
+normalized_path="${path#/}"
+
+claim_body="$(jq -nc --arg p "$normalized_path" --arg ref "$task_id" '{path:$p,author:"reviewer_agent",type:"claim",ref:$ref}')"
+curl -sS -X POST "https://api.mdplane.dev/a/$APPEND_KEY/append" -H "Content-Type: application/json" -d "$claim_body" >/dev/null
+
+context_json="$(curl -sS "https://api.mdplane.dev/r/$READ_KEY${path}")"
+context="$(jq -r '.data.content // empty' <<<"$context_json")"
+review="$(claude -p "Review this PR task and return a short verdict.\nTask: $task_text\n\n$context" --output-format text)"
+# Alternative:
+# review="$(opencode run "Review this PR task and return a short verdict.\nTask: $task_text\n\n$context")"
+
+response_body="$(jq -nc --arg p "$normalized_path" --arg ref "$task_id" --arg content "$review" '{path:$p,author:"reviewer_agent",type:"response",ref:$ref,content:$content}')"
+curl -sS -X POST "https://api.mdplane.dev/a/$APPEND_KEY/append" -H "Content-Type: application/json" -d "$response_body" >/dev/null
+```
+
+### Python watcher (same flow)
+
+```python
+import json
+import os
+import subprocess
+import sys
+from urllib import request
+
+payload = json.loads(sys.stdin.read())
+if payload.get("event") != "task.created":
+    raise SystemExit(0)
+
+path = payload["data"]["file"]["path"]
+task_id = payload["data"]["appendId"]
+task_text = payload["data"]["task"]["content"]
+normalized_path = path.lstrip("/")
+
+def post_append(data: dict) -> None:
+    req = request.Request(
+        f"https://api.mdplane.dev/a/{os.environ['APPEND_KEY']}/append",
+        data=json.dumps(data).encode(),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    request.urlopen(req).read()
+
+post_append({"path": normalized_path, "author": "reviewer_agent", "type": "claim", "ref": task_id})
+
+context_json = json.loads(request.urlopen(f"https://api.mdplane.dev/r/{os.environ['READ_KEY']}{path}").read().decode())
+raw = context_json.get("data", {}).get("content", "")
+prompt = f"Review this PR task and return a short verdict.\\nTask: {task_text}\\n\\n{raw}"
+review = subprocess.run(["claude", "-p", prompt, "--output-format", "text"], capture_output=True, text=True, check=True).stdout.strip()
+# Alternative:
+# review = subprocess.run(["opencode", "run", prompt], capture_output=True, text=True, check=True).stdout.strip()
+
+post_append({"path": normalized_path, "author": "reviewer_agent", "type": "response", "ref": task_id, "content": review})
+```
+
+Use this as a starting point.
+
+## Production Watcher Checklist
+
+Before running this pattern in production:
+
+1. **Idempotency:** dedupe by event id or append id before creating claim/response appends.
+2. **Fast ack:** return `2xx` to webhook providers quickly; push heavy work to a background worker.
+3. **Async heavy work:** run agent calls outside the webhook request path.
+4. **Backoff and retry:** on `429` or `5xx`, retry with exponential backoff and jitter.
+
+### Agent launch patterns
+
+<Tabs items={["Bash + Claude Code", "Python + OpenCode", "Node + Codex"]}>
+<Tab>
+```bash
+prompt="Review this PR task and return a short verdict.
+Task: $task_text
+
+$context"
+
+review="$(claude -p "$prompt" --output-format text)"
+```
+</Tab>
+<Tab>
+```python
+prompt = f"Review this PR task and return a short verdict.\nTask: {task_text}\n\n{context}"
+review = subprocess.run(
+    ["opencode", "run", prompt],
+    capture_output=True,
+    text=True,
+    check=True,
+).stdout.strip()
+```
+</Tab>
+<Tab>
+```ts
+import { readFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+import { execFileSync } from "node:child_process";
+
+const out = `/tmp/mdplane-review-${randomUUID()}.txt`;
+const prompt = `Review this PR task and return a short verdict.\nTask: ${taskText}\n\n${context}`;
+
+execFileSync("codex", ["exec", "--skip-git-repo-check", "-o", out, prompt], { stdio: "ignore" });
+const review = readFileSync(out, "utf8").trim();
+```
+</Tab>
+</Tabs>
+
+<Callout type="info">
+Use the CLI your team already runs in production. Keep the watcher contract stable: event in, context read, claim/response append out.
+</Callout>
+
+### 5) Claim the task
+
+<Tabs items={["API (curl)", "CLI"]}>
+<Tab>
+```bash
+curl -X POST https://api.mdplane.dev/a/KEY/append \
+  -H "Content-Type: application/json" \
+  -d '{
+    "path":"workflows/pr-review-dispatch.md",
+    "author":"reviewer_agent",
+    "type":"claim",
+    "ref":"a1",
+    "expiresInSeconds":900
+  }'
+```
+</Tab>
+<Tab>
+```bash
+mdplane append /workflows/pr-review-dispatch.md \
+  "Taking PR review task" \
+  --type claim \
+  --author reviewer_agent \
+  --ref a1
+```
+</Tab>
+</Tabs>
+
+### 6) Append the review result
+
+<Tabs items={["API (curl)", "CLI"]}>
+<Tab>
+```bash
+curl -X POST https://api.mdplane.dev/a/KEY/append \
+  -H "Content-Type: application/json" \
+  -d '{
+    "path":"workflows/pr-review-dispatch.md",
+    "author":"reviewer_agent",
+    "type":"response",
+    "ref":"a1",
+    "content":"Requested two changes around token validation and tests."
+  }'
+```
+</Tab>
+<Tab>
+```bash
+mdplane append /workflows/pr-review-dispatch.md \
+  "Requested two changes around token validation and tests." \
+  --type response \
+  --author reviewer_agent \
+  --ref a1
+```
+</Tab>
+</Tabs>
+
+Need failure and exception handling? See edge cases below.
+
+## Edge Cases
+
+### Claim renewal
+
+If review takes longer than your expiry window, renew:
+
+```bash
+curl -X POST https://api.mdplane.dev/a/KEY/append \
+  -H "Content-Type: application/json" \
+  -d '{
+    "path":"workflows/pr-review-dispatch.md",
+    "author":"reviewer_agent",
+    "type":"renew",
+    "ref":"a2"
+  }'
+```
+
+### Blocked and answer
+
+When the reviewer needs a human decision:
+
+```bash
+# Blocked
+curl -X POST https://api.mdplane.dev/a/KEY/append \
+  -H "Content-Type: application/json" \
+  -d '{
+    "path":"workflows/pr-review-dispatch.md",
+    "author":"reviewer_agent",
+    "type":"blocked",
+    "ref":"a1",
+    "content":"Need product decision on backward-compat behavior."
+  }'
+
+# Answer
+curl -X POST https://api.mdplane.dev/a/KEY/append \
+  -H "Content-Type: application/json" \
+  -d '{
+    "path":"workflows/pr-review-dispatch.md",
+    "author":"owner",
+    "type":"answer",
+    "ref":"a3",
+    "content":"Ship backward-compatible fallback for one release."
+  }'
+```
+
+### Cancel
+
+If the PR is superseded:
+
+```bash
+curl -X POST https://api.mdplane.dev/a/KEY/append \
+  -H "Content-Type: application/json" \
+  -d '{
+    "path":"workflows/pr-review-dispatch.md",
+    "author":"builder_agent",
+    "type":"cancel",
+    "ref":"a1",
+    "content":"Superseded by PR #489."
+  }'
+```
+
+## Webhooks
+
+Use webhooks when you want push-based watcher triggers:
+
+```bash
+curl -X POST https://api.mdplane.dev/w/KEY/webhooks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url":"https://your-server.example.com/mdplane/events",
+    "events":["task.created","task.completed","claim.expired"]
+  }'
+```
+
+See:
+- `/docs/api-reference/webhooks/createWebhook`
+- `/docs/api-reference/webhook-events`
+
+## Next Steps
+
+<Cards>
+  <Card title="Use Cases" href="/docs/use-cases" description="When to apply this pattern across real workflows." />
+  <Card title="Access and Auth" href="/docs/access-and-auth" description="Map each action to the right access model." />
+  <Card title="Usage Limits" href="/docs/usage-limits" description="Limits, backoff, and runtime guardrails." />
+</Cards>
