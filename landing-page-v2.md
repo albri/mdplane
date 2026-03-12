@@ -84,6 +84,145 @@ The v2 landing page wireframe is live at `/v2`. Content and structure are finali
 
 ---
 
+## High-Fidelity Prompt
+
+Use this prompt to generate the styled version:
+
+```
+Design a high-fidelity landing page for mdplane — a markdown workspace platform.
+
+## Aesthetic Direction
+
+Neo-brutalist with a warm palette. Reference v0's style:
+- Cream/off-white backgrounds
+- Earthy accent colors (sage greens, terracotta, amber)
+- Dark ink for text
+- Thick borders, hard offset shadows (no blur)
+- Bold, chunky typography
+- Cards with slight rotation for visual interest
+- Space Grotesk for headings, Space Mono for code
+
+Keep it bold, warm, and confident. Not sterile or corporate.
+
+---
+
+## Content & Structure (Follow Exactly)
+
+### 1. HERO
+**Headline:** "Share markdown beautifully"
+**Subhead:** "A workspace for your docs — organized, shareable, and readable by your agents."
+**CTAs:** "Get started" (primary), "Read the docs" (secondary)
+**Visual:** Floating/drifting markdown document cards. Calm, ambient. Not busy.
+
+### 2. WHY MDPLANE?
+**Headline:** "Why mdplane?"
+**Subhead:** "You have markdown you want to share — a spec, a runbook, some notes."
+**Content:** Bullet list of pain points:
+- Share it instantly, no account required
+- See it formatted nicely, no friction
+- Share it securely, with access control
+- Let agents read it — or even coordinate around it
+**Closing:** "mdplane gives your markdown a workspace — secure, shareable, readable by humans and agents alike."
+
+### 3. WORKSPACES
+**Headline:** "Workspaces"
+**Content:** "A workspace is a container for your markdown files — like a folder you can share with a URL."
+**Visual:** File tree showing workspace structure (folders, .md files, shareable URL indicator)
+**Closing:** "Like a mini repo — instantly shareable."
+
+### 4. THREE KEYS
+**Headline:** "Three keys"
+**Content:** "Creating a workspace gives you three capability URLs. Share the right one for the right access level."
+**Visual:** Three stacked cards:
+- READ (view files, copy content) — show key format r_xxx...
+- APPEND (read + add content) — show key format a_xxx...
+- WRITE (full control) — show key format w_xxx...
+**Closing:** "No accounts needed. The URL is the credential."
+
+### 5. ANYONE WITH THE KEY CAN READ
+**Headline:** "Anyone with the key can read"
+**Subhead:** "Humans and agents each get what they need."
+**Visual:** Two-column comparison:
+- Humans: Web URL (app.mdplane.dev/r/...) → beautifully formatted
+- Agents: API URL (api.mdplane.dev/r/.../raw) → raw markdown or JSON
+**Bullets:**
+- Same key, different endpoints for different needs
+- Persistent context — survives sessions
+- Update the file, everyone gets the latest
+
+### 6. AUTOMATING AGENTS
+**Headline:** "Automating agents"
+**Subhead:** "Humans check when they want. But how does an agent know when to read — and how to use mdplane?"
+**Content - Skills:** Brief explanation + code block: `npx skills add albri/mdplane`
+**Content - Watchers:** Tabbed interface showing three patterns:
+- WebSocket (connect, listen for events, spawn agent)
+- Webhook (register URL, receive POST, spawn agent)
+- Polling (periodically check for claimable tasks)
+Each tab shows pseudocode for that pattern.
+
+### 7. THE APPEND MODEL
+**Headline:** "The append model"
+**Subhead:** "Now that agents can read and be triggered — how do they contribute safely?"
+**Visual:** Split box showing:
+- Top: MAIN DOCUMENT (write key) — "# Project Spec, your content, requirements, instructions"
+- Bottom: APPENDS (append key) — "[task] Review API, [claim] Working on this, [response] Done"
+**Content:** "Appends live at the end of the file — structured entries that accumulate. Safe contributions: agents can add, but can't modify or delete."
+**Visual:** Grid of 10 append types with colored labels:
+task, claim, response, blocked, answer, comment, renew, cancel, vote, heartbeat
+**Closing:** "Every entry is timestamped and attributed to an author."
+
+### 8. THE FULL PICTURE
+**Headline:** "The full picture"
+**Subhead:** "From workspace to completion."
+**Visual:** Top-down flow diagram with these nodes:
+- Setup row: Create workspace → Get keys → Add files → Share
+- Watcher subscribes
+- Task arrives
+- Agent spawns
+- Claim (highlighted)
+- Work
+- Branch into two paths:
+  - Success: Response → Done ✓
+  - Stuck: Blocked → Answer → retry
+**Footer notes:** "First to claim wins • Claims expire automatically • Blocked tasks wait for answers"
+
+### 9. WHY MARKDOWN?
+**Headline:** "Why markdown?"
+**Subhead:** "The de facto interface language for agent and human collaboration."
+**Visual:** Three cards:
+- "Agents read it reliably" — format they're most reliable at reading/writing/reasoning over
+- "Humans read it too" — inspect and edit the same artifact agents use
+- "No schema needed" — structure emerges from headings and appends
+
+### 10. FAQS
+**Headline:** "Questions"
+**Format:** Left-bordered list of Q&A:
+- Is mdplane open source?
+- Do I need an account?
+- Does mdplane run my agents?
+- How do agents know when to start?
+- Can I encrypt content?
+- What if I lose my access keys?
+
+### 11. FOOTER
+**CTA Headline:** "Get started"
+**Subhead:** "Create a workspace. Share it with anyone (or anything)."
+**Buttons:** "Open app", "Read the docs"
+**Footer bar:** "mdplane — Shareable markdown workspaces." + links (Docs, API, GitHub, Privacy, Terms)
+
+---
+
+## Important Notes
+
+- Make section backgrounds alternate for visual rhythm (cream, slightly darker cream, accent color sections for key moments)
+- The flow diagram in "The full picture" should be the visual centerpiece — make it beautiful
+- Keep code blocks clean and readable
+- Mobile-first but should look great on desktop
+- No generic stock illustrations or SaaS clichés
+```
+
+---
+
 ## Visual Direction (Decided)
 
 **Neo-brutalist warm** — cherry-picked from the best generations:

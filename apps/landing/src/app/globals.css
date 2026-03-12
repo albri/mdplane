@@ -5,11 +5,24 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, SFMono-Regular, monospace;
+
+  --color-cream: #FDFBF7;
+  --color-cream-dark: #F4F1EA;
+  --color-ink: #1A1A1A;
+  --color-sage: #8B9A8B;
+  --color-terracotta: #D97757;
+  --color-amber: #E8A851;
+
+  --color-bg: var(--color-cream);
+  --color-text: var(--color-ink);
+
+  /* Legacy colors for app compatibility */
   --color-background: var(--background);
   --color-background-content: var(--background-content);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist), -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: var(--font-geist-mono), "SF Mono", Consolas, monospace;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -39,7 +52,47 @@
   --color-status-expired: var(--status-expired);
   --color-status-blocked: var(--status-blocked);
   --color-accent-answer: var(--accent-answer);
+}
 
+@layer utilities {
+  .brutal-border {
+    border: 3px solid var(--color-ink);
+  }
+  .brutal-shadow {
+    box-shadow: 6px 6px 0px 0px var(--color-ink);
+  }
+  .brutal-shadow-sm {
+    box-shadow: 4px 4px 0px 0px var(--color-ink);
+  }
+  .brutal-shadow-lg {
+    box-shadow: 12px 12px 0px 0px var(--color-ink);
+  }
+  .brutal-shadow-hover {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .brutal-shadow-hover:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 8px 8px 0px 0px var(--color-ink);
+  }
+  .brutal-shadow-hover:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px 0px var(--color-ink);
+  }
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+}
+
+code, pre {
+  font-family: var(--font-mono);
 }
 
 :root {
@@ -71,7 +124,6 @@
   --status-expired: hsl(220 8.9% 46.1%);
   --status-blocked: hsl(0 84.2% 60.2%);
   --accent-answer: #7c3aed;
-
 }
 
 .dark {
@@ -102,7 +154,6 @@
   --status-expired: hsl(220 8.9% 46.1%);
   --status-blocked: hsl(0 84.2% 60.2%);
   --accent-answer: #7c3aed;
-
 }
 
 @layer base {

@@ -1,6 +1,5 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
-import { SiteFooter, SiteHeader } from '../site-chrome'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
@@ -10,8 +9,13 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-background font-sans">
-      <SiteHeader />
+    <div className="min-h-screen bg-[#FDFBF7] font-sans">
+      <nav className="bg-[#FDFBF7] border-b-3 border-[#1A1A1A] px-6 py-4 flex justify-between items-center">
+        <Link href="/" className="font-display font-bold text-2xl tracking-tighter flex items-center gap-2">
+          <div className="w-6 h-6 bg-[#1A1A1A] rotate-3"></div>
+          mdplane
+        </Link>
+      </nav>
 
       <main className="mx-auto max-w-3xl px-6 py-24">
         <h1 className="text-3xl font-bold mb-4">Privacy Policy</h1>
@@ -158,17 +162,15 @@ export default function PrivacyPage() {
           </section>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-border">
-          <p className="text-muted-foreground text-sm">
+        <div className="mt-12 pt-8 border-t-3 border-[#1A1A1A]">
+          <p className="text-[#1A1A1A]/60 text-sm">
             See also:{' '}
-            <Link href="/terms" className="text-foreground hover:underline">
+            <Link href="/terms" className="text-[#1A1A1A] hover:underline">
               Terms of Service
             </Link>
           </p>
         </div>
       </main>
-
-      <SiteFooter />
     </div>
   )
 }

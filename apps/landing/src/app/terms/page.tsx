@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import { SiteFooter, SiteHeader } from '../site-chrome'
+import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
@@ -9,8 +9,13 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-background font-sans">
-      <SiteHeader />
+    <div className="min-h-screen bg-[#FDFBF7] font-sans">
+      <nav className="bg-[#FDFBF7] border-b-3 border-[#1A1A1A] px-6 py-4 flex justify-between items-center">
+        <Link href="/" className="font-display font-bold text-2xl tracking-tighter flex items-center gap-2">
+          <div className="w-6 h-6 bg-[#1A1A1A] rotate-3"></div>
+          mdplane
+        </Link>
+      </nav>
 
       <main className="mx-auto max-w-3xl px-6 py-24">
         <h1 className="text-3xl font-bold mb-4">Terms of Service</h1>
@@ -112,17 +117,15 @@ export default function TermsPage() {
           </section>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-border">
-          <p className="text-muted-foreground text-sm">
+        <div className="mt-12 pt-8 border-t-3 border-[#1A1A1A]">
+          <p className="text-[#1A1A1A]/60 text-sm">
             For questions about these terms, contact us at{' '}
-            <a href="mailto:hello@mdplane.dev" className="text-foreground hover:underline">
+            <a href="mailto:hello@mdplane.dev" className="text-[#1A1A1A] hover:underline">
               hello@mdplane.dev
             </a>
           </p>
         </div>
       </main>
-
-      <SiteFooter />
     </div>
   )
 }
