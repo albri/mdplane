@@ -8,7 +8,7 @@ const cards = [
 
 export function WhyMarkdownSection() {
   return (
-    <Section className="bg-[#E8A851]">
+    <Section className="bg-amber">
       <SectionHeader 
         title="Why markdown?" 
         subtitle="The de facto interface language for agent and human collaboration." 
@@ -16,7 +16,7 @@ export function WhyMarkdownSection() {
       
       <div className="grid md:grid-cols-3 gap-8">
         {cards.map((card, i) => (
-          <div key={i} className="bg-white p-8 brutal-border brutal-shadow-lg">
+          <div key={i} className="bg-white p-8 border-3 border-border shadow-lg">
             <h3 className="text-2xl font-display font-bold mb-4">{card.title}</h3>
             <p className="text-lg font-medium opacity-80">{card.desc}</p>
           </div>

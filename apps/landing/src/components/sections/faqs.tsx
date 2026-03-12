@@ -11,10 +11,10 @@ const faqs = [
 
 export function FAQsSection() {
   return (
-    <Section id="faqs" className="bg-[#F4F1EA]">
+    <Section id="faqs" className="bg-muted">
       <SectionHeader title="Questions" />
       
-      <div className="max-w-3xl border-l-4 border-[#1A1A1A] pl-8 space-y-12">
+      <div className="max-w-3xl border-l-4 border-foreground pl-8 space-y-12">
         {faqs.map((faq, i) => (
           <div key={i}>
             <h3 className="text-2xl font-display font-bold mb-3">{faq.q}</h3>

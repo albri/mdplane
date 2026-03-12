@@ -9,40 +9,40 @@ const bullets = [
 
 export function ReadersSection() {
   return (
-    <Section className="bg-[#FDFBF7]">
+    <Section className="bg-background">
       <SectionHeader 
         title="Anyone with the key can read" 
         subtitle="Humans and agents each get what they need." 
       />
       
       <div className="grid md:grid-cols-2 gap-8 mb-16">
-        <div className="bg-white p-8 brutal-border brutal-shadow">
+        <div className="bg-white p-8 border-3 border-border shadow">
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-12 h-12 bg-[#E8A851] brutal-border flex items-center justify-center">
+            <div className="w-12 h-12 bg-amber border-3 border-border flex items-center justify-center">
               <Users size={24} />
             </div>
             <h3 className="text-2xl font-display font-bold">Humans</h3>
           </div>
-          <div className="bg-[#F4F1EA] p-4 brutal-border mb-6 font-mono text-sm break-all">
+          <div className="bg-muted p-4 border-3 border-border mb-6 font-mono text-sm break-all">
             app.mdplane.dev/r/x7k9p2
           </div>
-          <div className="border-l-4 border-[#1A1A1A] pl-6 py-2">
+          <div className="border-l-4 border-foreground pl-6 py-2">
             <h4 className="font-display font-bold text-xl mb-2">Beautifully formatted</h4>
             <p className="opacity-80">Rich typography, syntax highlighting, and a clean reading experience.</p>
           </div>
         </div>
         
-        <div className="bg-[#1A1A1A] text-white p-8 brutal-border brutal-shadow">
+        <div className="bg-foreground text-white p-8 border-3 border-border shadow">
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-12 h-12 bg-[#8B9A8B] brutal-border flex items-center justify-center text-[#1A1A1A]">
+            <div className="w-12 h-12 bg-sage border-3 border-border flex items-center justify-center text-foreground">
               <Terminal size={24} />
             </div>
             <h3 className="text-2xl font-display font-bold">Agents</h3>
           </div>
-          <div className="bg-white/10 p-4 brutal-border mb-6 font-mono text-sm break-all text-[#E8A851]">
+          <div className="bg-white/10 p-4 border-3 border-border mb-6 font-mono text-sm break-all text-amber">
             api.mdplane.dev/r/x7k9p2/raw
           </div>
-          <div className="border-l-4 border-[#8B9A8B] pl-6 py-2">
+          <div className="border-l-4 border-sage pl-6 py-2">
             <h4 className="font-display font-bold text-xl mb-2">Raw markdown or JSON</h4>
             <p className="opacity-80">Clean text ready for context windows, or structured JSON for parsing.</p>
           </div>
@@ -51,8 +51,8 @@ export function ReadersSection() {
       
       <div className="flex flex-wrap gap-4 justify-center">
         {bullets.map((bullet, i) => (
-          <div key={i} className="flex items-center gap-3 bg-white px-6 py-3 brutal-border brutal-shadow-sm">
-            <Check size={20} className="text-[#D97757]" />
+          <div key={i} className="flex items-center gap-3 bg-white px-6 py-3 border-3 border-border shadow-sm">
+            <Check size={20} className="text-terracotta" />
             <span className="font-bold">{bullet}</span>
           </div>
         ))}

@@ -24,8 +24,8 @@ const sizeConfig: Record<LogoSize, { square: string; text: string; shadow: strin
 }
 
 const colorConfig: Record<LogoVariant, { square: string; text: string; shadowColor: string }> = {
-  default: { square: 'bg-[#E8A851]', text: 'text-[#1A1A1A]', shadowColor: '#1A1A1A' },
-  inverted: { square: 'bg-[#E8A851]', text: 'text-white', shadowColor: '#FFFFFF' },
+  default: { square: 'bg-amber', text: 'text-foreground', shadowColor: 'var(--foreground)' },
+  inverted: { square: 'bg-amber', text: 'text-white', shadowColor: '#FFFFFF' },
 }
 
 export function Logo({
@@ -73,12 +73,11 @@ export function LogoMark({
 }
 
 /**
- * Logo colors for use in CSS/Tailwind
+ * Brand colors - use CSS variables when possible (bg-amber, text-terracotta, etc.)
+ * These hex values are provided for contexts where CSS vars aren't available.
  */
-export const LOGO_COLORS = {
+export const BRAND_COLORS = {
   amber: '#E8A851',
-  ink: '#1A1A1A',
-  cream: '#FDFBF7',
   terracotta: '#D97757',
   sage: '#8B9A8B',
 } as const

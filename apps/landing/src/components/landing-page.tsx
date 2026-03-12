@@ -17,7 +17,7 @@ import {
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen selection:bg-[#E8A851] selection:text-[#1A1A1A]">
+    <div className="min-h-screen selection:bg-amber selection:text-foreground">
       <Navbar />
       <HeroSection />
       <WhyMdplaneSection />
