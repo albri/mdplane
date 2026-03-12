@@ -310,15 +310,15 @@ export function HeroSection() {
           <div className="flex flex-wrap gap-4">
             <Link
               href="https://app.mdplane.dev/launch"
-              className="px-6 py-3 font-display font-bold text-lg border-3 border-border shadow shadow-hover inline-flex items-center justify-center gap-2 bg-terracotta text-background"
+              className="px-6 py-3 font-display font-bold text-lg border-3 border-border shadow shadow-hover inline-flex items-center justify-center gap-2 bg-terracotta text-background focus:outline-none focus-visible:ring-4 focus-visible:ring-amber focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
-              Share Markdown <ArrowRight size={20} />
+              Share Markdown <ArrowRight size={20} aria-hidden="true" />
             </Link>
             <Link
               href="https://docs.mdplane.dev"
-              className="px-6 py-3 font-display font-bold text-lg border-3 border-border shadow shadow-hover inline-flex items-center justify-center gap-2 bg-background text-foreground"
+              className="px-6 py-3 font-display font-bold text-lg border-3 border-border shadow shadow-hover inline-flex items-center justify-center gap-2 bg-background text-foreground focus:outline-none focus-visible:ring-4 focus-visible:ring-amber focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
-              Read the docs <BookOpen size={20} />
+              Read the docs <BookOpen size={20} aria-hidden="true" />
             </Link>
           </div>
         </div>
