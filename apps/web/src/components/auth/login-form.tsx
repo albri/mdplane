@@ -71,9 +71,9 @@ export function LoginForm() {
     <div className="space-y-6 p-6 sm:p-8">
       <div className="space-y-3 border-b border-border/70 pb-5">
         <Logo
-          withWordmark={false}
+          showWordmark={false}
+          size="xl"
           className="justify-center"
-          markClassName="size-10"
         />
         <div className="text-center leading-relaxed">
           <h1 className="font-mono text-lg font-semibold tracking-tight">

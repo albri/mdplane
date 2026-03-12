@@ -14,6 +14,7 @@
   "dependencies": {
     "@fontsource/monaspace-neon": "^5.2.0",
     "@mdplane/shared": "workspace:^",
+    "@mdplane/ui": "workspace:^",
     "fumadocs-core": "16.5.0",
     "fumadocs-mdx": "14.2.6",
     "fumadocs-openapi": "^10.3.1",

@@ -4,20 +4,67 @@
 @import 'fumadocs-openapi/css/preset.css';
 
 @source '../../../node_modules/fumadocs-ui/dist/**/*.js';
+@source '../../../../packages/ui/src/**/*.{ts,tsx}';
 
 @theme {
   --radius-lg: 0.5rem;
   --radius-md: 0.375rem;
   --radius-sm: 0.25rem;
 
-  --font-sans: var(--font-geist), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  --color-fd-primary: #84cc16;
-  --color-fd-primary-foreground: #1a2e05;
+  --color-terracotta: #D97757;
+  --color-amber: #E8A851;
+  --color-sage: #8B9A8B;
+  --color-foreground: #1A1A1A;
+  --color-background: #FDFBF7;
+  --foreground: #1A1A1A;
+  --background: #FDFBF7;
+
+  --color-fd-primary: #D97757;
+  --color-fd-primary-foreground: #FDFBF7;
+  --color-fd-background: #FDFBF7;
+  --color-fd-foreground: #1A1A1A;
+  --color-fd-muted: #F4F1EA;
+  --color-fd-muted-foreground: #78716C;
+  --color-fd-card: #F8F6F1;
+  --color-fd-card-foreground: #1A1A1A;
+  --color-fd-popover: #FFFFFF;
+  --color-fd-popover-foreground: #1A1A1A;
+  --color-fd-border: #E5E2DB;
+  --color-fd-accent: #F4F1EA;
+  --color-fd-accent-foreground: #1A1A1A;
+  --color-fd-secondary: #EFECE5;
+  --color-fd-secondary-foreground: #44403C;
+  --color-fd-ring: #D97757;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
 }
 
 .dark {
-  --color-fd-primary: #84cc16;
-  --color-fd-primary-foreground: #1a2e05;
+  --color-foreground: #F5F3EF;
+  --color-background: #141211;
+  --foreground: #F5F3EF;
+  --background: #141211;
+
+  --color-fd-primary: #D97757;
+  --color-fd-primary-foreground: #141211;
+  --color-fd-background: #141211;
+  --color-fd-foreground: #F5F3EF;
+  --color-fd-muted: #262420;
+  --color-fd-muted-foreground: #A8A29E;
+  --color-fd-card: #1C1A18;
+  --color-fd-card-foreground: #F5F3EF;
+  --color-fd-popover: #1C1A18;
+  --color-fd-popover-foreground: #F5F3EF;
+  --color-fd-border: #2E2C28;
+  --color-fd-accent: #262420;
+  --color-fd-accent-foreground: #F5F3EF;
+  --color-fd-secondary: #262420;
+  --color-fd-secondary-foreground: #D6D3D1;
+  --color-fd-ring: #D97757;
 }
