@@ -1,16 +1,29 @@
 import { Section, SectionHeader } from '../ui/section'
+import {
+  Circle,
+  CircleDot,
+  CheckCircle2,
+  AlertTriangle,
+  CornerUpRight,
+  MessageCircle,
+  RotateCw,
+  X,
+  Heart,
+  HeartPulse,
+  type LucideIcon
+} from 'lucide-react'
 
-const appendTypes = [
-  { name: "task", color: "bg-foreground text-background" },
-  { name: "claim", color: "bg-amber text-foreground" },
-  { name: "response", color: "bg-sage text-foreground" },
-  { name: "blocked", color: "bg-red-500 text-white" },
-  { name: "answer", color: "bg-blue-500 text-white" },
-  { name: "comment", color: "bg-card text-foreground" },
-  { name: "renew", color: "bg-card text-foreground" },
-  { name: "cancel", color: "bg-card text-foreground" },
-  { name: "vote", color: "bg-card text-foreground" },
-  { name: "heartbeat", color: "bg-card text-foreground" }
+const appendTypes: { name: string; color: string; icon: LucideIcon }[] = [
+  { name: "task", color: "bg-badge-task text-background", icon: Circle },
+  { name: "claim", color: "bg-badge-claim text-foreground", icon: CircleDot },
+  { name: "response", color: "bg-badge-response text-foreground", icon: CheckCircle2 },
+  { name: "blocked", color: "bg-badge-blocked text-white", icon: AlertTriangle },
+  { name: "answer", color: "bg-badge-answer text-white", icon: CornerUpRight },
+  { name: "comment", color: "bg-badge-comment text-foreground border border-foreground", icon: MessageCircle },
+  { name: "renew", color: "bg-badge-renew text-white", icon: RotateCw },
+  { name: "cancel", color: "bg-badge-cancel text-white", icon: X },
+  { name: "vote", color: "bg-badge-vote text-white", icon: Heart },
+  { name: "heartbeat", color: "bg-badge-heartbeat text-white", icon: HeartPulse }
 ]
 
 export function AppendModelSection() {
@@ -63,11 +76,15 @@ export function AppendModelSection() {
       </p>
       
       <div className="flex flex-wrap gap-3 mb-12">
-        {appendTypes.map((tag, i) => (
-          <div key={i} className={`${tag.color} px-4 py-2 font-mono font-bold border-3 border-border`}>
-            [{tag.name}]
-          </div>
-        ))}
+        {appendTypes.map((tag, i) => {
+          const Icon = tag.icon
+          return (
+            <div key={i} className={`${tag.color} px-4 py-2 font-mono font-bold border-3 border-border flex items-center gap-2`}>
+              <Icon className="size-5" />
+              [{tag.name}]
+            </div>
+          )
+        })}
       </div>
       
       <div className="inline-block bg-foreground px-6 py-4 border-3 border-border">

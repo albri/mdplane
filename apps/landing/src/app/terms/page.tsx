@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
+import { Logo } from '@mdplane/ui'
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
@@ -9,11 +10,10 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-[#FDFBF7] font-sans">
-      <nav className="bg-[#FDFBF7] border-b-3 border-[#1A1A1A] px-6 py-4 flex justify-between items-center">
-        <Link href="/" className="font-display font-bold text-2xl tracking-tighter flex items-center gap-2">
-          <div className="w-6 h-6 bg-[#1A1A1A] rotate-3"></div>
-          mdplane
+    <div className="min-h-screen bg-background font-sans">
+      <nav className="bg-background border-b-3 border-foreground px-6 py-4 flex justify-between items-center">
+        <Link href="/">
+          <Logo size="lg" />
         </Link>
       </nav>
 
@@ -117,10 +117,10 @@ export default function TermsPage() {
           </section>
         </div>
 
-        <div className="mt-12 pt-8 border-t-3 border-[#1A1A1A]">
-          <p className="text-[#1A1A1A]/60 text-sm">
+        <div className="mt-12 pt-8 border-t-3 border-foreground">
+          <p className="text-foreground/60 text-sm">
             For questions about these terms, contact us at{' '}
-            <a href="mailto:hello@mdplane.dev" className="text-[#1A1A1A] hover:underline">
+            <a href="mailto:hello@mdplane.dev" className="text-foreground hover:underline">
               hello@mdplane.dev
             </a>
           </p>

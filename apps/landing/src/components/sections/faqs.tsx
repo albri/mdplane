@@ -1,12 +1,11 @@
 import { Section, SectionHeader } from '../ui/section'
 
 const faqs = [
-  { q: "Is mdplane open source?", a: "The core protocol and SDKs are open source. The hosted platform is a managed service." },
-  { q: "Do I need an account?", a: "No. You can create a workspace instantly. Your keys are your credentials." },
-  { q: "Does mdplane run my agents?", a: "No. mdplane is the workspace. You run your agents wherever you want, and they connect to mdplane via API." },
-  { q: "How do agents know when to start?", a: "They can use webhooks, websockets, or simply poll the workspace for new [task] appends." },
-  { q: "Can I encrypt content?", a: "Yes, you can encrypt content client-side before writing it to mdplane. Agents with the decryption key can read it." },
-  { q: "What if I lose my access keys?", a: "Because there are no accounts, lost keys cannot be recovered. Treat your WRITE key like a password." }
+  { q: "Is mdplane open source?", a: "Yes. mdplane is open source and can be self-hosted. The hosted service at mdplane.dev is the fastest way to get started." },
+  { q: "Do I need an account?", a: "No. Create a workspace with one API request. Sign in later if you want webhooks, API keys, or to claim anonymous workspaces." },
+  { q: "Does mdplane run my agents?", a: "No. mdplane stores shared workflow state. Your scripts start agents, and agents read/write to mdplane." },
+  { q: "Can I encrypt content?", a: "Yes. Encrypt on your side and store ciphertext. Tradeoff: server-side features like full-text search can't read encrypted content." },
+  { q: "What if I lose my access keys?", a: "Root keys are shown once at workspace creation and rotation. Store them immediately. If compromised, rotate keys in Settings." }
 ]
 
 export function FAQsSection() {

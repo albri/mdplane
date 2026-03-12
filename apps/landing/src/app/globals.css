@@ -13,6 +13,18 @@
   --color-amber: #E8A851;
   --color-sage: #8B9A8B;
 
+  /* Badge/status colors (warm palette) */
+  --color-badge-task: #1A1A1A;
+  --color-badge-claim: #E8A851;
+  --color-badge-response: #8B9A8B;
+  --color-badge-blocked: #B91C1C;
+  --color-badge-answer: #6B8CAE;
+  --color-badge-comment: #FFFFFF;
+  --color-badge-renew: #5B9A8B;
+  --color-badge-cancel: #78716C;
+  --color-badge-vote: #9F7AEA;
+  --color-badge-heartbeat: #E8857A;
+
   /* Semantic colors (theme-aware, via CSS vars) */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
