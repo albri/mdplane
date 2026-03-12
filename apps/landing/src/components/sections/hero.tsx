@@ -309,7 +309,7 @@ export function HeroSection() {
           </p>
           <div className="flex flex-wrap gap-4">
             <Link
-              href="https://app.mdplane.dev/launch"
+              href="https://app.mdplane.dev/new"
               className="px-6 py-3 font-display font-bold text-lg border-3 border-border shadow shadow-hover inline-flex items-center justify-center gap-2 bg-terracotta text-background focus:outline-none focus-visible:ring-4 focus-visible:ring-amber focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               Share Markdown <ArrowRight size={20} aria-hidden="true" />

@@ -55,9 +55,9 @@ describe('07 - Folder Operations', () => {
     expect(response.status).toBe(201);
   });
 
-  test('POST /a/:key/folders/:path/files creates file with append key', async () => {
-    const response = await apiRequest('POST', `/a/${workspace.appendKey}/folders/${testFolderName}/files`, {
-      body: { filename: 'append-created.md', content: '# Append created file' },
+  test('POST /w/:key/folders/:path/files creates file with write key', async () => {
+    const response = await apiRequest('POST', `/w/${workspace.writeKey}/folders/${testFolderName}/files`, {
+      body: { filename: 'write-created.md', content: '# Write created file' },
     });
     expect(response.status).toBe(201);
   });
@@ -81,8 +81,8 @@ describe('07 - Folder Operations', () => {
     expect(data.data).toBeDefined();
   });
 
-  test('POST /a/:key/folders/:path/bulk creates multiple files', async () => {
-    const response = await apiRequest('POST', `/a/${workspace.appendKey}/folders/${testFolderName}/bulk`, {
+  test('POST /w/:key/folders/:path/bulk creates multiple files', async () => {
+    const response = await apiRequest('POST', `/w/${workspace.writeKey}/folders/${testFolderName}/bulk`, {
       body: {
         files: [
           { filename: 'bulk1.md', content: '# Bulk 1' },

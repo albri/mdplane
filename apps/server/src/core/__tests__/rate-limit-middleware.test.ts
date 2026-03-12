@@ -373,17 +373,17 @@ describe('Rate Limit Middleware', () => {
             getCustomLimits: () => ({ bulk: 2 }),
           })
         )
-        .post('/a/:key/folders/:folderPath/bulk', () => ({ ok: true }));
+        .post('/w/:key/folders/:folderPath/bulk', () => ({ ok: true }));
 
       await testApp.handle(
-        new Request('http://localhost/a/test/folders/projects/bulk', { method: 'POST' })
+        new Request('http://localhost/w/test/folders/projects/bulk', { method: 'POST' })
       );
       await testApp.handle(
-        new Request('http://localhost/a/test/folders/projects/bulk', { method: 'POST' })
+        new Request('http://localhost/w/test/folders/projects/bulk', { method: 'POST' })
       );
 
       const response = await testApp.handle(
-        new Request('http://localhost/a/test/folders/projects/bulk', { method: 'POST' })
+        new Request('http://localhost/w/test/folders/projects/bulk', { method: 'POST' })
       );
       expect(response.status).toBe(429);
     });
@@ -396,17 +396,17 @@ describe('Rate Limit Middleware', () => {
             getCustomLimits: () => ({ bulk: 2, append: 99 }),
           })
         )
-        .post('/a/:key/folders/bulk', () => ({ ok: true }));
+        .post('/w/:key/folders/bulk', () => ({ ok: true }));
 
       await testApp.handle(
-        new Request('http://localhost/a/test/folders/bulk', { method: 'POST' })
+        new Request('http://localhost/w/test/folders/bulk', { method: 'POST' })
       );
       await testApp.handle(
-        new Request('http://localhost/a/test/folders/bulk', { method: 'POST' })
+        new Request('http://localhost/w/test/folders/bulk', { method: 'POST' })
       );
 
       const response = await testApp.handle(
-        new Request('http://localhost/a/test/folders/bulk', { method: 'POST' })
+        new Request('http://localhost/w/test/folders/bulk', { method: 'POST' })
       );
       expect(response.status).toBe(429);
     });
@@ -465,8 +465,8 @@ describe('Rate Limit Middleware', () => {
       expect(operation).toBe('capability_check');
     });
 
-    test('should classify /a/:key/folders/bulk as bulk', () => {
-      const operation = determineOperationType('POST', '/a/a_testKey12345678901234/folders/bulk');
+    test('should classify /w/:key/folders/bulk as bulk', () => {
+      const operation = determineOperationType('POST', '/w/w_testKey12345678901234/folders/bulk');
       expect(operation).toBe('bulk');
     });
 

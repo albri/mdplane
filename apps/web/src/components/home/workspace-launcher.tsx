@@ -3,9 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button, buttonVariants } from '@mdplane/ui/ui/button'
-import { Input } from '@/components/ui/input'
 import { AUTH_FRONTEND_ROUTES } from '@mdplane/shared'
 import { buildCapabilityPath, parseCapabilityUrl } from './capability-url'
 import {
@@ -15,13 +12,7 @@ import {
   deserializeRecentWorkspaceState,
   type RecentWorkspaceUrl,
 } from './recent-workspace-storage'
-import {
-  Link as LinkIcon,
-  History,
-  Plus,
-  ArrowRight,
-  Trash2,
-} from 'lucide-react'
+import { Link as LinkIcon, History, Plus, ArrowRight, Trash2 } from 'lucide-react'
 
 export function WorkspaceLauncher() {
   const router = useRouter()
@@ -97,27 +88,28 @@ export function WorkspaceLauncher() {
   }, [capabilityInput, router, addRecentUrl])
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="flex min-h-screen items-center justify-center bg-muted p-6">
       <div className="w-full max-w-lg space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Workspace Launcher</h1>
-          <p className="mt-1 text-muted-foreground">
+        <div className="text-center">
+          <h1 className="font-display text-3xl font-bold">Workspace Launcher</h1>
+          <p className="mt-2 text-muted-foreground">
             Open an existing workspace or create a new one
           </p>
         </div>
 
-        <Card tone="muted" size="sm">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <LinkIcon className="h-5 w-5 text-primary" />
-              <CardTitle className="text-base">Open Existing Workspace</CardTitle>
+        <div className="border-2 border-foreground bg-card p-6 shadow-[4px_4px_0_0_var(--foreground)]">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center bg-terracotta">
+              <LinkIcon className="h-5 w-5 text-white" />
             </div>
-            <CardDescription>
-              Paste a read URL (`/r/...`) or a read key. Bare keys open read runtime by default.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Input
+            <div>
+              <h2 className="font-display font-bold">Open Existing Workspace</h2>
+              <p className="text-sm text-muted-foreground">Paste a capability URL or key</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <input
+              type="text"
               placeholder="Capability URL or key"
               value={capabilityInput}
               onChange={(e) => {
@@ -125,102 +117,88 @@ export function WorkspaceLauncher() {
                 setInputError('')
               }}
               onKeyDown={(e) => e.key === 'Enter' && handleOpenWorkspace()}
+              className="w-full border-2 border-foreground bg-background px-4 py-3 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-terracotta"
             />
             {inputError && <p className="text-sm text-destructive">{inputError}</p>}
-            <Button onClick={handleOpenWorkspace} disabled={!capabilityInput.trim()} className="w-full">
+            <button
+              onClick={handleOpenWorkspace}
+              disabled={!capabilityInput.trim()}
+              className="flex w-full items-center justify-center gap-2 border-2 border-foreground bg-terracotta px-4 py-3 font-display font-bold text-white transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none shadow-[3px_3px_0_0_var(--foreground)] disabled:opacity-50"
+            >
               Open Workspace
               <ArrowRight className="h-4 w-4" />
-            </Button>
-          </CardContent>
-        </Card>
+            </button>
+          </div>
+        </div>
 
-        <Card tone="muted" size="sm">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <History className="h-5 w-5 text-muted-foreground" />
-                <CardTitle className="text-base">Recent Workspaces</CardTitle>
+        <div className="border-2 border-foreground bg-card p-6 shadow-[4px_4px_0_0_var(--foreground)]">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center bg-sage">
+                <History className="h-5 w-5 text-white" />
               </div>
-              <Button
-                variant={saveRecent ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleSaveRecentChange(!saveRecent)}
-                className="h-7 text-xs"
-              >
-                {saveRecent ? 'Enabled' : 'Disabled'}
-              </Button>
+              <h2 className="font-display font-bold">Recent Workspaces</h2>
             </div>
-            <CardDescription>
-              {saveRecent
-                ? 'Recent runtime URLs are stored in your browser'
-                : 'Enable to save recent runtime URLs (browser only)'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {recentUrls.length > 0 ? (
-              <div className="space-y-2">
-                {recentUrls.map((recent) => (
-                  <div
-                    key={recent.url}
-                    className="flex items-center justify-between rounded-md border border-border/80 bg-background p-2 text-sm"
-                  >
-                    <Link
-                      href={recent.url}
-                      className={buttonVariants({
-                        variant: 'ghost',
-                        size: 'sm',
-                        className: 'h-8 flex-1 justify-start rounded-md px-2 font-mono text-xs',
-                      })}
-                    >
-                      {recent.label}
-                    </Link>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeRecentUrl(recent.url)}
-                      aria-label={`Remove recent workspace ${recent.label}`}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearAllRecent}
-                  className="w-full text-xs text-muted-foreground"
+            <button
+              onClick={() => handleSaveRecentChange(!saveRecent)}
+              className={`border-2 border-foreground px-3 py-1 text-xs font-bold transition-colors ${
+                saveRecent ? 'bg-sage text-white' : 'bg-background text-foreground'
+              }`}
+            >
+              {saveRecent ? 'Enabled' : 'Disabled'}
+            </button>
+          </div>
+          {recentUrls.length > 0 ? (
+            <div className="space-y-2">
+              {recentUrls.map((recent) => (
+                <div
+                  key={recent.url}
+                  className="flex items-center justify-between border-2 border-border bg-background p-2"
                 >
-                  Clear all
-                </Button>
-              </div>
-            ) : (
-              <p className="text-center text-sm text-muted-foreground">
-                {saveRecent ? 'No recent URLs yet' : 'Enable to save recent URLs (browser only)'}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card tone="muted" size="sm" className="border-dashed">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <Plus className="h-5 w-5 text-muted-foreground" />
-              <CardTitle className="text-base">Create New Workspace</CardTitle>
+                  <Link href={recent.url} className="flex-1 font-mono text-sm hover:text-terracotta">
+                    {recent.label}
+                  </Link>
+                  <button
+                    onClick={() => removeRecentUrl(recent.url)}
+                    aria-label={`Remove recent workspace ${recent.label}`}
+                    className="p-1 text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+              <button
+                onClick={clearAllRecent}
+                className="w-full py-2 text-sm text-muted-foreground hover:text-foreground"
+              >
+                Clear all
+              </button>
             </div>
-            <CardDescription>
-              Start fresh with a new workspace and receive root keys once
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild variant="secondary" className="w-full">
-              <Link href={AUTH_FRONTEND_ROUTES.bootstrap}>
-                Create Workspace
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+          ) : (
+            <p className="text-center text-sm text-muted-foreground">
+              {saveRecent ? 'No recent URLs yet' : 'Enable to save recent URLs'}
+            </p>
+          )}
+        </div>
+
+        <div className="border-2 border-dashed border-foreground bg-card p-6">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center bg-amber">
+              <Plus className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h2 className="font-display font-bold">Create New Workspace</h2>
+              <p className="text-sm text-muted-foreground">Start fresh with new root keys</p>
+            </div>
+          </div>
+          <Link
+            href={AUTH_FRONTEND_ROUTES.bootstrap}
+            className="flex w-full items-center justify-center gap-2 border-2 border-foreground bg-amber px-4 py-3 font-display font-bold text-foreground transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none shadow-[3px_3px_0_0_var(--foreground)]"
+          >
+            Create Workspace
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
       </div>
     </div>
   )

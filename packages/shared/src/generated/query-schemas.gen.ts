@@ -133,7 +133,7 @@ export const zListFolderContentsViaWriteKeyQuery = z.object({
 export type ListFolderContentsViaWriteKeyQuery = z.infer<typeof zListFolderContentsViaWriteKeyQuery>;
 
 /**
- * Query parameters for POST /a/{key}/folders/{path}/bulk
+ * Query parameters for POST /w/{key}/folders/{path}/bulk
  * @operationId bulkCreateFiles
  */
 export const zBulkCreateFilesQuery = z.object({

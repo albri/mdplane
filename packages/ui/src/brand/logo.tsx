@@ -6,7 +6,7 @@ import { cn } from '../lib/utils'
  * Single rotated square with shadow in neo-brutalist style.
  */
 
-export type LogoSize = 'sm' | 'md' | 'lg' | 'xl'
+export type LogoSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 export type LogoVariant = 'default' | 'inverted'
 
 interface LogoProps {
@@ -21,6 +21,7 @@ const sizeConfig: Record<LogoSize, { square: string; text: string; shadow: strin
   md: { square: 'w-5 h-5', text: 'text-2xl', shadow: '4px 4px 0px 0px' },
   lg: { square: 'w-6 h-6', text: 'text-2xl', shadow: '4px 4px 0px 0px' },
   xl: { square: 'w-8 h-8', text: 'text-3xl', shadow: '6px 6px 0px 0px' },
+  '2xl': { square: 'w-10 h-10', text: 'text-4xl', shadow: '6px 6px 0px 0px' },
 }
 
 const colorConfig: Record<LogoVariant, { square: string; text: string; shadowColor: string }> = {

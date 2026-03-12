@@ -252,7 +252,7 @@ describe('Folder Operations Scenarios', () => {
   });
 
   describe('Create File in Folder', () => {
-    test('GIVEN a folder WHEN creating file with POST /a/:key/folders/:path/files THEN file is created', async () => {
+    test('GIVEN a folder WHEN creating file with POST /w/:key/folders/:path/files THEN file is created', async () => {
       // GIVEN: A workspace with a folder
       const workspace = await createTestWorkspace(app);
       await app.handle(
@@ -263,9 +263,9 @@ describe('Folder Operations Scenarios', () => {
         })
       );
 
-      // WHEN: Creating a file in the folder using POST /a/:key/folders/:path/files
+      // WHEN: Creating a file in the folder using POST /w/:key/folders/:path/files
       const response = await app.handle(
-        new Request(`http://localhost/a/${workspace.appendKey}/folders/docs/files`, {
+        new Request(`http://localhost/w/${workspace.writeKey}/folders/docs/files`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ filename: 'readme.md', content: '# Readme' }),

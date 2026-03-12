@@ -1077,48 +1077,6 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/RateLimited'
-  /a/{key}/folders/{path}/files:
-    post:
-      operationId: createFileInFolder
-      tags:
-        - Folders
-      summary: Create file in folder
-      security:
-        - capabilityKeyAuth: []
-      description: |
-        Create a new file in the specified folder. Uses folder append key.
-
-        Creating files is a safe additive operation. The creator receives all 3 file URLs
-        regardless of which folder key they used.
-
-        **Atomic creation:** If two clients attempt to create a file with the same name
-        simultaneously, exactly one succeeds (409 FILE_ALREADY_EXISTS for the other).
-
-        Use `Idempotency-Key` header to safely retry file creation.
-      parameters:
-        - $ref: '#/components/parameters/capabilityKey'
-        - $ref: '#/components/parameters/folderPath'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateFileRequest'
-      responses:
-        '201':
-          description: File created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CreateFileResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '429':
-          $ref: '#/components/responses/RateLimited'
   /w/{key}/folders/{path}:
     get:
       operationId: listFolderContentsViaWriteKey
@@ -1288,7 +1246,48 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/RateLimited'
-  /a/{key}/folders/{path}/copy:
+  /w/{key}/folders/{path}/files:
+    post:
+      operationId: createFileInFolder
+      tags:
+        - Folders
+      summary: Create file in folder
+      security:
+        - capabilityKeyAuth: []
+      description: |
+        Create a new file in the specified folder. Requires write key.
+
+        Creating files is a safe additive operation. The creator receives all 3 file URLs.
+
+        **Atomic creation:** If two clients attempt to create a file with the same name
+        simultaneously, exactly one succeeds (409 FILE_ALREADY_EXISTS for the other).
+
+        Use `Idempotency-Key` header to safely retry file creation.
+      parameters:
+        - $ref: '#/components/parameters/capabilityKey'
+        - $ref: '#/components/parameters/folderPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFileRequest'
+      responses:
+        '201':
+          description: File created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateFileResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /w/{key}/folders/{path}/copy:
     post:
       operationId: copyFileToFolder
       tags:
@@ -1325,7 +1324,7 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/RateLimited'
-  /a/{key}/folders/{path}/bulk:
+  /w/{key}/folders/{path}/bulk:
     post:
       operationId: bulkCreateFiles
       tags:
@@ -6692,55 +6691,6 @@ components:
               description: Workspace context for capability URL UI
         pagination:
           $ref: '#/components/schemas/PaginatedResponse'
-    CreateFileRequest:
-      type: object
-      required:
-        - filename
-      properties:
-        filename:
-          type: string
-          description: File name
-          maxLength: 255
-        content:
-          type: string
-          description: Initial file content
-    CreateFileResponse:
-      type: object
-      required:
-        - ok
-        - data
-      properties:
-        ok:
-          type: boolean
-          const: true
-        data:
-          type: object
-          required:
-            - id
-            - filename
-            - path
-            - urls
-            - createdAt
-          properties:
-            id:
-              type: string
-              description: File ID
-            filename:
-              type: string
-              description: File name
-            path:
-              type: string
-              description: Full file path
-            urls:
-              $ref: '#/components/schemas/CapabilityUrls'
-            createdAt:
-              type: string
-              format: date-time
-              description: Creation timestamp
-            webUrl:
-              type: string
-              format: uri
-              description: URL to view this file in the web interface
     FolderDeleteRequest:
       type: object
       description: Request body for cascade delete of non-empty folders
@@ -6863,6 +6813,55 @@ components:
               type: string
               format: uri
               description: URL to view this folder in the web interface
+    CreateFileRequest:
+      type: object
+      required:
+        - filename
+      properties:
+        filename:
+          type: string
+          description: File name
+          maxLength: 255
+        content:
+          type: string
+          description: Initial file content
+    CreateFileResponse:
+      type: object
+      required:
+        - ok
+        - data
+      properties:
+        ok:
+          type: boolean
+          const: true
+        data:
+          type: object
+          required:
+            - id
+            - filename
+            - path
+            - urls
+            - createdAt
+          properties:
+            id:
+              type: string
+              description: File ID
+            filename:
+              type: string
+              description: File name
+            path:
+              type: string
+              description: Full file path
+            urls:
+              $ref: '#/components/schemas/CapabilityUrls'
+            createdAt:
+              type: string
+              format: date-time
+              description: Creation timestamp
+            webUrl:
+              type: string
+              format: uri
+              description: URL to view this file in the web interface
     CopyFileToFolderRequest:
       type: object
       description: Request body for copying a file into a folder

@@ -3,7 +3,6 @@ import { APP_NAME } from '@mdplane/shared'
 import { LoginForm } from '@/components/auth'
 import { ControlModeNotConfiguredState } from '@/components/control'
 import { webEnv } from '@/config/env'
-import { DiagonalStripes, IntersectionMarks } from '@/components/ui/patterns'
 
 export const metadata: Metadata = {
   title: 'Sign In',
@@ -16,14 +15,9 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="state-shell">
-      <DiagonalStripes angle={135} spacing={24} className="opacity-30" />
-      <IntersectionMarks size={52} className="opacity-20" />
-
-      <div className="state-shell-content">
-        <div className="state-shell-card max-w-lg rounded-xl">
-          <LoginForm />
-        </div>
+    <main className="min-h-screen flex items-center justify-center bg-muted p-6">
+      <div className="w-full max-w-md">
+        <LoginForm />
       </div>
     </main>
   )

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { signIn } from '@/lib/auth-client'
-import { Button } from '@mdplane/ui/ui/button'
 import { CONTROL_FRONTEND_ROUTES, TAGLINE } from '@mdplane/shared'
 import { Loader2 } from 'lucide-react'
 import { Logo } from '@mdplane/ui/brand/logo'
@@ -68,25 +67,15 @@ export function LoginForm() {
   }
 
   return (
-    <div className="space-y-6 p-6 sm:p-8">
-      <div className="space-y-3 border-b border-border/70 pb-5">
-        <Logo
-          showWordmark={false}
-          size="xl"
-          className="justify-center"
-        />
-        <div className="text-center leading-relaxed">
-          <h1 className="font-mono text-lg font-semibold tracking-tight">
-            <span className="text-primary">md</span>
-            <span className="text-foreground">plane</span>
-          </h1>
-          <p className="mt-1 text-xs uppercase tracking-[0.16em] text-muted-foreground">{TAGLINE}</p>
-        </div>
+    <div className="p-8">
+      <div className="mb-8 flex flex-col items-center">
+        <Logo size="xl" />
+        <p className="mt-3 text-sm text-muted-foreground">{TAGLINE}</p>
       </div>
 
-      <div className="surface-panel space-y-5 p-5">
-        <div className="text-center">
-          <h2 className="text-lg font-semibold" data-testid="login-welcome-heading">
+      <div className="border-2 border-foreground bg-card p-6 shadow-[4px_4px_0_0_var(--foreground)]">
+        <div className="mb-6 text-center">
+          <h2 className="font-display text-xl font-bold" data-testid="login-welcome-heading">
             Sign in to Control Plane
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">Use your provider to continue</p>
@@ -94,32 +83,30 @@ export function LoginForm() {
 
         <div className="flex flex-col gap-3">
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button
-            variant="outline"
-            className="w-full justify-start"
+          <button
             onClick={() => handleOAuthSignIn('github')}
             disabled={isLoading !== null}
+            className="flex w-full items-center justify-center gap-3 border-2 border-foreground bg-foreground px-4 py-3 font-display font-bold text-background transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none shadow-[3px_3px_0_0_var(--amber)] disabled:opacity-50"
           >
             {isLoading === 'github' ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
-              <GithubIcon className="h-4 w-4" />
+              <GithubIcon className="h-5 w-5" />
             )}
             Continue with GitHub
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full justify-start"
+          </button>
+          <button
             onClick={() => handleOAuthSignIn('google')}
             disabled={isLoading !== null}
+            className="flex w-full items-center justify-center gap-3 border-2 border-foreground bg-background px-4 py-3 font-display font-bold text-foreground transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none shadow-[3px_3px_0_0_var(--terracotta)] disabled:opacity-50"
           >
             {isLoading === 'google' ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
-              <GoogleIcon className="h-4 w-4" />
+              <GoogleIcon className="h-5 w-5" />
             )}
             Continue with Google
-          </Button>
+          </button>
         </div>
       </div>
     </div>

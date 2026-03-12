@@ -564,23 +564,6 @@ export const zFolderListResponse = z.object({
     pagination: zPaginatedResponse.optional()
 });
 
-export const zCreateFileRequest = z.object({
-    filename: z.string().max(255),
-    content: z.string().optional()
-});
-
-export const zCreateFileResponse = z.object({
-    ok: z.literal(true),
-    data: z.object({
-        id: z.string(),
-        filename: z.string(),
-        path: z.string(),
-        urls: zCapabilityUrls,
-        createdAt: z.string().datetime(),
-        webUrl: z.string().url().optional()
-    })
-});
-
 /**
  * Request body for cascade delete of non-empty folders
  */
@@ -623,6 +606,23 @@ export const zFolderCreateRequest = z.object({
 export const zFolderCreateResponse = z.object({
     ok: z.literal(true),
     data: z.object({
+        path: z.string(),
+        urls: zCapabilityUrls,
+        createdAt: z.string().datetime(),
+        webUrl: z.string().url().optional()
+    })
+});
+
+export const zCreateFileRequest = z.object({
+    filename: z.string().max(255),
+    content: z.string().optional()
+});
+
+export const zCreateFileResponse = z.object({
+    ok: z.literal(true),
+    data: z.object({
+        id: z.string(),
+        filename: z.string(),
         path: z.string(),
         urls: zCapabilityUrls,
         createdAt: z.string().datetime(),
@@ -2436,20 +2436,6 @@ export const zListFolderContentsViaAppendKeyData = z.object({
  */
 export const zListFolderContentsViaAppendKeyResponse = zFolderListResponse;
 
-export const zCreateFileInFolderData = z.object({
-    body: zCreateFileRequest,
-    path: z.object({
-        key: z.string().min(20).regex(/^[A-Za-z0-9_]{20,}$/),
-        path: z.string()
-    }),
-    query: z.never().optional()
-});
-
-/**
- * File created successfully
- */
-export const zCreateFileInFolderResponse = zCreateFileResponse;
-
 export const zDeleteFolderData = z.object({
     body: zFolderDeleteRequest.optional(),
     path: z.object({
@@ -2514,6 +2500,20 @@ export const zCreateFolderData = z.object({
  * Folder created successfully
  */
 export const zCreateFolderResponse = zFolderCreateResponse;
+
+export const zCreateFileInFolderData = z.object({
+    body: zCreateFileRequest,
+    path: z.object({
+        key: z.string().min(20).regex(/^[A-Za-z0-9_]{20,}$/),
+        path: z.string()
+    }),
+    query: z.never().optional()
+});
+
+/**
+ * File created successfully
+ */
+export const zCreateFileInFolderResponse = zCreateFileResponse;
 
 export const zCopyFileToFolderData = z.object({
     body: zCopyFileToFolderRequest,

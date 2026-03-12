@@ -130,16 +130,16 @@ paths:
     $ref: 'paths/folders.yaml#/~1r~1{key}~1folders~1{path}'
   /a/{key}/folders/{path}:
     $ref: 'paths/folders.yaml#/~1a~1{key}~1folders~1{path}'
-  /a/{key}/folders/{path}/files:
-    $ref: 'paths/folders.yaml#/~1a~1{key}~1folders~1{path}~1files'
   /w/{key}/folders/{path}:
     $ref: 'paths/folders.yaml#/~1w~1{key}~1folders~1{path}'
   /w/{key}/folders:
     $ref: 'paths/folders.yaml#/~1w~1{key}~1folders'
-  /a/{key}/folders/{path}/copy:
-    $ref: 'paths/folders.yaml#/~1a~1{key}~1folders~1{path}~1copy'
-  /a/{key}/folders/{path}/bulk:
-    $ref: 'paths/folders.yaml#/~1a~1{key}~1folders~1{path}~1bulk'
+  /w/{key}/folders/{path}/files:
+    $ref: 'paths/folders.yaml#/~1w~1{key}~1folders~1{path}~1files'
+  /w/{key}/folders/{path}/copy:
+    $ref: 'paths/folders.yaml#/~1w~1{key}~1folders~1{path}~1copy'
+  /w/{key}/folders/{path}/bulk:
+    $ref: 'paths/folders.yaml#/~1w~1{key}~1folders~1{path}~1bulk'
   /w/{key}/folders/{path}/move:
     $ref: 'paths/folders.yaml#/~1w~1{key}~1folders~1{path}~1move'
   /w/{key}/folders/{path}/settings:

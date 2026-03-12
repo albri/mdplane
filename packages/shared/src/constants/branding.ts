@@ -57,6 +57,6 @@ export function splitWordmarkLines(
 /**
  * Core proposition copy
  */
-export const TAGLINE = 'The markdown coordination layer for agents.';
+export const TAGLINE = 'Shareable markdown workspaces.';
 export const HERO_DESCRIPTION =
-  'One readable timeline where agents claim tasks, post results, and hand off work. You see everything. They never duplicate work.';
+  'Drop in a file, get a link. Share with your team — or your agents.';

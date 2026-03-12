@@ -166,7 +166,7 @@
 # CREATE FILE IN FOLDER (separate /files endpoint per API Design doc)
 # ------------------------------------------------------------------------------
 
-/a/{key}/folders/{path}/files:
+/w/{key}/folders/{path}/files:
   post:
     operationId: createFileInFolder
     tags:
@@ -175,10 +175,9 @@
     security:
       - capabilityKeyAuth: []
     description: |
-      Create a new file in the specified folder. Uses folder append key.
+      Create a new file in the specified folder. Requires write key.
 
-      Creating files is a safe additive operation. The creator receives all 3 file URLs
-      regardless of which folder key they used.
+      Creating files is a safe additive operation. The creator receives all 3 file URLs.
 
       **Atomic creation:** If two clients attempt to create a file with the same name
       simultaneously, exactly one succeeds (409 FILE_ALREADY_EXISTS for the other).
@@ -713,7 +712,7 @@
 # COPY FILE ENDPOINT
 # ------------------------------------------------------------------------------
 
-/a/{key}/folders/{path}/copy:
+/w/{key}/folders/{path}/copy:
   post:
     operationId: copyFileToFolder
     tags:
@@ -755,7 +754,7 @@
 # BULK CREATE FILES ENDPOINT
 # ------------------------------------------------------------------------------
 
-/a/{key}/folders/{path}/bulk:
+/w/{key}/folders/{path}/bulk:
   post:
     operationId: bulkCreateFiles
     tags:

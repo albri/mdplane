@@ -423,34 +423,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/a/{key}/folders/{path}/files": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create file in folder
-         * @description Create a new file in the specified folder. Uses folder append key.
-         *
-         *     Creating files is a safe additive operation. The creator receives all 3 file URLs
-         *     regardless of which folder key they used.
-         *
-         *     **Atomic creation:** If two clients attempt to create a file with the same name
-         *     simultaneously, exactly one succeeds (409 FILE_ALREADY_EXISTS for the other).
-         *
-         *     Use `Idempotency-Key` header to safely retry file creation.
-         */
-        post: operations["createFileInFolder"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/w/{key}/folders/{path}": {
         parameters: {
             query?: never;
@@ -508,7 +480,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/a/{key}/folders/{path}/copy": {
+    "/w/{key}/folders/{path}/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create file in folder
+         * @description Create a new file in the specified folder. Requires write key.
+         *
+         *     Creating files is a safe additive operation. The creator receives all 3 file URLs.
+         *
+         *     **Atomic creation:** If two clients attempt to create a file with the same name
+         *     simultaneously, exactly one succeeds (409 FILE_ALREADY_EXISTS for the other).
+         *
+         *     Use `Idempotency-Key` header to safely retry file creation.
+         */
+        post: operations["createFileInFolder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/w/{key}/folders/{path}/copy": {
         parameters: {
             query?: never;
             header?: never;
@@ -531,7 +530,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/a/{key}/folders/{path}/bulk": {
+    "/w/{key}/folders/{path}/bulk": {
         parameters: {
             query?: never;
             header?: never;
@@ -3146,35 +3145,6 @@ export interface components {
             };
             pagination?: components["schemas"]["PaginatedResponse"];
         };
-        CreateFileRequest: {
-            /** @description File name */
-            filename: string;
-            /** @description Initial file content */
-            content?: string;
-        };
-        CreateFileResponse: {
-            /** @constant */
-            ok: true;
-            data: {
-                /** @description File ID */
-                id: string;
-                /** @description File name */
-                filename: string;
-                /** @description Full file path */
-                path: string;
-                urls: components["schemas"]["CapabilityUrls"];
-                /**
-                 * Format: date-time
-                 * @description Creation timestamp
-                 */
-                createdAt: string;
-                /**
-                 * Format: uri
-                 * @description URL to view this file in the web interface
-                 */
-                webUrl?: string;
-            };
-        };
         /** @description Request body for cascade delete of non-empty folders */
         FolderDeleteRequest: {
             /** @description Delete folder and all contents */
@@ -3245,6 +3215,35 @@ export interface components {
                 /**
                  * Format: uri
                  * @description URL to view this folder in the web interface
+                 */
+                webUrl?: string;
+            };
+        };
+        CreateFileRequest: {
+            /** @description File name */
+            filename: string;
+            /** @description Initial file content */
+            content?: string;
+        };
+        CreateFileResponse: {
+            /** @constant */
+            ok: true;
+            data: {
+                /** @description File ID */
+                id: string;
+                /** @description File name */
+                filename: string;
+                /** @description Full file path */
+                path: string;
+                urls: components["schemas"]["CapabilityUrls"];
+                /**
+                 * Format: date-time
+                 * @description Creation timestamp
+                 */
+                createdAt: string;
+                /**
+                 * Format: uri
+                 * @description URL to view this file in the web interface
                  */
                 webUrl?: string;
             };
@@ -6076,39 +6075,6 @@ export interface operations {
             429: components["responses"]["RateLimited"];
         };
     };
-    createFileInFolder: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Capability key (20+ chars, base62 with underscore) */
-                key: components["parameters"]["capabilityKey"];
-                /** @description URL-encoded folder path */
-                path: components["parameters"]["folderPath"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateFileRequest"];
-            };
-        };
-        responses: {
-            /** @description File created successfully */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CreateFileResponse"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            429: components["responses"]["RateLimited"];
-        };
-    };
     listFolderContentsViaWriteKey: {
         parameters: {
             query?: {
@@ -6251,6 +6217,39 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    createFileInFolder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Capability key (20+ chars, base62 with underscore) */
+                key: components["parameters"]["capabilityKey"];
+                /** @description URL-encoded folder path */
+                path: components["parameters"]["folderPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFileRequest"];
+            };
+        };
+        responses: {
+            /** @description File created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateFileResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             429: components["responses"]["RateLimited"];
         };

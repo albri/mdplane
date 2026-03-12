@@ -25,7 +25,7 @@ describe('Folder Mutations', () => {
     resetTestFolders();
   });
 
-  describe('POST /a/:key/folders/:path/copy - Copy File to Folder', () => {
+  describe('POST /w/:key/folders/:path/copy - Copy File to Folder', () => {
     const TEST_SOURCE_READ_KEY = 'srcR8k2mP9qL3nR7mQ2pN4';
     const TEST_SOURCE_FILE_PATH = '/source/test-source.md';
     const TEST_SOURCE_CONTENT = '# Source File Content\n\nThis is the source file.';
@@ -67,7 +67,7 @@ describe('Folder Mutations', () => {
 
         const response = await app.handle(
           new Request(
-            `http://localhost/a/${VALID_APPEND_KEY}/folders/dest/copy`,
+            `http://localhost/w/${VALID_WRITE_KEY}/folders/dest/copy`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -84,7 +84,7 @@ describe('Folder Mutations', () => {
 
         const response = await app.handle(
           new Request(
-            `http://localhost/a/${VALID_APPEND_KEY}/folders/dest2/copy`,
+            `http://localhost/w/${VALID_WRITE_KEY}/folders/dest2/copy`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -102,7 +102,7 @@ describe('Folder Mutations', () => {
 
         const response = await app.handle(
           new Request(
-            `http://localhost/a/${VALID_APPEND_KEY}/folders/dest3/copy`,
+            `http://localhost/w/${VALID_WRITE_KEY}/folders/dest3/copy`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -128,7 +128,7 @@ describe('Folder Mutations', () => {
 
         const response = await app.handle(
           new Request(
-            `http://localhost/a/${VALID_APPEND_KEY}/folders/dest4/copy`,
+            `http://localhost/w/${VALID_WRITE_KEY}/folders/dest4/copy`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -146,7 +146,7 @@ describe('Folder Mutations', () => {
 
         const response = await app.handle(
           new Request(
-            `http://localhost/a/${VALID_APPEND_KEY}/folders/dest5/copy`,
+            `http://localhost/w/${VALID_WRITE_KEY}/folders/dest5/copy`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -164,7 +164,7 @@ describe('Folder Mutations', () => {
 
         const copyResponse = await app.handle(
           new Request(
-            `http://localhost/a/${VALID_APPEND_KEY}/folders/dest6/copy`,
+            `http://localhost/w/${VALID_WRITE_KEY}/folders/dest6/copy`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -181,7 +181,7 @@ describe('Folder Mutations', () => {
 
         const response = await app.handle(
           new Request(
-            `http://localhost/a/${VALID_APPEND_KEY}/folders/dest7/copy`,
+            `http://localhost/w/${VALID_WRITE_KEY}/folders/dest7/copy`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -199,7 +199,7 @@ describe('Folder Mutations', () => {
       test('should return 404 for invalid destination key', async () => {
         const response = await app.handle(
           new Request(
-            `http://localhost/a/${INVALID_KEY}/folders/Dest123/copy`,
+            `http://localhost/w/${INVALID_KEY}/folders/Dest123/copy`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -214,7 +214,7 @@ describe('Folder Mutations', () => {
       test('should return 404 for expired destination key', async () => {
         const response = await app.handle(
           new Request(
-            `http://localhost/a/${EXPIRED_KEY}/folders/src/copy`,
+            `http://localhost/w/${EXPIRED_KEY}/folders/src/copy`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -229,7 +229,7 @@ describe('Folder Mutations', () => {
       test('should return 404 for revoked destination key', async () => {
         const response = await app.handle(
           new Request(
-            `http://localhost/a/${REVOKED_KEY}/folders/src/copy`,
+            `http://localhost/w/${REVOKED_KEY}/folders/src/copy`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -246,7 +246,7 @@ describe('Folder Mutations', () => {
 
         const response = await app.handle(
           new Request(
-            `http://localhost/a/${VALID_READ_KEY}/folders/src/copy`,
+            `http://localhost/w/${VALID_READ_KEY}/folders/src/copy`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -264,7 +264,7 @@ describe('Folder Mutations', () => {
       test('should return 404 for invalid source key', async () => {
         const response = await app.handle(
           new Request(
-            `http://localhost/a/${VALID_APPEND_KEY}/folders/src/copy`,
+            `http://localhost/w/${VALID_WRITE_KEY}/folders/src/copy`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -282,7 +282,7 @@ describe('Folder Mutations', () => {
       test('should return 404 for non-existent source key', async () => {
         const response = await app.handle(
           new Request(
-            `http://localhost/a/${VALID_APPEND_KEY}/folders/src/copy`,
+            `http://localhost/w/${VALID_WRITE_KEY}/folders/src/copy`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -300,7 +300,7 @@ describe('Folder Mutations', () => {
       test('should return 422 for missing sourceKey', async () => {
         const response = await app.handle(
           new Request(
-            `http://localhost/a/${VALID_APPEND_KEY}/folders/src/copy`,
+            `http://localhost/w/${VALID_WRITE_KEY}/folders/src/copy`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -326,7 +326,7 @@ describe('Folder Mutations', () => {
 
         const response = await app.handle(
           new Request(
-            `http://localhost/a/${VALID_APPEND_KEY}/folders/conflict-dest/copy`,
+            `http://localhost/w/${VALID_WRITE_KEY}/folders/conflict-dest/copy`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -347,7 +347,7 @@ describe('Folder Mutations', () => {
         const invalidPath = encodeURIComponent('../etc');
         const response = await app.handle(
           new Request(
-            `http://localhost/a/${VALID_APPEND_KEY}/folders/${invalidPath}/copy`,
+            `http://localhost/w/${VALID_WRITE_KEY}/folders/${invalidPath}/copy`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -366,7 +366,7 @@ describe('Folder Mutations', () => {
 
         const response = await app.handle(
           new Request(
-            `http://localhost/a/${VALID_APPEND_KEY}/folders/dest-invalid/copy`,
+            `http://localhost/w/${VALID_WRITE_KEY}/folders/dest-invalid/copy`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -387,7 +387,7 @@ describe('Folder Mutations', () => {
 
         const response = await app.handle(
           new Request(
-            `http://localhost/a/${VALID_APPEND_KEY}/folders/perm-append/copy`,
+            `http://localhost/w/${VALID_WRITE_KEY}/folders/perm-append/copy`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -404,7 +404,7 @@ describe('Folder Mutations', () => {
 
         const response = await app.handle(
           new Request(
-            `http://localhost/a/${VALID_WRITE_KEY}/folders/perm-write/copy`,
+            `http://localhost/w/${VALID_WRITE_KEY}/folders/perm-write/copy`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -423,7 +423,7 @@ describe('Folder Mutations', () => {
 
         const response = await app.handle(
           new Request(
-            `http://localhost/a/${VALID_APPEND_KEY}/folders/copy`,
+            `http://localhost/w/${VALID_APPEND_KEY}/folders/copy`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -439,7 +439,7 @@ describe('Folder Mutations', () => {
     });
   });
 
-  describe('POST /a/:key/folders/:path/bulk - Bulk Create Files', () => {
+  describe('POST /w/:key/folders/:path/bulk - Bulk Create Files', () => {
     beforeEach(() => {
       sqlite.exec(`DELETE FROM appends WHERE file_id IN (SELECT id FROM files WHERE workspace_id = 'ws_test_folders' AND (path LIKE '/bulk%' OR path = '/empty-content.md' OR path = '/write-key-bulk.md' OR path = '/async1.md' OR path = '/structure-test.md'))`);
       sqlite.exec(`DELETE FROM files WHERE workspace_id = 'ws_test_folders' AND (path LIKE '/bulk%' OR path = '/empty-content.md' OR path = '/write-key-bulk.md' OR path = '/async1.md' OR path = '/structure-test.md')`);
@@ -449,7 +449,7 @@ describe('Folder Mutations', () => {
     describe('Success Cases', () => {
       test('should return 201 when bulk creating files successfully', async () => {
         const response = await app.handle(
-          new Request(`http://localhost/a/${VALID_APPEND_KEY}/folders/bulk`, {
+          new Request(`http://localhost/w/${VALID_APPEND_KEY}/folders/bulk`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -474,7 +474,7 @@ describe('Folder Mutations', () => {
 
       test('should return 201 for bulk create in subfolder', async () => {
         const response = await app.handle(
-          new Request(`http://localhost/a/${VALID_APPEND_KEY}/folders/bulk-test-subfolder/bulk`, {
+          new Request(`http://localhost/w/${VALID_APPEND_KEY}/folders/bulk-test-subfolder/bulk`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -493,7 +493,7 @@ describe('Folder Mutations', () => {
 
       test('should return 202 for async mode', async () => {
         const response = await app.handle(
-          new Request(`http://localhost/a/${VALID_APPEND_KEY}/folders/bulk?async=true`, {
+          new Request(`http://localhost/w/${VALID_APPEND_KEY}/folders/bulk?async=true`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -509,7 +509,7 @@ describe('Folder Mutations', () => {
 
       test('should create files with empty content', async () => {
         const response = await app.handle(
-          new Request(`http://localhost/a/${VALID_APPEND_KEY}/folders/bulk`, {
+          new Request(`http://localhost/w/${VALID_APPEND_KEY}/folders/bulk`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -525,7 +525,7 @@ describe('Folder Mutations', () => {
 
       test('should work with write key', async () => {
         const response = await app.handle(
-          new Request(`http://localhost/a/${VALID_WRITE_KEY}/folders/bulk`, {
+          new Request(`http://localhost/w/${VALID_WRITE_KEY}/folders/bulk`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -540,7 +540,7 @@ describe('Folder Mutations', () => {
     describe('Error Cases', () => {
       test('should return 404 for invalid key', async () => {
         const response = await app.handle(
-          new Request(`http://localhost/a/${INVALID_KEY}/folders/Bulk123/bulk`, {
+          new Request(`http://localhost/w/${INVALID_KEY}/folders/Bulk123/bulk`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ files: [{ filename: 'test.md' }] }),
@@ -551,7 +551,7 @@ describe('Folder Mutations', () => {
 
       test('should return 404 for expired key', async () => {
         const response = await app.handle(
-          new Request(`http://localhost/a/${EXPIRED_KEY}/folders/bulk`, {
+          new Request(`http://localhost/w/${EXPIRED_KEY}/folders/bulk`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ files: [{ filename: 'test.md' }] }),
@@ -562,7 +562,7 @@ describe('Folder Mutations', () => {
 
       test('should return 404 for revoked key', async () => {
         const response = await app.handle(
-          new Request(`http://localhost/a/${REVOKED_KEY}/folders/bulk`, {
+          new Request(`http://localhost/w/${REVOKED_KEY}/folders/bulk`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ files: [{ filename: 'test.md' }] }),
@@ -573,7 +573,7 @@ describe('Folder Mutations', () => {
 
       test('should return 404 for read-only key', async () => {
         const response = await app.handle(
-          new Request(`http://localhost/a/${VALID_READ_KEY}/folders/bulk`, {
+          new Request(`http://localhost/w/${VALID_READ_KEY}/folders/bulk`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ files: [{ filename: 'test.md' }] }),
@@ -587,7 +587,7 @@ describe('Folder Mutations', () => {
 
       test('should return 400 for empty files array', async () => {
         const response = await app.handle(
-          new Request(`http://localhost/a/${VALID_APPEND_KEY}/folders/bulk`, {
+          new Request(`http://localhost/w/${VALID_APPEND_KEY}/folders/bulk`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ files: [] }),
@@ -602,7 +602,7 @@ describe('Folder Mutations', () => {
       test('should return 422 for more than 100 files', async () => {
         const files = Array.from({ length: 101 }, (_, i) => ({ filename: `file${i}.md` }));
         const response = await app.handle(
-          new Request(`http://localhost/a/${VALID_APPEND_KEY}/folders/bulk`, {
+          new Request(`http://localhost/w/${VALID_APPEND_KEY}/folders/bulk`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ files }),
@@ -616,7 +616,7 @@ describe('Folder Mutations', () => {
 
       test('should return 400 for invalid filename with path separator', async () => {
         const response = await app.handle(
-          new Request(`http://localhost/a/${VALID_APPEND_KEY}/folders/bulk`, {
+          new Request(`http://localhost/w/${VALID_APPEND_KEY}/folders/bulk`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ files: [{ filename: 'invalid/name.md' }] }),
@@ -629,7 +629,7 @@ describe('Folder Mutations', () => {
 
       test('should return 400 for filename with path traversal', async () => {
         const response = await app.handle(
-          new Request(`http://localhost/a/${VALID_APPEND_KEY}/folders/bulk`, {
+          new Request(`http://localhost/w/${VALID_APPEND_KEY}/folders/bulk`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ files: [{ filename: '../etc/passwd' }] }),
@@ -642,7 +642,7 @@ describe('Folder Mutations', () => {
 
       test('should return 422 for missing files field', async () => {
         const response = await app.handle(
-          new Request(`http://localhost/a/${VALID_APPEND_KEY}/folders/bulk`, {
+          new Request(`http://localhost/w/${VALID_APPEND_KEY}/folders/bulk`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({}),
@@ -656,14 +656,14 @@ describe('Folder Mutations', () => {
 
       test('should return 409 when file already exists', async () => {
         await app.handle(
-          new Request(`http://localhost/a/${VALID_APPEND_KEY}/folders/bulk`, {
+          new Request(`http://localhost/w/${VALID_APPEND_KEY}/folders/bulk`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ files: [{ filename: 'existing-bulk.md' }] }),
           })
         );
         const response = await app.handle(
-          new Request(`http://localhost/a/${VALID_APPEND_KEY}/folders/bulk`, {
+          new Request(`http://localhost/w/${VALID_APPEND_KEY}/folders/bulk`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ files: [{ filename: 'existing-bulk.md' }] }),
@@ -678,7 +678,7 @@ describe('Folder Mutations', () => {
       test('should return 400 for path traversal in folder path', async () => {
         const invalidPath = encodeURIComponent('../etc');
         const response = await app.handle(
-          new Request(`http://localhost/a/${VALID_APPEND_KEY}/folders/${invalidPath}/bulk`, {
+          new Request(`http://localhost/w/${VALID_WRITE_KEY}/folders/${invalidPath}/bulk`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ files: [{ filename: 'test.md' }] }),
@@ -693,7 +693,7 @@ describe('Folder Mutations', () => {
     describe('Response Format', () => {
       test('should return proper response structure for sync mode', async () => {
         const response = await app.handle(
-          new Request(`http://localhost/a/${VALID_APPEND_KEY}/folders/bulk`, {
+          new Request(`http://localhost/w/${VALID_APPEND_KEY}/folders/bulk`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -719,7 +719,7 @@ describe('Folder Mutations', () => {
 
       test('should return proper response structure for async mode', async () => {
         const response = await app.handle(
-          new Request(`http://localhost/a/${VALID_APPEND_KEY}/folders/bulk?async=true`, {
+          new Request(`http://localhost/w/${VALID_APPEND_KEY}/folders/bulk?async=true`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

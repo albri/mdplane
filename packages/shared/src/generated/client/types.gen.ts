@@ -932,44 +932,6 @@ export type FolderListResponse = {
     pagination?: PaginatedResponse;
 };
 
-export type CreateFileRequest = {
-    /**
-     * File name
-     */
-    filename: string;
-    /**
-     * Initial file content
-     */
-    content?: string;
-};
-
-export type CreateFileResponse = {
-    ok: true;
-    data: {
-        /**
-         * File ID
-         */
-        id: string;
-        /**
-         * File name
-         */
-        filename: string;
-        /**
-         * Full file path
-         */
-        path: string;
-        urls: CapabilityUrls;
-        /**
-         * Creation timestamp
-         */
-        createdAt: string;
-        /**
-         * URL to view this file in the web interface
-         */
-        webUrl?: string;
-    };
-};
-
 /**
  * Request body for cascade delete of non-empty folders
  */
@@ -1065,6 +1027,44 @@ export type FolderCreateResponse = {
         createdAt: string;
         /**
          * URL to view this folder in the web interface
+         */
+        webUrl?: string;
+    };
+};
+
+export type CreateFileRequest = {
+    /**
+     * File name
+     */
+    filename: string;
+    /**
+     * Initial file content
+     */
+    content?: string;
+};
+
+export type CreateFileResponse = {
+    ok: true;
+    data: {
+        /**
+         * File ID
+         */
+        id: string;
+        /**
+         * File name
+         */
+        filename: string;
+        /**
+         * Full file path
+         */
+        path: string;
+        urls: CapabilityUrls;
+        /**
+         * Creation timestamp
+         */
+        createdAt: string;
+        /**
+         * URL to view this file in the web interface
          */
         webUrl?: string;
     };
@@ -4459,52 +4459,6 @@ export type ListFolderContentsViaAppendKeyResponses = {
 
 export type ListFolderContentsViaAppendKeyResponse = ListFolderContentsViaAppendKeyResponses[keyof ListFolderContentsViaAppendKeyResponses];
 
-export type CreateFileInFolderData = {
-    body: CreateFileRequest;
-    path: {
-        /**
-         * Capability key (20+ chars, base62 with underscore)
-         */
-        key: string;
-        /**
-         * URL-encoded folder path
-         */
-        path: string;
-    };
-    query?: never;
-    url: '/a/{key}/folders/{path}/files';
-};
-
-export type CreateFileInFolderErrors = {
-    /**
-     * Invalid request
-     */
-    400: Error;
-    /**
-     * Resource not found
-     */
-    404: Error;
-    /**
-     * Conflict (e.g., concurrent edit, already claimed)
-     */
-    409: Error;
-    /**
-     * Rate limit exceeded
-     */
-    429: Error;
-};
-
-export type CreateFileInFolderError = CreateFileInFolderErrors[keyof CreateFileInFolderErrors];
-
-export type CreateFileInFolderResponses = {
-    /**
-     * File created successfully
-     */
-    201: CreateFileResponse;
-};
-
-export type CreateFileInFolderResponse = CreateFileInFolderResponses[keyof CreateFileInFolderResponses];
-
 export type DeleteFolderData = {
     body?: FolderDeleteRequest;
     path: {
@@ -4710,6 +4664,52 @@ export type CreateFolderResponses = {
 
 export type CreateFolderResponse = CreateFolderResponses[keyof CreateFolderResponses];
 
+export type CreateFileInFolderData = {
+    body: CreateFileRequest;
+    path: {
+        /**
+         * Capability key (20+ chars, base62 with underscore)
+         */
+        key: string;
+        /**
+         * URL-encoded folder path
+         */
+        path: string;
+    };
+    query?: never;
+    url: '/w/{key}/folders/{path}/files';
+};
+
+export type CreateFileInFolderErrors = {
+    /**
+     * Invalid request
+     */
+    400: Error;
+    /**
+     * Resource not found
+     */
+    404: Error;
+    /**
+     * Conflict (e.g., concurrent edit, already claimed)
+     */
+    409: Error;
+    /**
+     * Rate limit exceeded
+     */
+    429: Error;
+};
+
+export type CreateFileInFolderError = CreateFileInFolderErrors[keyof CreateFileInFolderErrors];
+
+export type CreateFileInFolderResponses = {
+    /**
+     * File created successfully
+     */
+    201: CreateFileResponse;
+};
+
+export type CreateFileInFolderResponse = CreateFileInFolderResponses[keyof CreateFileInFolderResponses];
+
 export type CopyFileToFolderData = {
     body: CopyFileToFolderRequest;
     path: {
@@ -4723,7 +4723,7 @@ export type CopyFileToFolderData = {
         path: string;
     };
     query?: never;
-    url: '/a/{key}/folders/{path}/copy';
+    url: '/w/{key}/folders/{path}/copy';
 };
 
 export type CopyFileToFolderErrors = {
@@ -4774,7 +4774,7 @@ export type BulkCreateFilesData = {
          */
         async?: boolean;
     };
-    url: '/a/{key}/folders/{path}/bulk';
+    url: '/w/{key}/folders/{path}/bulk';
 };
 
 export type BulkCreateFilesErrors = {

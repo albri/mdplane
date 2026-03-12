@@ -113,7 +113,7 @@ export function determineOperationType(method: string, pathname: string): Operat
   if (
     verb === 'POST' &&
     segments.length >= 4 &&
-    segments[0] === 'a' &&
+    segments[0] === 'w' &&
     segments[2] === 'folders' &&
     segments[segments.length - 1] === 'bulk'
   ) {

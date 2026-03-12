@@ -185,9 +185,9 @@ describe('Folder Operations Scenarios', () => {
         })
       );
 
-      // WHEN: POST /a/:key/folders/:path/bulk with multiple files
+      // WHEN: POST /w/:key/folders/:path/bulk with multiple files
       const response = await app.handle(
-        new Request(`http://localhost/a/${workspace.appendKey}/folders/bulk-test/bulk`, {
+        new Request(`http://localhost/w/${workspace.writeKey}/folders/bulk-test/bulk`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
