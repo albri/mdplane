@@ -29,9 +29,9 @@ const appendTypes: { name: string; color: string; icon: LucideIcon }[] = [
 export function AppendModelSection() {
   return (
     <Section className="bg-terracotta text-white">
-      <SectionHeader 
-        title="The append model" 
-        subtitle="Now that agents can read and be triggered — how do they contribute safely?" 
+      <SectionHeader
+        title="The append model"
+        subtitle="Agents can read your workspace — but how do they contribute safely?"
       />
       
       <div className="bg-background text-foreground border-3 border-border shadow-lg mb-12">

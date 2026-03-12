@@ -27,7 +27,7 @@ export function FooterSection() {
           <div className="flex gap-6 font-medium opacity-80">
             <Link href="https://docs.mdplane.dev" className="hover:text-amber transition-colors">Docs</Link>
             <Link href="https://api.mdplane.dev" className="hover:text-amber transition-colors">API</Link>
-            <Link href="https://github.com/alscotty/mdplane" className="hover:text-amber transition-colors">GitHub</Link>
+            <Link href="https://github.com/albri/mdplane" className="hover:text-amber transition-colors">GitHub</Link>
             <Link href="/privacy" className="hover:text-amber transition-colors">Privacy</Link>
             <Link href="/terms" className="hover:text-amber transition-colors">Terms</Link>
           </div>
