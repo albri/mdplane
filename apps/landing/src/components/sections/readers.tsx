@@ -70,10 +70,10 @@ export function ReadersSection() {
         ))}
       </div>
 
-      <ul className="flex flex-wrap gap-4 justify-center" role="list">
+      <ul className="flex flex-col md:flex-row flex-wrap gap-4 md:justify-center" role="list">
         {FEATURES.map((feature) => (
-          <li key={feature} className="flex items-center gap-3 bg-card px-6 py-3 border-3 border-border shadow-sm">
-            <Check size={20} className="text-terracotta" aria-hidden="true" />
+          <li key={feature} className="flex items-center gap-3 bg-card px-6 py-3 border-3 border-border shadow-sm w-full md:w-auto">
+            <Check size={20} className="text-terracotta flex-shrink-0" aria-hidden="true" />
             <span className="font-bold">{feature}</span>
           </li>
         ))}

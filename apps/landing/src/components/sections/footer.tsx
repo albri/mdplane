@@ -5,6 +5,7 @@ const FOOTER_LINKS = [
   { href: 'https://docs.mdplane.dev', label: 'Docs' },
   { href: 'https://api.mdplane.dev', label: 'API' },
   { href: 'https://github.com/albri/mdplane', label: 'GitHub' },
+  { href: 'https://status.mdplane.dev', label: 'Status' },
   { href: '/privacy', label: 'Privacy' },
   { href: '/terms', label: 'Terms' },
 ]

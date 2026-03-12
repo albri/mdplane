@@ -78,7 +78,7 @@ export function AppendModelSection() {
           <p className="font-bold font-display uppercase tracking-widest text-sm text-terracotta mb-4">Appends (Append Key)</p>
           <ul className="space-y-3 font-mono" role="list">
             {EXAMPLE_APPENDS.map((append, i) => (
-              <li key={i} className={`bg-card p-3 border-3 border-border flex gap-3 ${append.indented ? 'ml-8' : ''}`}>
+              <li key={i} className={`bg-card p-3 border-3 border-border flex gap-3 ${append.indented ? 'ml-4 md:ml-8' : ''}`}>
                 <span className={`${append.typeColor} font-bold`}>[{append.type}]</span>
                 <span>{append.content}</span>
               </li>
