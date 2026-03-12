@@ -1,5 +1,6 @@
 export { cn } from './lib/utils'
-export { Logo } from './brand/logo'
+export { Logo, LogoMark, LOGO_COLORS } from './brand/logo'
+export type { LogoSize, LogoVariant } from './brand/logo'
 export { CodeBlock } from './ui/code-block'
 export { BorderedIcon } from './ui/bordered-icon'
 export { Button, buttonVariants } from './ui/button'

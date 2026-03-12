@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Logo } from '@mdplane/ui'
 
 export function FooterSection() {
   return (
@@ -16,11 +17,11 @@ export function FooterSection() {
             </Link>
           </div>
         </div>
-        
+
         <div className="border-t-2 border-white/20 pt-8 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="font-display font-bold text-xl flex items-center gap-2">
-            <div className="w-5 h-5 bg-[#E8A851] rotate-3"></div>
-            mdplane <span className="opacity-50 font-sans font-normal text-base ml-2">— Shareable markdown workspaces.</span>
+          <div className="flex items-center gap-3">
+            <Logo size="lg" variant="inverted" />
+            <span className="opacity-50 font-sans font-normal text-base">— Shareable markdown workspaces.</span>
           </div>
           
           <div className="flex gap-6 font-medium opacity-80">
