@@ -3,7 +3,7 @@ import { Logo } from '@mdplane/ui'
 
 export function FooterSection() {
   return (
-    <footer className="bg-foreground text-white pt-24 pb-12 px-6 md:px-12 lg:px-24">
+    <footer className="bg-foreground text-background pt-24 pb-12 px-6 md:px-12 lg:px-24">
       <div className="max-w-7xl mx-auto">
         <div className="mb-24 text-center">
           <h2 className="text-5xl md:text-7xl font-display font-bold mb-6">Get started</h2>
@@ -12,7 +12,7 @@ export function FooterSection() {
             <Link href="https://app.mdplane.dev" className="px-6 py-3 font-display font-bold text-lg border-3 border-border shadow shadow-hover inline-flex items-center justify-center gap-2 bg-terracotta text-white">
               Open app
             </Link>
-            <Link href="https://docs.mdplane.dev" className="px-6 py-3 font-display font-bold text-lg border-3 border-border shadow shadow-hover inline-flex items-center justify-center gap-2 bg-white text-foreground">
+            <Link href="https://docs.mdplane.dev" className="px-6 py-3 font-display font-bold text-lg border-3 border-border shadow shadow-hover inline-flex items-center justify-center gap-2 bg-card text-foreground">
               Read the docs
             </Link>
           </div>

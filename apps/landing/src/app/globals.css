@@ -2,8 +2,6 @@
 @import "@mdplane/ui/styles/code-block.css";
 @source "../../../../packages/ui/src/**/*.{ts,tsx}";
 
-@custom-variant dark (&:is(.dark *));
-
 @theme {
   /* Fonts */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
@@ -98,27 +96,7 @@ code, pre {
   --destructive: hsl(0 72.2% 50.6%);
 }
 
-.dark {
-  /* Warm brutalist palette - Dark mode */
-  --background: #1A1A1A;           /* ink */
-  --foreground: #FDFBF7;           /* cream */
-  --muted: #2A2A2A;                /* slightly lighter ink */
-  --muted-foreground: #A8B4A8;     /* lighter sage */
-  --border: #FDFBF7;               /* cream (inverted) */
-  --input: #3A3A3A;
-  --ring: #D97757;                 /* terracotta */
-  --card: #242424;
-  --card-foreground: #FDFBF7;
-  --popover: #242424;
-  --popover-foreground: #FDFBF7;
-  --primary: #D97757;              /* terracotta */
-  --primary-foreground: #FDFBF7;
-  --secondary: #2A2A2A;
-  --secondary-foreground: #FDFBF7;
-  --accent: #E8A851;               /* amber */
-  --accent-foreground: #1A1A1A;
-  --destructive: hsl(0 72.2% 50.6%);
-}
+
 
 @layer base {
   * {

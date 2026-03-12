@@ -15,7 +15,7 @@ export function AutomatingAgentsSection() {
       />
       
       <div className="mb-16">
-        <div className="bg-foreground text-white p-8 border-3 border-border shadow-lg max-w-3xl">
+        <div className="bg-foreground text-background p-8 border-3 border-border shadow-lg max-w-3xl">
           <h3 className="text-2xl font-display font-bold mb-4 text-amber">Give your agent the skills</h3>
           <p className="mb-6 text-lg">Install the official MCP server to give your agents native mdplane capabilities.</p>
           <div className="bg-black p-4 border-3 border-border border-white/20 font-mono text-lg flex items-center justify-between">
@@ -27,7 +27,7 @@ export function AutomatingAgentsSection() {
       
       <h3 className="text-3xl font-display font-bold mb-8">Watchers</h3>
       
-      <div className="bg-white border-3 border-border shadow-lg overflow-hidden">
+      <div className="bg-card border-3 border-border shadow-lg overflow-hidden">
         <div className="flex border-b-3 border-foreground overflow-x-auto">
           {['websocket', 'webhook', 'polling'].map((tab) => (
             <button 
@@ -41,7 +41,7 @@ export function AutomatingAgentsSection() {
           ))}
         </div>
         
-        <div className="p-8 bg-foreground text-white font-mono text-sm md:text-base overflow-x-auto">
+        <div className="p-8 bg-foreground text-background font-mono text-sm md:text-base overflow-x-auto">
           {activeTab === 'websocket' && (
             <pre>
 <span className="text-sage">// Connect, listen for events, spawn agent</span><br/>

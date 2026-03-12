@@ -15,7 +15,7 @@ export function WorkspacesSection() {
           </div>
         </div>
         
-        <div className="bg-white p-8 border-3 border-border shadow-lg -rotate-1">
+        <div className="bg-card p-8 border-3 border-border shadow-lg -rotate-1">
           <div className="flex items-center gap-3 mb-6 pb-6 border-b-3 border-foreground">
             <Globe size={24} />
             <span className="font-mono font-bold text-lg">app.mdplane.dev/w/abc-123</span>

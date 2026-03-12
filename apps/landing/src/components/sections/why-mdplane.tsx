@@ -18,7 +18,7 @@ export function WhyMdplaneSection() {
       <div className="grid md:grid-cols-2 gap-12">
         <div className="space-y-6">
           {painPoints.map((item, i) => (
-            <div key={i} className="flex items-start gap-4 p-6 bg-white border-3 border-border shadow-sm">
+            <div key={i} className="flex items-start gap-4 p-6 bg-card border-3 border-border shadow-sm">
               <div className="bg-amber p-2 border-3 border-border">
                 <item.icon size={24} />
               </div>

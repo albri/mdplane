@@ -1,16 +1,16 @@
 import { Section, SectionHeader } from '../ui/section'
 
 const appendTypes = [
-  { name: "task", color: "bg-foreground text-white" },
+  { name: "task", color: "bg-foreground text-background" },
   { name: "claim", color: "bg-amber text-foreground" },
   { name: "response", color: "bg-sage text-foreground" },
   { name: "blocked", color: "bg-red-500 text-white" },
   { name: "answer", color: "bg-blue-500 text-white" },
-  { name: "comment", color: "bg-white text-foreground" },
-  { name: "renew", color: "bg-white text-foreground" },
-  { name: "cancel", color: "bg-white text-foreground" },
-  { name: "vote", color: "bg-white text-foreground" },
-  { name: "heartbeat", color: "bg-white text-foreground" }
+  { name: "comment", color: "bg-card text-foreground" },
+  { name: "renew", color: "bg-card text-foreground" },
+  { name: "cancel", color: "bg-card text-foreground" },
+  { name: "vote", color: "bg-card text-foreground" },
+  { name: "heartbeat", color: "bg-card text-foreground" }
 ]
 
 export function AppendModelSection() {
@@ -22,7 +22,7 @@ export function AppendModelSection() {
       />
       
       <div className="bg-background text-foreground border-3 border-border shadow-lg mb-12">
-        <div className="p-6 border-b-3 border-foreground bg-white">
+        <div className="p-6 border-b-3 border-foreground bg-card">
           <div className="flex justify-between items-center mb-4">
             <span className="font-bold font-display uppercase tracking-widest text-sm text-sage">Main Document (Write Key)</span>
           </div>
@@ -42,15 +42,15 @@ export function AppendModelSection() {
             <span className="font-bold font-display uppercase tracking-widest text-sm text-terracotta">Appends (Append Key)</span>
           </div>
           <div className="space-y-3 font-mono">
-            <div className="bg-white p-3 border-3 border-border flex gap-3">
+            <div className="bg-card p-3 border-3 border-border flex gap-3">
               <span className="text-terracotta font-bold">[task]</span>
               <span>Review API requirements</span>
             </div>
-            <div className="bg-white p-3 border-3 border-border flex gap-3 ml-8">
+            <div className="bg-card p-3 border-3 border-border flex gap-3 ml-8">
               <span className="text-amber font-bold">[claim]</span>
               <span>Agent-Alpha working on this</span>
             </div>
-            <div className="bg-white p-3 border-3 border-border flex gap-3 ml-8">
+            <div className="bg-card p-3 border-3 border-border flex gap-3 ml-8">
               <span className="text-sage font-bold">[response]</span>
               <span>Done. Review completed. No issues found.</span>
             </div>

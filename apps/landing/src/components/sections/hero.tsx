@@ -30,7 +30,7 @@ export function HeroSection() {
           <motion.div 
             animate={{ y: [0, -20, 0], rotate: [-2, 1, -2] }}
             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-10 right-10 w-80 bg-white p-6 border-3 border-border shadow-lg z-20"
+            className="absolute top-10 right-10 w-80 bg-card p-6 border-3 border-border shadow-lg z-20"
           >
             <div className="w-3/4 h-4 bg-foreground mb-4"></div>
             <div className="w-full h-2 bg-gray-200 mb-2"></div>
