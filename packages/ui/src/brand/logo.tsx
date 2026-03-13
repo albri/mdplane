@@ -1,11 +1,5 @@
 import { cn } from '../lib/utils'
 
-/**
- * mdplane Logo
- *
- * Single rotated square with shadow in neo-brutalist style.
- */
-
 export type LogoSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 export type LogoVariant = 'default' | 'inverted'
 
@@ -42,8 +36,11 @@ export function Logo({
     <span className={cn('inline-flex items-center gap-2.5', className)}>
       <span
         data-testid="logo-mark"
-        className={cn(sizes.square, colors.square, 'rotate-3')}
-        style={{ boxShadow: `${sizes.shadow} ${colors.shadowColor}` }}
+        className={cn(sizes.square, colors.square, 'origin-top')}
+        style={{
+          boxShadow: `${sizes.shadow} ${colors.shadowColor}`,
+          transform: 'rotate(-2deg) perspective(100px) rotateX(-2deg)'
+        }}
       />
       {showWordmark && (
         <span className={cn('font-display font-bold tracking-tighter', sizes.text, colors.text)}>
@@ -54,9 +51,6 @@ export function Logo({
   )
 }
 
-/**
- * Single-square logo mark for tight spaces
- */
 export function LogoMark({
   size = 'md',
   variant = 'default',
@@ -67,8 +61,11 @@ export function LogoMark({
 
   return (
     <span
-      className={cn(sizes.square, colors.square, 'rotate-3 inline-block', className)}
-      style={{ boxShadow: `${sizes.shadow} ${colors.shadowColor}` }}
+      className={cn(sizes.square, colors.square, 'origin-top inline-block', className)}
+      style={{
+        boxShadow: `${sizes.shadow} ${colors.shadowColor}`,
+        transform: 'rotate(-2deg) perspective(100px) rotateX(-2deg)'
+      }}
     />
   )
 }
