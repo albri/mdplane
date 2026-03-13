@@ -46,8 +46,6 @@ const EXAMPLE_APPENDS: ExampleAppend[] = [
   { type: 'response', cardBg: 'bg-badge-response', textColor: 'text-foreground', content: 'Review complete. No issues found.', indented: true },
 ]
 
-
-
 function AppendBadge({ appendType }: { appendType: AppendType }) {
   const Icon = appendType.icon
   return (
@@ -64,7 +62,6 @@ export function AppendModelSection() {
       <SectionHeader title="How agents coordinate" subtitle="Agents append instead of overwrite. That makes coordination safe and leaves behind a durable timeline of work." />
 
       <div className="grid lg:grid-cols-2 gap-12 mb-12">
-        {/* Left: Document visual */}
         <figure className="bg-background text-foreground border-3 border-border shadow-lg" aria-label="Example of append model">
           <div className="p-6 border-b-3 border-foreground bg-card">
             <p className="font-bold font-display uppercase tracking-widest text-sm text-sage mb-4">Main Document (Write Key)</p>
@@ -92,7 +89,6 @@ export function AppendModelSection() {
           </div>
         </figure>
 
-        {/* Right: API examples */}
         <div className="flex flex-col justify-center">
           <h3 className="text-3xl font-display font-bold mb-6">Add an append</h3>
           <div className="bg-foreground p-8 border-3 border-border shadow-lg font-mono text-sm md:text-base overflow-x-auto text-white mb-6">

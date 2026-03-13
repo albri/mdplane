@@ -23,7 +23,6 @@ export function WorkspacesSection() {
       />
 
       <div className="grid lg:grid-cols-2 gap-12 mb-16">
-        {/* Left: Code block */}
         <div className="bg-foreground p-8 border-3 border-border shadow-lg font-mono text-sm md:text-base overflow-x-auto flex flex-col justify-center">
           <div className="text-amber mb-4">POST /bootstrap</div>
           <div className="text-white mb-8">{'{ "workspaceName": "project-alpha" }'}</div>
@@ -40,15 +39,13 @@ export function WorkspacesSection() {
           </div>
         </div>
 
-        {/* Right: Keys explanation */}
         <div>
           <h3 className="text-3xl font-display font-bold mb-4">Three keys, three access levels</h3>
           <p className="text-lg font-medium mb-8 opacity-80">
             Creating a workspace returns three capability URLs. Share the right one for the right access level.
           </p>
 
-          {/* Permissions table */}
-          <div className="bg-background text-foreground border-3 border-border shadow overflow-hidden mb-8">
+          <div className="bg-background text-foreground border-3 border-border shadow overflow-hidden mb-8" role="table" aria-label="Permission levels by key type">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b-2 border-foreground bg-amber">
@@ -83,15 +80,14 @@ export function WorkspacesSection() {
         </div>
       </div>
 
-      {/* Bottom features */}
-      <div className="flex flex-col md:flex-row md:flex-wrap gap-4 md:justify-center">
+      <ul className="flex flex-col md:flex-row md:flex-wrap gap-4 md:justify-center" role="list">
         {FEATURES.map((feature) => (
-          <div key={feature} className="flex items-center gap-3 bg-background text-foreground px-6 py-3 border-3 border-border shadow-sm">
+          <li key={feature} className="flex items-center gap-3 bg-background text-foreground px-6 py-3 border-3 border-border shadow-sm">
             <Check size={20} className="text-terracotta flex-shrink-0" aria-hidden="true" />
             <span className="font-bold">{feature}</span>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </Section>
   )
 }

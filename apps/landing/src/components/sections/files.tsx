@@ -9,7 +9,7 @@ const TABLE_ROWS = [
 const FEATURES = [
   'Files are the artifacts agents read for context',
   'Folders organize workflow lanes and permissions',
-  'Watchers can subscribe to specific paths',
+  'Events can be scoped to specific paths',
 ]
 
 export function FilesSection() {
@@ -21,10 +21,8 @@ export function FilesSection() {
       />
 
       <div className="grid lg:grid-cols-2 gap-12 mb-16">
-        {/* Left: Code block */}
-        <div className="bg-foreground p-8 border-3 border-border shadow-lg font-mono text-sm md:text-base overflow-x-auto flex flex-col justify-center text-white">
-          {/* File tree */}
-          <div className="mb-8 text-sage">
+        <figure className="bg-foreground p-8 border-3 border-border shadow-lg font-mono text-sm md:text-base overflow-x-auto flex flex-col justify-center text-white" aria-label="File structure and API examples">
+          <div className="mb-8 text-sage" aria-label="Example folder structure">
             /workflows/<br />
             <span className="pl-4 inline-block">└── pr-review-dispatch.md</span><br />
             /events/<br />
@@ -33,27 +31,23 @@ export function FilesSection() {
             <span className="pl-4 inline-block">└── agent-activity.md</span>
           </div>
 
-          {/* PUT example */}
           <div className="text-terracotta mb-2">PUT /w/KEY/workflows/task-board.md</div>
           <div className="mb-6">{'{ "content": "# Task Board\\n..." }'}</div>
 
-          {/* GET example */}
           <div className="text-amber mb-2">GET /r/KEY/workflows/task-board.md</div>
           <div>{'→ { "content": "...", "appendCount": 12 }'}</div>
-        </div>
+        </figure>
 
-        {/* Right: Two parts explanation */}
         <div>
           <h3 className="text-3xl font-display font-bold mb-6">Two parts to every file</h3>
 
-          {/* Table */}
-          <div className="bg-background text-foreground border-3 border-border shadow overflow-hidden mb-8">
+          <div className="bg-background text-foreground border-3 border-border shadow overflow-hidden mb-8" role="table" aria-label="File structure breakdown">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b-2 border-foreground bg-sage text-white">
-                  <th className="p-4 font-display font-bold">Part</th>
-                  <th className="p-4 font-display font-bold border-l-2 border-foreground">Purpose</th>
-                  <th className="p-4 font-display font-bold border-l-2 border-foreground">Mutability</th>
+                  <th scope="col" className="p-4 font-display font-bold">Part</th>
+                  <th scope="col" className="p-4 font-display font-bold border-l-2 border-foreground">Purpose</th>
+                  <th scope="col" className="p-4 font-display font-bold border-l-2 border-foreground">Mutability</th>
                 </tr>
               </thead>
               <tbody className="font-medium">
@@ -74,15 +68,14 @@ export function FilesSection() {
         </div>
       </div>
 
-      {/* Bottom features */}
-      <div className="flex flex-col md:flex-row md:flex-wrap gap-4 md:justify-center">
+      <ul className="flex flex-col md:flex-row md:flex-wrap gap-4 md:justify-center" role="list">
         {FEATURES.map((feature) => (
-          <div key={feature} className="flex items-center gap-3 bg-background text-foreground px-6 py-3 border-3 border-border shadow-sm">
+          <li key={feature} className="flex items-center gap-3 bg-background text-foreground px-6 py-3 border-3 border-border shadow-sm">
             <Check size={20} className="text-terracotta flex-shrink-0" aria-hidden="true" />
             <span className="font-bold">{feature}</span>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </Section>
   )
 }

@@ -10,10 +10,10 @@ type TabId = (typeof TABS)[number]
 const CODE_EXAMPLES: Record<TabId, React.ReactNode> = {
   websocket: (
     <pre>
-      <span className="text-sage">// 1. Get subscription credentials</span><br/>
+      <span className="text-sage">{'// 1. Get subscription credentials'}</span><br/>
       <span className="text-terracotta">const</span> {'{'} wsUrl, token {'}'} = <span className="text-terracotta">await</span> fetch(<span className="text-sage">&apos;/a/a_xxx/ops/subscribe&apos;</span>);<br/>
       <br/>
-      <span className="text-sage">// 2. Connect and listen for new tasks</span><br/>
+      <span className="text-sage">{'// 2. Connect and listen for new tasks'}</span><br/>
       <span className="text-terracotta">const</span> ws = <span className="text-amber">new</span> WebSocket(<span className="text-sage">`$&#123;wsUrl&#125;?token=$&#123;token&#125;`</span>);<br/>
       <br/>
       ws.on(<span className="text-sage">&apos;message&apos;</span>, (msg) =&gt; {'{'}<br/>

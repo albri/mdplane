@@ -44,7 +44,7 @@ function LayerCard({ item }: { item: LayerItem }) {
   const Icon = item.icon
   const iconBg = item.iconColor || 'bg-white/20'
   return (
-    <div className={`${item.cardBg} ${item.textColor || ''} p-8 border-3 border-border shadow`}>
+    <div className={`${item.cardBg} ${item.textColor || ''} p-8 border-3 border-border shadow h-full`}>
       <div
         className={`${iconBg} w-12 h-12 border-3 border-border flex items-center justify-center mb-6`}
         aria-hidden="true"
@@ -59,17 +59,18 @@ function LayerCard({ item }: { item: LayerItem }) {
 
 export function CoordinationLayerSection() {
   return (
-    <Section className="bg-background">
+    <Section id="how-it-works" className="bg-background">
       <SectionHeader
         title="The coordination layer"
-        subtitle="mdplane combines shared artifacts, append-only coordination, and watchers into one readable layer for agent workflows."
+        subtitle="mdplane combines shared artifacts, append-only coordination, and real-time events into one readable layer for agent workflows."
       />
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <ul className="grid md:grid-cols-2 lg:grid-cols-4 gap-8" role="list">
         {LAYER_ITEMS.map((item) => (
-          <LayerCard key={item.title} item={item} />
+          <li key={item.title}>
+            <LayerCard item={item} />
+          </li>
         ))}
-      </div>
+      </ul>
     </Section>
   )
 }
-

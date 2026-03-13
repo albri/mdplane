@@ -3,10 +3,10 @@ import { Logo } from '@mdplane/ui'
 
 const NAV_LINKS = [
   { href: '#problem', label: 'Problem' },
-  { href: '#protocol', label: 'Protocol' },
+  { href: '#how-it-works', label: 'How it works' },
   { href: '#events', label: 'Events' },
   { href: '#faqs', label: 'FAQs' },
-  { href: 'https://docs.mdplane.dev', label: 'Docs', external: true },
+  { href: 'https://docs.mdplane.dev', label: 'Docs' },
 ]
 
 export function Navbar() {
@@ -21,23 +21,14 @@ export function Navbar() {
         <span className="sr-only">mdplane home</span>
       </Link>
       <ul className="hidden md:flex gap-8 font-medium" role="list">
-        {NAV_LINKS.map(({ href, label, external }) => (
+        {NAV_LINKS.map(({ href, label }) => (
           <li key={href}>
-            {external ? (
-              <a
-                href={href}
-                className="hover:underline underline-offset-4 decoration-2 focus:outline-none focus-visible:ring-4 focus-visible:ring-amber focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-sm px-1 py-1"
-              >
-                {label}
-              </a>
-            ) : (
-              <a
-                href={href}
-                className="hover:underline underline-offset-4 decoration-2 focus:outline-none focus-visible:ring-4 focus-visible:ring-amber focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-sm px-1 py-1"
-              >
-                {label}
-              </a>
-            )}
+            <a
+              href={href}
+              className="hover:underline underline-offset-4 decoration-2 focus:outline-none focus-visible:ring-4 focus-visible:ring-amber focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-sm px-1 py-1"
+            >
+              {label}
+            </a>
           </li>
         ))}
       </ul>
