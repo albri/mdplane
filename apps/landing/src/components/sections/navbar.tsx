@@ -4,7 +4,7 @@ import { Logo } from '@mdplane/ui'
 const NAV_LINKS = [
   { href: '#problem', label: 'Problem' },
   { href: '#protocol', label: 'Protocol' },
-  { href: '#watchers', label: 'Watchers' },
+  { href: '#events', label: 'Events' },
   { href: '#faqs', label: 'FAQs' },
   { href: 'https://docs.mdplane.dev', label: 'Docs', external: true },
 ]

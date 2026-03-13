@@ -32,8 +32,8 @@ const LAYER_ITEMS: LayerItem[] = [
     textColor: 'text-white',
   },
   {
-    title: 'Watchers',
-    desc: 'Triggers that react to worklog changes and spawn agents in real time.',
+    title: 'Events',
+    desc: 'Real-time streams that notify when the worklog changes.',
     icon: RefreshCw,
     cardBg: 'bg-card',
     iconColor: 'bg-black/5',

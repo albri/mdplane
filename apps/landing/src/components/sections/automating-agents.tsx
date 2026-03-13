@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useId } from 'react'
-import { Check } from 'lucide-react'
+import { Check, Copy } from 'lucide-react'
 import { Section, SectionHeader } from '../ui/section'
 
 const TABS = ['websocket', 'webhook', 'polling'] as const
@@ -57,7 +57,14 @@ const CODE_EXAMPLES: Record<TabId, React.ReactNode> = {
 
 export function AutomatingAgentsSection() {
   const [activeTab, setActiveTab] = useState<TabId>('websocket')
+  const [copied, setCopied] = useState(false)
   const tabPanelId = useId()
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText('npx skills add albri/mdplane')
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
     const tabCount = TABS.length
@@ -82,37 +89,13 @@ export function AutomatingAgentsSection() {
   }
 
   return (
-    <Section id="watchers" className="bg-muted">
+    <Section id="events" className="bg-muted">
       <SectionHeader
-        title="Automating agents"
-        subtitle="Humans check when they want. But how does an agent know when to read — and how to use mdplane?"
+        title="Real-time events"
+        subtitle="mdplane emits events when the worklog changes. You provide the watcher and business logic."
       />
 
-      <div className="mb-16">
-        <div className="bg-foreground text-background p-8 border-3 border-border shadow-lg max-w-3xl">
-          <h3 className="text-2xl font-display font-bold mb-4 text-amber">Give your agent the skills</h3>
-          <p className="mb-6 text-lg">Install skills to teach agents the claim/response pattern and mdplane API.</p>
-          <div className="bg-black p-4 border-3 border-border border-white/20 font-mono text-lg flex items-center justify-between">
-            <code>npx skills add albri/mdplane</code>
-            <button
-              type="button"
-              className="hover:text-amber transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-amber focus-visible:ring-offset-2 focus-visible:ring-offset-black rounded-sm p-1"
-              aria-label="Copy command"
-            >
-              <Check size={20} />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <p className="text-xl mb-12 max-w-3xl">
-        Your agent now knows the full mdplane API — reading files, appending updates, and coordinating work via claims.
-        You can set up a watcher to react to new tasks, <strong>or let the agent build one itself</strong>.
-      </p>
-
-      <h3 className="text-3xl font-display font-bold mb-8">Watcher patterns</h3>
-
-      <div className="bg-card border-3 border-border shadow-lg overflow-hidden">
+      <div className="bg-card border-3 border-border shadow-lg overflow-hidden mb-12">
         <div role="tablist" aria-label="Code examples" className="flex border-b-3 border-foreground overflow-x-auto">
           {TABS.map((tab, index) => (
             <button
@@ -145,6 +128,26 @@ export function AutomatingAgentsSection() {
             {CODE_EXAMPLES[tab]}
           </div>
         ))}
+      </div>
+
+      <p className="text-xl mb-12 max-w-3xl">
+        Your watcher listens for events and spawns agents. But how do your agents know how to use mdplane?
+      </p>
+
+      <div className="bg-foreground text-background p-8 border-3 border-border shadow-lg max-w-3xl">
+        <h3 className="text-2xl font-display font-bold mb-4 text-amber">Teach your agents</h3>
+        <p className="mb-6 text-lg">Skills are markdown files that give agents knowledge of APIs and patterns. Install the mdplane skill to teach agents how to coordinate.</p>
+        <div className="bg-black p-4 border-3 border-border border-white/20 font-mono text-lg flex items-center justify-between">
+          <code>npx skills add albri/mdplane</code>
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="hover:text-amber transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-amber focus-visible:ring-offset-2 focus-visible:ring-offset-black rounded-sm p-1"
+            aria-label={copied ? 'Copied' : 'Copy command'}
+          >
+            {copied ? <Check size={20} className="text-sage" /> : <Copy size={20} />}
+          </button>
+        </div>
       </div>
     </Section>
   )

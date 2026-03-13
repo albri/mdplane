@@ -28,8 +28,8 @@ const SURFACE_TYPES: SurfaceType[] = [
     iconBg: 'bg-sage',
     items: [
       'Use raw markdown / JSON / Append APIs',
+      'Subscribe to real-time events',
       'Coordinate through the append protocol',
-      'Trigger automation through real-time watchers',
       'Maintain context across distributed agents',
     ],
     cardStyle: 'bg-foreground text-background',
