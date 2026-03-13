@@ -82,7 +82,7 @@ export function AutomatingAgentsSection() {
   }
 
   return (
-    <Section id="agents" className="bg-muted">
+    <Section id="watchers" className="bg-muted">
       <SectionHeader
         title="Automating agents"
         subtitle="Humans check when they want. But how does an agent know when to read — and how to use mdplane?"

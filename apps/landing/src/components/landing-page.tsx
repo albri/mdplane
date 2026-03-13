@@ -9,6 +9,7 @@ import {
   ReadersSection,
   AutomatingAgentsSection,
   AppendModelSection,
+  CoordinationLayerSection,
   FullPictureSection,
   WhyMarkdownSection,
   FAQsSection,
@@ -21,11 +22,12 @@ export function LandingPage() {
       <Navbar />
       <HeroSection />
       <WhyMdplaneSection />
+      <AppendModelSection />
+      <CoordinationLayerSection />
       <WorkspacesSection />
       <ThreeKeysSection />
       <ReadersSection />
       <AutomatingAgentsSection />
-      <AppendModelSection />
       <FullPictureSection />
       <WhyMarkdownSection />
       <FAQsSection />

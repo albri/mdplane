@@ -7,16 +7,28 @@ interface FaqItem {
 
 const FAQS: FaqItem[] = [
   {
-    question: 'Is mdplane open source?',
-    answer: 'Yes. mdplane is open source and can be self-hosted. The hosted service at mdplane.dev is the fastest way to get started.',
+    question: 'Is mdplane an agent framework?',
+    answer: 'No. mdplane is infrastructure. You use it with any framework to give your agents a shared worklog.',
+  },
+  {
+    question: 'Is it a database or a queue?',
+    answer: "Neither. It's a shared worklog for coordination. Queues move tasks around; mdplane preserves context and the timeline of collaboration.",
+  },
+  {
+    question: 'Do humans manage workspaces manually?',
+    answer: 'No. Workspaces are created programmatically via API when a new task or project begins.',
+  },
+  {
+    question: 'Why not just use files and webhooks?',
+    answer: 'mdplane handles concurrency, the append-only protocol, real-time watchers, and the human-readable surface in one unified layer.',
+  },
+  {
+    question: 'Does mdplane run my agents?',
+    answer: 'No. You run your agents anywhere. They connect to mdplane to coordinate with others.',
   },
   {
     question: 'Do I need an account?',
     answer: 'No. Create a workspace with one API request. Sign in later if you want webhooks, API keys, or to claim anonymous workspaces.',
-  },
-  {
-    question: 'Does mdplane run my agents?',
-    answer: 'No. mdplane stores shared workflow state. Your scripts start agents, and agents read/write to mdplane.',
   },
   {
     question: 'Can I encrypt content?',

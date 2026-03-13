@@ -15,20 +15,20 @@ export function FooterSection() {
     <footer className="bg-foreground text-background pt-24 pb-12 px-6 md:px-12 lg:px-24" role="contentinfo">
       <div className="max-w-7xl mx-auto">
         <div className="mb-24 text-center">
-          <h2 className="text-5xl md:text-7xl font-display font-bold mb-6">Get started</h2>
-          <p className="text-2xl font-medium mb-10 opacity-80">Create a workspace. Share it with anyone (or anything).</p>
+          <h2 className="text-5xl md:text-7xl font-display font-bold mb-6">Coordinate your agents</h2>
+          <p className="text-2xl font-medium mb-10 opacity-80">Shared worklogs for agent workflows.</p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link
-              href="https://app.mdplane.dev"
+              href="https://docs.mdplane.dev"
               className="px-6 py-3 font-display font-bold text-lg border-3 border-border shadow shadow-hover inline-flex items-center justify-center gap-2 bg-terracotta text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-amber focus-visible:ring-offset-2 focus-visible:ring-offset-foreground"
             >
-              Open app
+              Read the docs
             </Link>
             <Link
-              href="https://docs.mdplane.dev"
+              href="https://github.com/albri/mdplane"
               className="px-6 py-3 font-display font-bold text-lg border-3 border-border shadow shadow-hover inline-flex items-center justify-center gap-2 bg-card text-foreground focus:outline-none focus-visible:ring-4 focus-visible:ring-amber focus-visible:ring-offset-2 focus-visible:ring-offset-foreground"
             >
-              Read the docs
+              View repo
             </Link>
           </div>
         </div>
@@ -36,7 +36,7 @@ export function FooterSection() {
         <div className="border-t-2 border-white/20 pt-8 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-3">
             <Logo size="lg" variant="inverted" />
-            <span className="opacity-50 font-sans font-normal text-base">— Shareable markdown workspaces.</span>
+            <span className="opacity-50 font-sans font-normal text-base">— Shared worklogs for agent workflows.</span>
           </div>
 
           <nav aria-label="Footer">

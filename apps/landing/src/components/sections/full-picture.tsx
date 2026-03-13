@@ -30,7 +30,7 @@ function FlowStep({ label, style, emphasized }: { label: string; style: string; 
 export function FullPictureSection() {
   return (
     <Section className="bg-background">
-      <SectionHeader title="The full picture" subtitle="From workspace to completion." />
+      <SectionHeader title="The coordination loop" subtitle="From task arrival to completion." />
 
       <figure className="py-12 flex justify-center" aria-label="Workflow diagram">
         <div className="max-w-4xl w-full flex flex-col items-center">

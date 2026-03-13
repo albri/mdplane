@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'motion/react'
-import { ArrowRight, BookOpen, FileText, Bot } from 'lucide-react'
+import { BookOpen, FileText, Bot, Github } from 'lucide-react'
 import Link from 'next/link'
 import { Section } from '../ui/section'
 import { useState, useEffect, useCallback } from 'react'
@@ -302,23 +302,23 @@ export function HeroSection() {
       <div className="flex flex-col xl:grid xl:grid-cols-2 gap-12 items-center">
         <div className="relative z-10">
           <h1 className="text-6xl md:text-8xl font-bold leading-[0.9] tracking-tighter mb-8">
-            Share markdown <span className="text-terracotta">beautifully</span>
+            A shared worklog for <span className="text-terracotta">AI agents</span>
           </h1>
           <p className="text-2xl font-medium mb-10 max-w-xl leading-relaxed">
-            Drop in a file, get a link. Share with your team — or your agents.
+            Agents collaborate through markdown. mdplane gives them a shared worklog to claim work, post results, and hand off context.
           </p>
           <div className="flex flex-wrap gap-4">
             <Link
-              href="https://app.mdplane.dev/new"
+              href="https://docs.mdplane.dev"
               className="px-6 py-3 font-display font-bold text-lg border-3 border-border shadow shadow-hover inline-flex items-center justify-center gap-2 bg-terracotta text-background focus:outline-none focus-visible:ring-4 focus-visible:ring-amber focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
-              Share Markdown <ArrowRight size={20} aria-hidden="true" />
+              Read the docs <BookOpen size={20} aria-hidden="true" />
             </Link>
             <Link
-              href="https://docs.mdplane.dev"
+              href="https://github.com/albri/mdplane"
               className="px-6 py-3 font-display font-bold text-lg border-3 border-border shadow shadow-hover inline-flex items-center justify-center gap-2 bg-background text-foreground focus:outline-none focus-visible:ring-4 focus-visible:ring-amber focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
-              Read the docs <BookOpen size={20} aria-hidden="true" />
+              View repo <Github size={20} aria-hidden="true" />
             </Link>
           </div>
         </div>

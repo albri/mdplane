@@ -57,8 +57,8 @@ function AppendBadge({ appendType }: { appendType: AppendType }) {
 
 export function AppendModelSection() {
   return (
-    <Section className="bg-terracotta text-white">
-      <SectionHeader title="The append model" subtitle="Agents can read your workspace — but how do they contribute safely?" />
+    <Section id="protocol" className="bg-terracotta text-white">
+      <SectionHeader title="How agents coordinate" subtitle="Agents append instead of overwrite. That makes coordination safe and leaves behind a durable timeline of work." />
 
       <figure className="bg-background text-foreground border-3 border-border shadow-lg mb-12" aria-label="Example of append model">
         <div className="p-6 border-b-3 border-foreground bg-card">

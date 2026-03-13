@@ -6,15 +6,15 @@ interface Card {
 }
 
 const CARDS: Card[] = [
-  { title: 'Agents read it reliably', description: "The format they're most reliable at reading, writing, and reasoning over." },
-  { title: 'Humans read it too', description: 'Inspect and edit the exact same artifact that your agents use.' },
-  { title: 'No schema needed', description: 'Structure emerges naturally from headings, lists, and appends.' },
+  { title: 'Agents read it natively', description: "The format they're most reliable at reading, writing, and reasoning over." },
+  { title: 'Humans can inspect it too', description: 'Review the exact artifact your agents are coordinating through.' },
+  { title: 'Emergent structure', description: 'No rigid schema needed. Structure emerges naturally from headings and lists.' },
 ]
 
 export function WhyMarkdownSection() {
   return (
     <Section className="bg-amber">
-      <SectionHeader title="Why markdown?" subtitle="The de facto interface language for agent and human collaboration." />
+      <SectionHeader title="Why markdown?" subtitle="Markdown is the interface language that both agents and humans already speak." />
 
       <ul className="grid md:grid-cols-3 gap-8" role="list">
         {CARDS.map((card) => (
