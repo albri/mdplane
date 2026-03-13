@@ -1,27 +1,65 @@
-import { MessageSquareOff, Clock, FileQuestion, Unplug, LucideIcon } from 'lucide-react'
+import { ScrollText, Clock, FolderX, Unplug, type LucideIcon } from 'lucide-react'
 import { Section, SectionHeader } from '../ui/section'
 
 interface Problem {
+  number: string
   icon: LucideIcon
   text: string
+  cardBg: string
+  textColor: string
+  numberColor: string
 }
 
 const PROBLEMS: Problem[] = [
-  { icon: MessageSquareOff, text: 'Logs are hard to coordinate through' },
-  { icon: Clock, text: 'State is trapped in ephemeral sessions' },
-  { icon: FileQuestion, text: 'No shared artifact of collaboration' },
-  { icon: Unplug, text: 'Context is lost between handoffs' },
+  {
+    number: '01',
+    icon: ScrollText,
+    text: 'Logs are hard to coordinate through',
+    cardBg: 'bg-amber',
+    textColor: 'text-foreground',
+    numberColor: 'text-black/5 group-hover:text-black/10',
+  },
+  {
+    number: '02',
+    icon: Clock,
+    text: 'State is trapped in ephemeral sessions',
+    cardBg: 'bg-muted',
+    textColor: 'text-foreground',
+    numberColor: 'text-black/5 group-hover:text-black/10',
+  },
+  {
+    number: '03',
+    icon: FolderX,
+    text: 'No shared artifact of collaboration',
+    cardBg: 'bg-terracotta',
+    textColor: 'text-white',
+    numberColor: 'text-white/10 group-hover:text-white/20',
+  },
+  {
+    number: '04',
+    icon: Unplug,
+    text: 'Context is lost between handoffs',
+    cardBg: 'bg-sage',
+    textColor: 'text-white',
+    numberColor: 'text-white/10 group-hover:text-white/20',
+  },
 ]
 
-function ProblemItem({ problem }: { problem: Problem }) {
+function ProblemCard({ problem }: { problem: Problem }) {
   const Icon = problem.icon
   return (
-    <li className="flex items-start gap-4 p-6 bg-card border-3 border-border shadow-sm">
-      <div className="bg-amber p-2 border-3 border-border" aria-hidden="true">
-        <Icon size={24} />
+    <div className={`${problem.cardBg} ${problem.textColor} p-8 relative overflow-hidden group flex flex-col min-h-[240px]`}>
+      <div
+        className={`font-display font-black text-9xl absolute -top-4 -right-4 pointer-events-none transition-colors ${problem.numberColor}`}
+        aria-hidden="true"
+      >
+        {problem.number}
       </div>
-      <p className="text-xl font-medium pt-1">{problem.text}</p>
-    </li>
+      <Icon size={32} className="mb-auto" aria-hidden="true" />
+      <p className="text-2xl font-bold leading-tight mt-8 relative z-10 uppercase tracking-tight">
+        {problem.text}
+      </p>
+    </div>
   )
 }
 
@@ -30,21 +68,20 @@ export function WhyMdplaneSection() {
     <Section id="problem" className="bg-muted">
       <SectionHeader
         title="Agent workflows scatter state everywhere"
-        subtitle="Prompts disappear with the session. Queues transport tasks but don't preserve shared context. Local files don't travel across agents."
+        subtitle="There's no shared place for agents to coordinate."
       />
 
-      <div className="grid md:grid-cols-2 gap-12">
-        <ul className="space-y-6" role="list">
+      <div className="border-4 border-foreground bg-background shadow-lg">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 divide-y-4 lg:divide-y-0 lg:divide-x-4 divide-foreground">
           {PROBLEMS.map((problem) => (
-            <ProblemItem key={problem.text} problem={problem} />
+            <ProblemCard key={problem.number} problem={problem} />
           ))}
-        </ul>
-
-        <aside className="flex items-center justify-center p-8 bg-sage border-3 border-border shadow">
-          <p className="text-3xl font-display font-bold text-white leading-tight">
-            mdplane gives agents one shared worklog to coordinate through — durable, readable, and safe.
+        </div>
+        <div className="border-t-4 border-foreground p-8 md:p-12 bg-foreground text-background">
+          <p className="text-3xl md:text-5xl font-display font-bold leading-tight max-w-4xl">
+            mdplane gives agents <span className="text-amber">one shared worklog</span> to coordinate through — durable, readable, and safe.
           </p>
-        </aside>
+        </div>
       </div>
     </Section>
   )
