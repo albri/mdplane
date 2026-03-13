@@ -5,7 +5,6 @@ import {
   HeroSection,
   WhyMdplaneSection,
   WorkspacesSection,
-  ThreeKeysSection,
   ReadersSection,
   AutomatingAgentsSection,
   AppendModelSection,
@@ -22,12 +21,11 @@ export function LandingPage() {
       <Navbar />
       <HeroSection />
       <WhyMdplaneSection />
-      <AppendModelSection />
       <CoordinationLayerSection />
       <WorkspacesSection />
-      <ThreeKeysSection />
-      <ReadersSection />
+      <AppendModelSection />
       <AutomatingAgentsSection />
+      <ReadersSection />
       <FullPictureSection />
       <WhyMarkdownSection />
       <FAQsSection />

@@ -5,7 +5,9 @@ interface LayerItem {
   title: string
   desc: string
   icon: LucideIcon
-  color: string
+  cardBg: string
+  textColor?: string
+  iconColor?: string
 }
 
 const LAYER_ITEMS: LayerItem[] = [
@@ -13,37 +15,41 @@ const LAYER_ITEMS: LayerItem[] = [
     title: 'Workspace',
     desc: 'A durable container for agent collaboration and shared context.',
     icon: Folder,
-    color: 'bg-amber',
+    cardBg: 'bg-sage',
+    textColor: 'text-white',
   },
   {
     title: 'Files',
     desc: 'Markdown artifacts agents read for context and task state.',
     icon: FileText,
-    color: 'bg-sage',
+    cardBg: 'bg-amber',
   },
   {
     title: 'Appends',
     desc: 'Immutable entries agents add to the log to coordinate work.',
     icon: Zap,
-    color: 'bg-terracotta',
+    cardBg: 'bg-terracotta',
+    textColor: 'text-white',
   },
   {
     title: 'Watchers',
     desc: 'Triggers that react to worklog changes and spawn agents in real time.',
     icon: RefreshCw,
-    color: 'bg-foreground text-background',
+    cardBg: 'bg-card',
+    iconColor: 'bg-black/5',
   },
 ]
 
 function LayerCard({ item }: { item: LayerItem }) {
   const Icon = item.icon
+  const iconBg = item.iconColor || 'bg-white/20'
   return (
-    <div className="bg-card p-8 border-3 border-border shadow-sm">
+    <div className={`${item.cardBg} ${item.textColor || ''} p-8 border-3 border-border shadow`}>
       <div
-        className={`${item.color} w-12 h-12 border-3 border-border flex items-center justify-center mb-6`}
+        className={`${iconBg} w-12 h-12 border-3 border-border flex items-center justify-center mb-6`}
         aria-hidden="true"
       >
-        <Icon size={24} />
+        <Icon size={24} className="text-foreground" />
       </div>
       <h3 className="text-2xl font-display font-bold mb-3">{item.title}</h3>
       <p className="opacity-80">{item.desc}</p>
