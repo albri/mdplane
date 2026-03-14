@@ -1,5 +1,6 @@
-import { WorkspaceControlChooser } from '@/components/home/workspace-control-chooser'
+import { redirect } from 'next/navigation'
+import { CONTROL_FRONTEND_ROUTES } from '@mdplane/shared'
 
 export default function Home() {
-  return <WorkspaceControlChooser />
+  redirect(CONTROL_FRONTEND_ROUTES.root)
 }

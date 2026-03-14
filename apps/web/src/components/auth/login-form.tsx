@@ -73,9 +73,9 @@ export function LoginForm() {
         <p className="mt-3 text-sm text-muted-foreground">{TAGLINE}</p>
       </div>
 
-      <div className="border-2 border-foreground bg-card p-6 shadow-[4px_4px_0_0_var(--foreground)]">
+      <div className="rounded-lg border border-border bg-card p-6">
         <div className="mb-6 text-center">
-          <h2 className="font-display text-xl font-bold" data-testid="login-welcome-heading">
+          <h2 className="font-display text-xl font-semibold" data-testid="login-welcome-heading">
             Sign in to Control Plane
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">Use your provider to continue</p>
@@ -86,7 +86,7 @@ export function LoginForm() {
           <button
             onClick={() => handleOAuthSignIn('github')}
             disabled={isLoading !== null}
-            className="flex w-full items-center justify-center gap-3 border-2 border-foreground bg-foreground px-4 py-3 font-display font-bold text-background transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none shadow-[3px_3px_0_0_var(--amber)] disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-3 rounded-lg border border-foreground bg-foreground px-4 py-3 font-medium text-background transition-colors hover:bg-foreground/90 disabled:opacity-50"
           >
             {isLoading === 'github' ? (
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -98,7 +98,7 @@ export function LoginForm() {
           <button
             onClick={() => handleOAuthSignIn('google')}
             disabled={isLoading !== null}
-            className="flex w-full items-center justify-center gap-3 border-2 border-foreground bg-background px-4 py-3 font-display font-bold text-foreground transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none shadow-[3px_3px_0_0_var(--terracotta)] disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-background px-4 py-3 font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
           >
             {isLoading === 'google' ? (
               <Loader2 className="h-5 w-5 animate-spin" />

@@ -6,10 +6,10 @@ type CardTone = "default" | "muted" | "interactive"
 type CardSize = "default" | "sm"
 
 const cardToneClasses: Record<CardTone, string> = {
-  default: "bg-card text-card-foreground rounded-lg border border-border/80 shadow-sm",
-  muted: "bg-card text-card-foreground rounded-lg border border-border/80 shadow-sm",
+  default: "bg-card text-card-foreground border border-border",
+  muted: "bg-card text-card-foreground border border-border",
   interactive:
-    "bg-card text-card-foreground rounded-lg border border-border/80 shadow-sm transition-colors hover:border-foreground/20 hover:bg-accent/20",
+    "bg-card text-card-foreground border border-border transition-colors hover:border-foreground/30",
 }
 
 const cardSizeClasses: Record<CardSize, string> = {

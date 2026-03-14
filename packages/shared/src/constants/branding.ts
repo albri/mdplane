@@ -54,9 +54,6 @@ export function splitWordmarkLines(
   }));
 }
 
-/**
- * Core proposition copy
- */
-export const TAGLINE = 'Shareable markdown workspaces.';
+export const TAGLINE = 'Shared worklogs for agent workflows.';
 export const HERO_DESCRIPTION =
   'Drop in a file, get a link. Share with your team — or your agents.';

@@ -96,7 +96,7 @@ export function DangerZone() {
       </div>
 
       {rotateResult ? (
-        <div className="space-y-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4" data-testid="rotated-keys-panel">
+        <div className="space-y-3 border border-amber/40 bg-amber/10 p-4" data-testid="rotated-keys-panel">
           <p className="text-sm font-medium">New keys issued</p>
           <p className="text-xs text-muted-foreground">
             {rotateResult.keyCustodyWarning}

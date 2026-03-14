@@ -61,7 +61,7 @@ export function MarkdownCallout({
   return (
     <div
       className={cn(
-        'my-4 flex gap-2 rounded-xl border bg-muted/50 p-3 ps-1 text-sm text-card-foreground shadow-md',
+        'my-4 flex gap-2 rounded-lg border bg-muted/50 p-3 ps-1 text-sm text-card-foreground shadow-md',
         className
       )}
       role={role ?? 'note'}

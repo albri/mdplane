@@ -110,10 +110,10 @@ function RootOnboardingState({
   return (
     <section
       data-testid="folder-empty-onboarding"
-      className="space-y-5 rounded-lg border border-border/80 bg-card p-6 shadow-sm"
+      className="space-y-5 border border-border bg-card p-6"
     >
       <div className="space-y-2">
-        <p className="inline-flex items-center gap-2 rounded-md border border-border/70 bg-muted/40 px-2.5 py-1 text-xs text-muted-foreground">
+        <p className="inline-flex items-center gap-2 border border-border bg-muted/40 px-2.5 py-1 text-xs text-muted-foreground">
           <Sparkles className="h-3.5 w-3.5" />
           Runtime quick start
         </p>
@@ -124,7 +124,7 @@ function RootOnboardingState({
       </div>
 
       {showClaimAction && onClaimWorkspace ? (
-        <div className="rounded-md border border-primary/30 bg-primary/10 p-3">
+        <div className="border border-amber/30 bg-amber/10 p-3">
           <p className="text-sm font-medium">Unclaimed workspace</p>
           <p className="mt-1 text-xs text-muted-foreground">
             Claim ownership to unlock governance in Control and key lifecycle management.

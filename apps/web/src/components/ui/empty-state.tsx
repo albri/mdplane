@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { cn } from '@mdplane/ui/lib/utils'
 import { Button } from '@mdplane/ui/ui/button'
 import { Copy, Check, ArrowRight } from 'lucide-react'
-import { GeometricGrid } from '@/components/ui/patterns'
 
 interface EmptyStateAction {
   label: string
@@ -50,12 +49,11 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'relative flex flex-col items-center justify-center rounded-lg border border-border/80 bg-card px-6 py-12 text-center shadow-sm',
+        'relative flex flex-col items-center justify-center border border-border bg-card px-6 py-12 text-center',
         className
       )}
       data-testid="empty-state"
     >
-      <GeometricGrid size={28} />
       {icon && (
         <div className="mb-4 text-muted-foreground" aria-hidden="true">
           {icon}

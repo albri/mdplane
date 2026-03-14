@@ -193,7 +193,7 @@ export function CodeBlock({
       tabIndex={-1}
       data-testid={testId}
       className={cn(
-        'my-4 rounded-xl border border-border/80 bg-secondary text-sm shadow-sm not-prose relative overflow-hidden shiki',
+        'my-4 rounded-lg border border-border/80 bg-secondary text-sm shadow-sm not-prose relative overflow-hidden shiki',
         parsedBlock?.preClassName,
         className
       )}

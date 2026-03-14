@@ -19,8 +19,8 @@ const sizeConfig: Record<LogoSize, { square: string; text: string; shadow: strin
 }
 
 const colorConfig: Record<LogoVariant, { square: string; text: string; shadowColor: string; iconColor: string }> = {
-  default: { square: 'bg-amber', text: 'text-foreground', shadowColor: 'var(--foreground)', iconColor: 'var(--foreground)' },
-  inverted: { square: 'bg-amber', text: 'text-white', shadowColor: '#FFFFFF', iconColor: 'var(--foreground)' },
+  default: { square: 'bg-amber', text: 'text-foreground', shadowColor: 'var(--foreground)', iconColor: '#1A1A1A' },
+  inverted: { square: 'bg-amber', text: 'text-white', shadowColor: '#FFFFFF', iconColor: '#1A1A1A' },
 }
 
 function RobotIcon({ className, color }: { className?: string; color: string }) {
