@@ -1,7 +1,8 @@
 'use client'
 
 import { motion } from 'motion/react'
-import { BookOpen, FileText, Bot, Github } from 'lucide-react'
+import { BookOpen, FileText, Github } from 'lucide-react'
+import { RiRobot3Fill } from 'react-icons/ri'
 import Link from 'next/link'
 import { Section } from '../ui/section'
 import { useState, useEffect, useCallback } from 'react'
@@ -165,7 +166,7 @@ function PaperLine({ line }: { line: Line }) {
       return (
         <div className="flex items-center gap-2">
           <div className={`w-4 h-4 rounded-sm ${line.color} flex items-center justify-center`}>
-            <Bot size={10} className="text-white" />
+            <RiRobot3Fill size={10} className="text-white" />
           </div>
           <div className="h-2 bg-muted-foreground/30 rounded-sm flex-1" style={{ maxWidth: line.width }} />
         </div>
@@ -174,7 +175,7 @@ function PaperLine({ line }: { line: Line }) {
       return (
         <div className="flex items-center gap-2 ml-5">
           <div className={`w-3.5 h-3.5 rounded-sm ${line.color} flex items-center justify-center`}>
-            <Bot size={8} className="text-white" />
+            <RiRobot3Fill size={8} className="text-white" />
           </div>
           <div className="h-2 bg-muted-foreground/20 rounded-sm flex-1" style={{ maxWidth: line.width }} />
         </div>
