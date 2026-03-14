@@ -10,12 +10,12 @@ interface LogoProps {
   showWordmark?: boolean
 }
 
-const sizeConfig: Record<LogoSize, { square: string; text: string; shadow: string; icon: string }> = {
-  sm: { square: 'w-4 h-4', text: 'text-xl', shadow: '3px 3px 0px 0px', icon: 'size-3' },
-  md: { square: 'w-5 h-5', text: 'text-2xl', shadow: '4px 4px 0px 0px', icon: 'size-3.5' },
-  lg: { square: 'w-6 h-6', text: 'text-2xl', shadow: '4px 4px 0px 0px', icon: 'size-4' },
-  xl: { square: 'w-8 h-8', text: 'text-3xl', shadow: '6px 6px 0px 0px', icon: 'size-6' },
-  '2xl': { square: 'w-10 h-10', text: 'text-4xl', shadow: '6px 6px 0px 0px', icon: 'size-7' },
+const sizeConfig: Record<LogoSize, { square: string; text: string; shadow: string; icon: string; gap: string }> = {
+  sm: { square: 'w-4 h-4', text: 'text-xl',  shadow: '3px 3px 0px 0px', icon: 'size-3',   gap: 'gap-2' },
+  md: { square: 'w-5 h-5', text: 'text-2xl', shadow: '4px 4px 0px 0px', icon: 'size-3.5', gap: 'gap-2.5' },
+  lg: { square: 'w-6 h-6', text: 'text-2xl', shadow: '4px 4px 0px 0px', icon: 'size-4',   gap: 'gap-2.5' },
+  xl: { square: 'w-8 h-8', text: 'text-3xl', shadow: '6px 6px 0px 0px', icon: 'size-6',   gap: 'gap-4' },
+  '2xl': { square: 'w-10 h-10', text: 'text-4xl', shadow: '6px 6px 0px 0px', icon: 'size-7', gap: 'gap-4' },
 }
 
 const colorConfig: Record<LogoVariant, { square: string; text: string; shadowColor: string; iconColor: string }> = {
@@ -48,7 +48,7 @@ export function Logo({
   const colors = colorConfig[variant]
 
   return (
-    <span className={cn('inline-flex items-center gap-2.5', className)}>
+    <span className={cn('inline-flex items-center', sizes.gap, className)}>
       <span
         data-testid="logo-mark"
         className={cn(sizes.square, colors.square, 'origin-top flex items-center justify-center')}

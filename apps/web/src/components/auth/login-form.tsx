@@ -69,7 +69,7 @@ export function LoginForm() {
   return (
     <div className="p-8">
       <div className="mb-8 flex flex-col items-center">
-        <Logo size="xl" />
+	        <Logo size="xl" />
         <p className="mt-3 text-sm text-muted-foreground">{TAGLINE}</p>
       </div>
 
