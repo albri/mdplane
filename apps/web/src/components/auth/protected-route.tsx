@@ -4,7 +4,7 @@ import { useEffect, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from '@/hooks'
 import { AUTH_FRONTEND_ROUTES } from '@mdplane/shared'
-import { Loader2 } from 'lucide-react'
+import { Spinner } from '@/components/ui/spinner'
 
 interface ProtectedRouteProps {
   children: ReactNode
@@ -28,7 +28,7 @@ export function ProtectedRoute({ children, fallbackUrl = AUTH_FRONTEND_ROUTES.lo
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <Spinner size="lg" label="Authenticating..." />
           <p className="text-sm text-muted-foreground">Loading...</p>
         </div>
       </div>

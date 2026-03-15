@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { signIn } from '@/lib/auth-client'
 import { CONTROL_FRONTEND_ROUTES, TAGLINE } from '@mdplane/shared'
-import { Loader2 } from 'lucide-react'
+import { Spinner } from '@/components/ui/spinner'
 import { Logo } from '@mdplane/ui/brand/logo'
 import { extractSafeNextPath, resolvePostLoginRedirect } from './login-redirect'
 
@@ -89,7 +89,7 @@ export function LoginForm() {
             className="flex w-full items-center justify-center gap-3 rounded-lg border border-foreground bg-foreground px-4 py-3 font-medium text-background transition-colors hover:bg-foreground/90 disabled:opacity-50"
           >
             {isLoading === 'github' ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <Spinner size="md" label="Signing in with GitHub..." />
             ) : (
               <GithubIcon className="h-5 w-5" />
             )}
@@ -101,7 +101,7 @@ export function LoginForm() {
             className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-background px-4 py-3 font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
           >
             {isLoading === 'google' ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <Spinner size="md" label="Signing in with Google..." />
             ) : (
               <GoogleIcon className="h-5 w-5" />
             )}

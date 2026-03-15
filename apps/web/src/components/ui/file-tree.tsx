@@ -116,7 +116,7 @@ export const FileTreeFolder = ({
     useContext(FileTreeContext)
   const isExpanded = expandedPaths.has(path)
   const isSelected = selectedPath === path || (!!selectedPath && selectedPath.startsWith(`${path}/`))
-  const iconColorClassName = isSelected ? "text-primary" : "text-muted-foreground"
+  const chevronColorClassName = isSelected ? "text-primary" : "text-muted-foreground"
 
   return (
     <FileTreeFolderContext.Provider value={{ path, name, isExpanded }}>
@@ -136,15 +136,15 @@ export const FileTreeFolder = ({
               <ChevronRight
                 className={cn(
                   "transition-transform",
-                  iconColorClassName,
+                  chevronColorClassName,
                   isExpanded && "rotate-90"
                 )}
               />
               <FileTreeIcon>
                 {isExpanded ? (
-                  <FolderOpen className={cn("size-4", iconColorClassName)} />
+                  <FolderOpen className="size-4 text-brand-amber" aria-hidden="true" />
                 ) : (
-                  <Folder className={cn("size-4", iconColorClassName)} />
+                  <Folder className="size-4 text-brand-amber" aria-hidden="true" />
                 )}
               </FileTreeIcon>
               <FileTreeName>{name}</FileTreeName>

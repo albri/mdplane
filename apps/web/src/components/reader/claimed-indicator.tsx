@@ -3,7 +3,7 @@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { CONTROL_FRONTEND_ROUTES } from '@mdplane/shared'
 import { Button } from '@mdplane/ui/ui/button'
-import { Check, Settings } from 'lucide-react'
+import { BadgeCheck, Settings } from 'lucide-react'
 import Link from 'next/link'
 
 interface ClaimedIndicatorProps {
@@ -20,20 +20,23 @@ export function ClaimedIndicator({ workspaceId }: ClaimedIndicatorProps) {
           data-testid="claimed-workspace-button"
           className="text-muted-foreground"
         >
-          <Check className="h-4 w-4" />
-          <span>Claimed</span>
+          <BadgeCheck className="h-4 w-4" aria-hidden="true" />
+          <span>Owned</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-48 p-2">
+      <PopoverContent align="start" className="w-56 p-3">
+        <p className="mb-2 text-xs text-muted-foreground">
+          You own this workspace. Manage settings from the control panel.
+        </p>
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           className="w-full justify-start gap-2"
           asChild
         >
           <Link href={CONTROL_FRONTEND_ROUTES.workspace(workspaceId)}>
-            <Settings className="h-4 w-4" />
-            Control Panel
+            <Settings className="h-4 w-4" aria-hidden="true" />
+            Open Control Panel
           </Link>
         </Button>
       </PopoverContent>

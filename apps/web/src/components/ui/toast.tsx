@@ -35,7 +35,7 @@ function ToastViewport() {
             key={toast.id}
             toast={toast}
             className={cn(
-              "grid grid-cols-[1fr_auto] gap-3 rounded-md border p-3 shadow-lg backdrop-blur-sm",
+              "grid grid-cols-[1fr_auto] gap-3 rounded-md border bg-background/90 p-3 shadow-lg backdrop-blur-sm",
               "transition-all data-[starting-style]:translate-y-1 data-[starting-style]:opacity-0 data-[ending-style]:translate-y-1 data-[ending-style]:opacity-0",
               getToastTypeClass(toast.type)
             )}

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Button } from '@mdplane/ui/ui/button'
-import { Clock3, FileText, User, UserCheck } from 'lucide-react'
+import { Clock3, FileText, User, UserCheck, Zap } from 'lucide-react'
 import { cn } from '@mdplane/ui/lib/utils'
 import type { OrchestrationTask } from '@/hooks'
 import { ORCHESTRATION_STATUS_META } from './orchestration-meta'
@@ -124,6 +124,7 @@ export function TaskCard({ task, taskHref, showTakeAction = false, onTakeAction 
         {isActionable ? (
           <div className='mt-2 flex items-center justify-end border-t border-border/70 pt-2'>
             <Button size='sm' variant='outline' onClick={() => onTakeAction?.(task)}>
+              <Zap className='h-4 w-4' aria-hidden='true' />
               Take action
             </Button>
           </div>

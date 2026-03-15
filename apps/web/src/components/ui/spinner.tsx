@@ -1,6 +1,6 @@
 'use client'
 
-import { Loader2 } from 'lucide-react'
+import { Loader } from 'lucide-react'
 import { cn } from '@mdplane/ui/lib/utils'
 
 type SpinnerSize = 'sm' | 'md' | 'lg' | 'xl'
@@ -46,7 +46,7 @@ export function Spinner({
   label = 'Loading...',
 }: SpinnerProps) {
   return (
-    <Loader2
+    <Loader
       className={cn(
         sizeClasses[size],
         'animate-spin motion-reduce:animate-none text-muted-foreground',

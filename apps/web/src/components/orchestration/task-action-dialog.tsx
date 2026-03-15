@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { cn } from '@mdplane/ui/lib/utils'
+import { RefreshCw, CheckCircle, XCircle, Ban, Hand, type LucideIcon } from 'lucide-react'
 
 export type TaskActionType = 'renew' | 'reclaim' | 'complete' | 'cancel' | 'block'
 
@@ -20,6 +21,7 @@ interface TaskActionOption {
   type: TaskActionType
   label: string
   description: string
+  icon: LucideIcon
   requiresReason?: boolean
   reasonLabel?: string
   reasonPlaceholder?: string
@@ -38,11 +40,13 @@ const CLAIMED_ACTIONS: TaskActionOption[] = [
     type: 'renew',
     label: 'Renew claim',
     description: 'Extend claim expiry to keep work in progress.',
+    icon: RefreshCw,
   },
   {
     type: 'complete',
     label: 'Resolve',
     description: 'Mark this claim as completed.',
+    icon: CheckCircle,
     requiresReason: true,
     reasonLabel: 'Resolution note',
     reasonPlaceholder: 'Briefly describe the resolution',
@@ -51,6 +55,7 @@ const CLAIMED_ACTIONS: TaskActionOption[] = [
     type: 'block',
     label: 'Mark blocked',
     description: 'Mark this claim as blocked and capture why.',
+    icon: Ban,
     requiresReason: true,
     reasonLabel: 'Block reason',
     reasonPlaceholder: 'What is blocking progress?',
@@ -59,6 +64,7 @@ const CLAIMED_ACTIONS: TaskActionOption[] = [
     type: 'cancel',
     label: 'Cancel',
     description: 'Cancel this claim and return work to pending.',
+    icon: XCircle,
     requiresReason: true,
     reasonLabel: 'Cancellation reason',
     reasonPlaceholder: 'Why should this claim be cancelled?',
@@ -70,11 +76,13 @@ const STALLED_ACTIONS: TaskActionOption[] = [
     type: 'reclaim',
     label: 'Reclaim',
     description: 'Re-open this stale claim for active progress.',
+    icon: Hand,
   },
   {
     type: 'complete',
     label: 'Resolve',
     description: 'Mark this stalled work as completed.',
+    icon: CheckCircle,
     requiresReason: true,
     reasonLabel: 'Resolution note',
     reasonPlaceholder: 'Briefly describe the resolution',
@@ -83,6 +91,7 @@ const STALLED_ACTIONS: TaskActionOption[] = [
     type: 'cancel',
     label: 'Cancel',
     description: 'Cancel this stale claim and leave task unclaimed.',
+    icon: XCircle,
     requiresReason: true,
     reasonLabel: 'Cancellation reason',
     reasonPlaceholder: 'Why should this stale claim be cancelled?',
@@ -158,6 +167,7 @@ export function TaskActionDialog({
             <div className='grid gap-2 sm:grid-cols-2'>
               {options.map((option) => {
                 const isSelected = option.type === selectedAction
+                const Icon = option.icon
                 return (
                   <button
                     key={option.type}
@@ -172,7 +182,10 @@ export function TaskActionDialog({
                     aria-pressed={isSelected}
                     disabled={isSubmitting}
                   >
-                    <p className='text-sm font-medium text-foreground'>{option.label}</p>
+                    <p className='flex items-center gap-2 text-sm font-medium text-foreground'>
+                      <Icon className='h-4 w-4' aria-hidden='true' />
+                      {option.label}
+                    </p>
                     <p className='mt-1 text-xs text-muted-foreground'>{option.description}</p>
                   </button>
                 )
