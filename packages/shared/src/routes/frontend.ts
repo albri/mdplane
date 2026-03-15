@@ -6,8 +6,8 @@
  *
  * Route categories:
  * - CONTROL_FRONTEND_ROUTES: /control/* authenticated control pages
- * - AUTH_FRONTEND_ROUTES: /login, /claim/*, /bootstrap authentication flows
- * - WORKSPACE_FRONTEND_ROUTES: /r capability URL workspace views
+ * - AUTH_FRONTEND_ROUTES: /login, /claim/* authentication flows
+ * - WORKSPACE_FRONTEND_ROUTES: /r/* capability URL workspace views
  * - LANDING_ROUTES: /, /privacy, /terms marketing pages
  *
  * @module routes/frontend
@@ -28,7 +28,6 @@ export const AUTH_FRONTEND_ROUTES = {
     `/login?next=${encodeURIComponent(next)}` as const,
   claim: '/claim' as const,
   claimWorkspace: (writeKey: string) => `/claim/${writeKey}` as const,
-  bootstrap: '/bootstrap' as const,
 } as const;
 
 export const WORKSPACE_FRONTEND_ROUTES = {

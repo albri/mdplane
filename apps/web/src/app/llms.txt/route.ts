@@ -25,8 +25,8 @@ export async function GET() {
   lines.push('');
   lines.push('## App Entry Points');
   lines.push(`- [Demo workspace](${URLS.APP}/demo): Live PR-review-dispatch style workflow example.`);
-  lines.push(`- [Bootstrap](${URLS.APP}/bootstrap): Create a new workspace.`);
   lines.push(`- [Login](${URLS.APP}/login): Access control-plane actions.`);
+  lines.push(`- Workspace viewer: If you have a read key, visit ${URLS.APP}/r/{readKey} to view the workspace with rendered markdown, file tree navigation, and more.`);
   lines.push('');
   lines.push('## Read Before Integrating');
   lines.push(`- [Docs index](${URLS.DOCS}/docs): Start with one complete workflow.`);

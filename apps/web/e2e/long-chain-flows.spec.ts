@@ -134,24 +134,12 @@ async function openClaimWorkspaceInput(page: Page): Promise<Locator> {
 }
 
 test.describe('Long Chained Control + Runtime Flows', () => {
-  test('bootstrap to runtime claim lands in scoped control', async ({ page }) => {
-    await page.goto('/bootstrap');
+  test('workspace runtime to claim lands in scoped control', async ({ page }) => {
+    const workspace = await createUnclaimedWorkspace(page, 'runtime-claim');
+    const { readKey, writeKey } = workspace;
 
-    await page.getByLabel(/workspace name/i).fill(`e2e-bootstrap-${Date.now()}`);
-    await page.getByRole('button', { name: /create workspace/i }).click();
-
-    await expect(page.getByText('Workspace created')).toBeVisible({ timeout: 15000 });
-
-    const keyReveals = page.getByTestId('key-reveal');
-    const readKey = await revealKey(keyReveals.nth(0));
-    const writeKey = await revealKey(keyReveals.nth(2));
-    expect(readKey).not.toBe(writeKey);
-
-    await page.getByRole('checkbox').first().click();
-    await expect(page.getByTestId('continue-to-workspace')).toBeEnabled();
-    await page.getByTestId('continue-to-workspace').click();
-
-    await expect(page).toHaveURL(new RegExp(`/r/${readKey}$`), { timeout: 10000 });
+    await page.goto(`/r/${readKey}`);
+    await expect(page.locator('[data-testid="reader-layout"]')).toBeVisible({ timeout: 10000 });
 
     const claimInput = await openClaimWorkspaceInput(page);
     await claimInput.fill(writeKey);
