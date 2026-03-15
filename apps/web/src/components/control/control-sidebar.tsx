@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/components/auth'
-import { CONTROL_FRONTEND_ROUTES, WORKSPACE_FRONTEND_ROUTES } from '@mdplane/shared'
+import { CONTROL_FRONTEND_ROUTES } from '@mdplane/shared'
 import { Button, buttonVariants } from '@mdplane/ui/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '@mdplane/ui/ui/popover'
@@ -28,7 +28,6 @@ import { useWorkspaces } from '@/contexts/workspace-context'
 import { extractControlWorkspaceId } from '@/lib/control-workspace-routing'
 import {
   PanelLeft,
-  ExternalLink,
   Settings,
   SquareKanban,
   House,
@@ -97,18 +96,6 @@ function SidebarBody() {
           </ul>
         </SidebarSection>
 
-        <SidebarSection title="Workspace" className="mt-6">
-          <ul className="flex flex-col gap-1">
-            <li>
-              <SidebarItem
-                href={WORKSPACE_FRONTEND_ROUTES.launch}
-                icon={ExternalLink}
-                label="Workspace Launcher"
-                className="text-muted-foreground"
-              />
-            </li>
-          </ul>
-        </SidebarSection>
       </SidebarViewport>
 
       <SidebarFooter>

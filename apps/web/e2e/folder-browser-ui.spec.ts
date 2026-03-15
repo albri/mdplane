@@ -140,7 +140,6 @@ test.describe('Folder Browser UI', () => {
     await page.waitForLoadState('networkidle');
 
     await expect(page.getByText('Error loading content')).toBeVisible({ timeout: 15000 });
-    await expect(page.locator('a[href="/launch"]').filter({ hasText: /workspace launcher/i })).toBeVisible();
-    await expect(page.locator('a[href="/bootstrap"]').filter({ hasText: /create workspace/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /try again/i })).toBeVisible();
   });
 });

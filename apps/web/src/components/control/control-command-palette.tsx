@@ -3,8 +3,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import {
-  ExternalLink,
-  FolderPlus,
   Settings,
   SquareKanban,
   House,
@@ -22,11 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { cn } from '@mdplane/ui/lib/utils'
-import {
-  AUTH_FRONTEND_ROUTES,
-  CONTROL_FRONTEND_ROUTES,
-  WORKSPACE_FRONTEND_ROUTES,
-} from "@mdplane/shared"
+import { CONTROL_FRONTEND_ROUTES } from "@mdplane/shared"
 import { extractControlWorkspaceId } from "@/lib/control-workspace-routing"
 
 interface CommandItem {
@@ -35,7 +29,7 @@ interface CommandItem {
   description: string
   href: string
   icon: LucideIcon
-  section: "control" | "workspace" | "auth"
+  section: "control" | "auth"
   keywords: string[]
 }
 
@@ -102,31 +96,12 @@ function getCommands(workspaceId: string | null): CommandItem[] {
       section: "control",
       keywords: ["settings", "danger", "rotate", "delete"],
     },
-    {
-      id: "workspace-launcher",
-      label: "Workspace launcher",
-      description: "Open workspace plane launcher",
-      href: WORKSPACE_FRONTEND_ROUTES.launch,
-      icon: ExternalLink,
-      section: "workspace",
-      keywords: ["workspace", "launcher", "runtime"],
-    },
-    {
-      id: "create-workspace",
-      label: "Create workspace",
-      description: "Start bootstrap flow for a new workspace",
-      href: AUTH_FRONTEND_ROUTES.bootstrap,
-      icon: FolderPlus,
-      section: "auth",
-      keywords: ["bootstrap", "create", "workspace"],
-    },
   ]
 }
 
 const SECTION_LABELS: Record<CommandItem["section"], string> = {
   auth: "Authentication",
   control: "Control",
-  workspace: "Workspace",
 }
 
 function getSearchText(command: CommandItem) {
@@ -169,7 +144,6 @@ export function ControlCommandPalette({
     const groups: Record<CommandItem["section"], CommandItem[]> = {
       auth: [],
       control: [],
-      workspace: [],
     }
     for (const command of filteredCommands) {
       groups[command.section].push(command)

@@ -49,14 +49,8 @@ test.describe('API Keys Page - Structure', () => {
 
     await expect(page.getByText(/couldn't load api keys/i)).toBeVisible({ timeout: 10000 });
 
-    const errorState = page.getByTestId('empty-state');
-    const launcherLink = errorState.locator('a[href="/launch"]');
-    const createWorkspaceLink = errorState.locator('a[href="/bootstrap"]');
-
-    await expect(launcherLink).toBeVisible();
-    await expect(launcherLink).toHaveAttribute('href', '/launch');
-    await expect(createWorkspaceLink).toBeVisible();
-    await expect(createWorkspaceLink).toHaveAttribute('href', '/bootstrap');
+    const tryAgainButton = page.getByRole('button', { name: /try again/i });
+    await expect(tryAgainButton).toBeVisible();
   });
 });
 

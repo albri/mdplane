@@ -62,12 +62,7 @@ authenticatedTest.describe('Control Access (Authenticated)', () => {
     expect(['Welcome']).toContain(headingText);
   });
 
-  authenticatedTest('should show workspace launcher label in workspace nav section', async ({ page }) => {
-    await page.goto('/control');
-    await page.waitForLoadState('networkidle');
 
-    await expect(page.getByRole('link', { name: /^workspace launcher$/i }).first()).toBeVisible();
-  });
 
   authenticatedTest('should show control onboarding cards in welcome state', async ({ page }) => {
     await page.route('**/workspaces/*/orchestration*', async (route) => {
@@ -89,9 +84,7 @@ authenticatedTest.describe('Control Access (Authenticated)', () => {
     const welcomeState = page.getByTestId('control-welcome-state');
 
     await expect(page.getByRole('heading', { name: /^welcome$/i })).toBeVisible();
-    await expect(welcomeState.getByText('Workspace Launcher', { exact: true })).toBeVisible();
     await expect(welcomeState.getByText('Orchestration', { exact: true })).toBeVisible();
-    await expect(welcomeState.getByRole('button', { name: /open launcher/i })).toBeVisible();
     await expect(welcomeState.getByRole('button', { name: /open orchestration/i })).toBeVisible();
   });
 
@@ -131,8 +124,8 @@ authenticatedTest.describe('Control Access (Authenticated)', () => {
 
     await expect(page.getByText(/couldn't load workspace activity/i)).toBeVisible({ timeout: 10000 });
 
-    const launcherButton = page.getByRole('button', { name: /^workspace launcher$/i });
-    await expect(launcherButton).toBeVisible();
+    const tryAgainButton = page.getByRole('button', { name: /^try again$/i });
+    await expect(tryAgainButton).toBeVisible();
   });
 });
 
@@ -208,8 +201,8 @@ authenticatedTest.describe('Control Webhooks Page', () => {
 
     await expect(page.getByText(/couldn't load webhooks/i)).toBeVisible({ timeout: 10000 });
 
-    const launcherButton = page.getByRole('button', { name: /^workspace launcher$/i });
-    await expect(launcherButton).toBeVisible();
+    const tryAgainButton = page.getByRole('button', { name: /^try again$/i });
+    await expect(tryAgainButton).toBeVisible();
   });
 });
 

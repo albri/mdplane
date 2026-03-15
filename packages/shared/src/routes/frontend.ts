@@ -6,8 +6,8 @@
  *
  * Route categories:
  * - CONTROL_FRONTEND_ROUTES: /control/* authenticated control pages
- * - AUTH_FRONTEND_ROUTES: /login, /claim/* authentication flows
- * - WORKSPACE_FRONTEND_ROUTES: /launch and /r capability URL workspace views
+ * - AUTH_FRONTEND_ROUTES: /login, /claim/*, /bootstrap authentication flows
+ * - WORKSPACE_FRONTEND_ROUTES: /r capability URL workspace views
  * - LANDING_ROUTES: /, /privacy, /terms marketing pages
  *
  * @module routes/frontend
@@ -32,8 +32,6 @@ export const AUTH_FRONTEND_ROUTES = {
 } as const;
 
 export const WORKSPACE_FRONTEND_ROUTES = {
-  launch: '/launch' as const,
-
   // Read viewer
   read: (key: string) => `/r/${key}` as const,
   readFile: (key: string, path: string) => `/r/${key}/${path}` as const,

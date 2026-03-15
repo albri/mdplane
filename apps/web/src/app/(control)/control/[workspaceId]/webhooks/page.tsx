@@ -13,7 +13,6 @@ import {
   useWorkspaceId,
 } from '@/hooks'
 import {
-  WORKSPACE_FRONTEND_ROUTES,
   URLS,
   type WebhookEvent,
 } from '@mdplane/shared'
@@ -263,13 +262,10 @@ export default function WebhooksPage() {
             headline="Couldn't load webhooks"
             description={
               errorCode === 'NOT_FOUND'
-                  ? 'Workspace not found. Open it from Workspace Launcher.'
-                  : 'Open your workspace from Workspace Launcher and try again.'
+                  ? 'Workspace not found.'
+                  : 'Something went wrong loading webhooks.'
             }
-            primaryAction={{
-              label: 'Workspace Launcher',
-              href: WORKSPACE_FRONTEND_ROUTES.launch,
-            }}
+            primaryAction={{ label: 'Try again', onClick: () => window.location.reload() }}
             className="rounded-none border-0 bg-transparent py-16 shadow-none"
           />
         ) : webhooks.length === 0 ? (

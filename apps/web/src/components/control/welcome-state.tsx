@@ -1,7 +1,7 @@
 'use client'
 
-import { URLS, CONTROL_FRONTEND_ROUTES, WORKSPACE_FRONTEND_ROUTES } from '@mdplane/shared'
-import { FolderPlus, SquareKanban, Key, Settings, Webhook } from 'lucide-react'
+import { URLS, CONTROL_FRONTEND_ROUTES } from '@mdplane/shared'
+import { SquareKanban, Key, Settings, Webhook } from 'lucide-react'
 import { useWorkspaces } from '@/contexts/workspace-context'
 import { IconActionCard } from '@/components/ui/icon-action-card'
 
@@ -23,17 +23,6 @@ export function WelcomeState() {
   return (
     <div className="space-y-6" data-testid="control-welcome-state">
       <div className="grid gap-4 md:grid-cols-2">
-        <IconActionCard
-          title="Workspace Launcher"
-          description="Create new workspaces and retrieve fresh capability keys."
-          icon={FolderPlus}
-          iconVariant="primary"
-          primaryAction={{
-            label: 'Open Launcher',
-            href: WORKSPACE_FRONTEND_ROUTES.launch,
-          }}
-        />
-
         <IconActionCard
           title="Orchestration"
           description="Monitor active and stalled tasks, then intervene when needed."

@@ -25,7 +25,7 @@ export async function GET() {
   lines.push('');
   lines.push('## App Entry Points');
   lines.push(`- [Demo workspace](${URLS.APP}/demo): Live PR-review-dispatch style workflow example.`);
-  lines.push(`- [Launch](${URLS.APP}/launch): Create and open a workspace quickly.`);
+  lines.push(`- [Bootstrap](${URLS.APP}/bootstrap): Create a new workspace.`);
   lines.push(`- [Login](${URLS.APP}/login): Access control-plane actions.`);
   lines.push('');
   lines.push('## Read Before Integrating');

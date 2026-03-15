@@ -6,7 +6,7 @@ import { Button } from '@mdplane/ui/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { StatsGridSkeleton, TableSkeleton } from '@/components/ui/skeletons'
 import { useControlClaims, useWorkspaceId } from '@/hooks'
-import { CONTROL_FRONTEND_ROUTES, WORKSPACE_FRONTEND_ROUTES } from '@mdplane/shared'
+import { CONTROL_FRONTEND_ROUTES } from '@mdplane/shared'
 import { Files, Key, Webhook, SquareKanban, Settings, Clock, CheckCircle, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 
@@ -130,8 +130,8 @@ export default function ControlPage() {
           <EmptyState
             icon={<AlertTriangle className="h-12 w-12" />}
             headline="Couldn't load workspace activity"
-            description="Open your workspace from Workspace Launcher and try again."
-            primaryAction={{ label: 'Workspace Launcher', href: WORKSPACE_FRONTEND_ROUTES.launch }}
+            description="Something went wrong loading the workspace."
+            primaryAction={{ label: 'Try again', onClick: () => window.location.reload() }}
             className="py-12"
           />
         </ControlContent>

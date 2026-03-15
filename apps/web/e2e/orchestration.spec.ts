@@ -202,7 +202,6 @@ test.describe('Orchestration Page', () => {
       const emptyState = page.getByTestId('orchestration-empty-state')
       await expect(emptyState.getByText(/no tasks yet/i)).toBeVisible({ timeout: 10000 })
       await expect(emptyState.getByRole('button', { name: /task docs/i })).toBeVisible()
-      await expect(emptyState.getByRole('link', { name: /^workspace launcher$/i })).toBeVisible()
     })
   })
 
@@ -227,9 +226,6 @@ test.describe('Orchestration Page', () => {
       await expect(page.getByText(/couldn't load tasks/i)).toBeVisible({ timeout: 10000 })
 
       const errorState = page.getByTestId('orchestration-error-state')
-
-      const launcherButton = errorState.getByRole('link', { name: /^workspace launcher$/i })
-      await expect(launcherButton).toBeVisible()
 
       const retryButton = errorState.getByRole('button', { name: /^try again$/i })
       await expect(retryButton).toBeVisible()

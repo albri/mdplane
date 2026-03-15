@@ -11,7 +11,7 @@ import {
   useToast,
   useWorkspaceId,
 } from '@/hooks'
-import { WORKSPACE_FRONTEND_ROUTES } from '@mdplane/shared'
+
 import { ApiKeyCard, ControlContent, ControlHeader } from '@/components/control'
 import { Button } from '@mdplane/ui/ui/button'
 import {
@@ -270,15 +270,8 @@ export default function ApiKeysPage() {
           <EmptyState
             icon={<AlertTriangle className="h-12 w-12" />}
             headline="Couldn't load API keys"
-            description="Open your workspace from Workspace Launcher and try again."
-            primaryAction={{
-              label: 'Workspace Launcher',
-              href: WORKSPACE_FRONTEND_ROUTES.launch,
-            }}
-            secondaryAction={{
-              label: 'Create workspace',
-              href: '/bootstrap',
-            }}
+            description="Something went wrong loading API keys."
+            primaryAction={{ label: 'Try again', onClick: () => window.location.reload() }}
             className="rounded-none border-0 bg-transparent py-16 shadow-none"
           />
         ) : apiKeys.length === 0 ? (
@@ -288,7 +281,6 @@ export default function ApiKeysPage() {
               headline="No API keys yet"
               description="Create your first API key for programmatic workspace access."
               primaryAction={{ label: 'Create API Key', onClick: () => setCreateDialogOpen(true) }}
-              secondaryAction={{ label: 'Workspace Launcher', href: WORKSPACE_FRONTEND_ROUTES.launch }}
               className="rounded-none border-0 bg-transparent py-16 shadow-none"
             />
           </div>

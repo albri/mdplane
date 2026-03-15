@@ -134,12 +134,10 @@ async function openClaimWorkspaceInput(page: Page): Promise<Locator> {
 }
 
 test.describe('Long Chained Control + Runtime Flows', () => {
-  test('launcher to bootstrap to runtime claim lands in scoped control', async ({ page }) => {
-    await page.goto('/launch');
-    await page.getByRole('button', { name: /create workspace/i }).click();
-    await expect(page).toHaveURL(/\/bootstrap$/);
+  test('bootstrap to runtime claim lands in scoped control', async ({ page }) => {
+    await page.goto('/bootstrap');
 
-    await page.getByLabel(/workspace name/i).fill(`e2e-launch-bootstrap-${Date.now()}`);
+    await page.getByLabel(/workspace name/i).fill(`e2e-bootstrap-${Date.now()}`);
     await page.getByRole('button', { name: /create workspace/i }).click();
 
     await expect(page.getByText('Workspace created')).toBeVisible({ timeout: 15000 });
@@ -500,35 +498,4 @@ test.describe('Long Chained Control + Runtime Flows', () => {
     await expect(page.getByRole('heading', { name: /^welcome$/i })).toBeVisible({ timeout: 10000 });
   });
 
-  test('recent workspace resume handles stale entries and still opens valid recent runtime URLs', async ({
-    page,
-  }) => {
-    const workspace = await createUnclaimedWorkspace(page, 'recent-resilience');
-    const staleUrl = '/r/invalid-key-that-does-not-exist-1234567890';
-    const validUrl = `/r/${workspace.readKey}`;
-
-    await page.addInitScript(([stale, valid]) => {
-      localStorage.setItem(
-        'mdplane_recent_workspace_urls',
-        JSON.stringify({
-          saveEnabled: true,
-          urls: [
-            { url: stale, label: 'R key: stale-entry...', addedAt: '2026-02-24T10:00:00.000Z' },
-            { url: valid, label: 'R key: valid-entry...', addedAt: '2026-02-24T09:00:00.000Z' },
-          ],
-        }),
-      );
-    }, [staleUrl, validUrl]);
-
-    await page.goto('/');
-    await page.getByRole('button', { name: /resume last workspace/i }).click();
-    await expect(page).toHaveURL(new RegExp(`${staleUrl}$`), { timeout: 10000 });
-    await expect(page.getByTestId('not-found')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByTestId('error-page')).toHaveCount(0);
-
-    await page.goto('/launch');
-    await page.getByRole('link', { name: 'R key: valid-entry...' }).click();
-    await expect(page).toHaveURL(new RegExp(`${validUrl}$`), { timeout: 10000 });
-    await expect(page.locator('[data-testid="reader-layout"]')).toBeVisible({ timeout: 10000 });
-  });
 });
