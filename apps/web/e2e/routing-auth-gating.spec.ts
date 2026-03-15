@@ -238,12 +238,11 @@ test.describe('Routing + Auth Gating', () => {
   });
 
   test.describe('Not Found Page', () => {
-    test('should only show a home action on 404 page', async ({ page }) => {
+    test('should show 404 page with documentation link', async ({ page }) => {
       await page.goto('/route-that-does-not-exist');
       await expect(page.getByTestId('not-found')).toBeVisible();
-
-      await expect(page.getByRole('link', { name: /^go home$/i })).toBeVisible();
-      await expect(page.getByRole('link', { name: /^docs$/i })).toHaveCount(0);
+      await expect(page.getByRole('heading', { name: /page not found/i })).toBeVisible();
+      await expect(page.getByRole('link', { name: /view documentation/i })).toBeVisible();
     });
   });
 

@@ -1,9 +1,6 @@
-import Link from 'next/link'
 import { Logo } from '@mdplane/ui'
-import { BookOpen } from 'lucide-react'
-import { URLS } from '@mdplane/shared'
 
-export default function NotFound() {
+export default function WorkspaceNotFound() {
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center bg-background p-6" data-testid="not-found">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -19,23 +16,14 @@ export default function NotFound() {
         </p>
 
         <h1 className="mt-2 font-display text-2xl font-semibold text-foreground">
-          Page not found
+          Workspace not found
         </h1>
 
         <p className="mt-3 text-muted-foreground">
-          The page you&apos;re looking for doesn&apos;t exist or may have been moved.
+          This workspace doesn&apos;t exist or the capability key is invalid.
         </p>
-
-        <div className="mt-8">
-          <Link
-            href={URLS.DOCS}
-            className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-          >
-            <BookOpen className="h-4 w-4" />
-            View documentation
-          </Link>
-        </div>
       </div>
     </div>
   )
 }
+

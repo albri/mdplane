@@ -9,6 +9,10 @@
   --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-space-mono), ui-monospace, SFMono-Regular, monospace;
 
+  --radius-sm: 0.125rem;   /* 2px */
+  --radius-md: 0.1875rem;  /* 3px */
+  --radius-lg: 0.25rem;    /* 4px */
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
@@ -86,7 +90,7 @@
   --secondary-foreground: #1A1A1A;
   --muted: #F4F1EA;
   --muted-foreground: #78716C;
-  --accent: #E8A851;
+  --accent: #F4F1EA;
   --accent-foreground: #1A1A1A;
   --destructive: #DC2626;
   --border: #E5E2DB;
@@ -123,8 +127,8 @@
   --secondary-foreground: #F5F3EF;
   --muted: #262420;
   --muted-foreground: #A8A29E;
-  --accent: #E8A851;
-  --accent-foreground: #141211;
+  --accent: #262420;
+  --accent-foreground: #F5F3EF;
   --destructive: #EF4444;
   --border: #2E2C28;
   --input: #2E2C28;
@@ -151,14 +155,6 @@
   isolation: isolate;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-display);
-}
-
-code, pre {
-  font-family: var(--font-mono);
-}
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -167,6 +163,14 @@ code, pre {
     @apply bg-background text-[15px] leading-6 text-foreground;
     font-family: var(--font-sans);
     position: relative;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
+
+  code, pre {
+    font-family: var(--font-mono);
   }
 
   h1 {

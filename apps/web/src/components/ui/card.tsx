@@ -27,7 +27,7 @@ function Card({
     <div
       data-slot="card"
       className={cn(
-        "flex flex-col",
+        "flex flex-col rounded-lg",
         cardToneClasses[tone],
         cardSizeClasses[size],
         className

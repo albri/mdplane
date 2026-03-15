@@ -18,7 +18,7 @@ export function DotBadge({ label, dotClassName, className }: DotBadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-md border border-border/70 bg-accent/60 px-2 py-0.5 text-xs text-accent-foreground',
+        'inline-flex items-center gap-1.5 rounded-sm border border-border/70 bg-accent px-2 py-0.5 text-xs text-accent-foreground',
         className
       )}
     >
@@ -85,7 +85,7 @@ export function MetaChip({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-md border border-border/70 bg-accent/60 px-2 py-0.5 text-xs',
+        'inline-flex items-center gap-1.5 rounded-sm border border-border/70 bg-accent px-2 py-0.5 text-xs',
         className
       )}
       aria-label={`${label}: ${value}`}

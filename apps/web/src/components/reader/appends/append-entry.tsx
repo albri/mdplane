@@ -76,7 +76,7 @@ export function AppendEntry({ append, className }: AppendEntryProps) {
               {append.labels?.map((label) => (
                 <span
                   key={label}
-                  className='rounded-md border border-border/70 bg-accent/60 px-2 py-0.5 text-xs text-accent-foreground'
+                  className='rounded-sm border border-border/70 bg-accent px-2 py-0.5 text-xs text-accent-foreground'
                 >
                   {label}
                 </span>

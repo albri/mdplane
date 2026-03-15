@@ -10,14 +10,13 @@
 import { test, expect, TEST_KEYS, BACKEND_URL, FRONTEND_URL } from './fixtures';
 
 test.describe('Capability Security', () => {
-  test('invalid key UI offers a home recovery action', async ({ page }) => {
+  test('invalid key UI shows workspace not found message', async ({ page }) => {
     const fakeKey = 'r_invalidKey123456789';
 
     await page.goto(`${FRONTEND_URL}/r/${fakeKey}`, { waitUntil: 'networkidle' });
 
     await expect(page.locator('[data-testid="not-found"]')).toBeVisible();
-    const homeLink = page.locator('a[href="/"]').filter({ hasText: /^go home$/i });
-    await expect(homeLink).toBeVisible();
+    await expect(page.getByRole('heading', { name: /workspace not found/i })).toBeVisible();
   });
 
   test('should return 404 for invalid capability keys (not 403)', async ({ page }) => {
