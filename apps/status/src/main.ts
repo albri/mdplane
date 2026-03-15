@@ -12,7 +12,6 @@ const DEFAULT_API_ORIGIN = 'https://api.mdplane.dev';
 const POLL_INTERVAL_MS = 30_000;
 const STALE_AFTER_MS = 2 * POLL_INTERVAL_MS;
 const REQUEST_TIMEOUT_MS = 10_000;
-const API_ORIGIN_QUERY_PARAM = 'api';
 
 const SYSTEM_STATUSES = ['operational', 'degraded', 'partial_outage', 'major_outage'] as const;
 const COMPONENT_STATUSES = ['operational', 'degraded', 'down'] as const;
@@ -20,11 +19,6 @@ const ENVIRONMENTS = ['development', 'test', 'production'] as const;
 
 type JsonRecord = Record<string, unknown>;
 type ComponentStatus = StatusResponse['data']['database']['status'];
-
-interface ApiOriginConfig {
-  origin: string;
-  isOverridden: boolean;
-}
 
 interface AppState {
   lastHealthyAtMs?: number;
@@ -61,15 +55,13 @@ function setText(id: string, value: string): void {
   requireElement(id).textContent = value;
 }
 
-function parseApiOrigin(): ApiOriginConfig {
-  const value = new URLSearchParams(window.location.search).get(API_ORIGIN_QUERY_PARAM);
-  const candidate = value === null || value.trim() === '' ? DEFAULT_API_ORIGIN : value.trim();
-  const isOverridden = value !== null && value.trim() !== '';
-
+function parseApiOrigin(): string {
+  const value = new URLSearchParams(window.location.search).get('api');
+  if (value === null || value.trim() === '') return DEFAULT_API_ORIGIN;
   try {
-    return { origin: new URL(candidate).origin, isOverridden };
+    return new URL(value.trim()).origin;
   } catch {
-    return { origin: DEFAULT_API_ORIGIN, isOverridden: false };
+    return DEFAULT_API_ORIGIN;
   }
 }
 
@@ -326,21 +318,16 @@ function startPolling(origin: string): void {
 }
 
 function boot(): void {
-  const apiOrigin = parseApiOrigin();
+  const origin = parseApiOrigin();
 
-  requireElement('refresh-btn').addEventListener('click', () => {
-    void poll(apiOrigin.origin);
-  });
-
-  requireElement('retry-btn').addEventListener('click', () => {
-    void poll(apiOrigin.origin);
-  });
+  requireElement('refresh-btn').addEventListener('click', () => void poll(origin));
+  requireElement('retry-btn').addEventListener('click', () => void poll(origin));
 
   setHeadlineStatus('Checking status...', 'status-neutral');
   renderService('svc-api', '—', 'status-neutral');
   renderService('svc-storage', '—', 'status-neutral');
   renderService('svc-realtime', '—', 'status-neutral');
-  startPolling(apiOrigin.origin);
+  startPolling(origin);
 }
 
 boot();
