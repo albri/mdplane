@@ -1,102 +1,73 @@
 'use client'
 
-import { URLS, CONTROL_FRONTEND_ROUTES } from '@mdplane/shared'
-import { SquareKanban, Key, Settings, Webhook } from 'lucide-react'
+import Link from 'next/link'
+import { CONTROL_FRONTEND_ROUTES } from '@mdplane/shared'
+import { SquareKanban, Key, Settings, Webhook, ArrowRight } from 'lucide-react'
 import { useWorkspaces } from '@/contexts/workspace-context'
-import { IconActionCard } from '@/components/ui/icon-action-card'
+import { BorderedIcon } from '@mdplane/ui/ui/bordered-icon'
 
 export function WelcomeState() {
   const { selectedWorkspace } = useWorkspaces()
-  const orchestrationHref = selectedWorkspace
-    ? CONTROL_FRONTEND_ROUTES.orchestration(selectedWorkspace.id)
-    : CONTROL_FRONTEND_ROUTES.root
-  const settingsHref = selectedWorkspace
-    ? CONTROL_FRONTEND_ROUTES.settings(selectedWorkspace.id)
-    : CONTROL_FRONTEND_ROUTES.root
-  const apiKeysHref = selectedWorkspace
-    ? CONTROL_FRONTEND_ROUTES.apiKeys(selectedWorkspace.id)
-    : CONTROL_FRONTEND_ROUTES.root
-  const webhooksHref = selectedWorkspace
-    ? CONTROL_FRONTEND_ROUTES.webhooks(selectedWorkspace.id)
-    : CONTROL_FRONTEND_ROUTES.root
+
+  const links = [
+    {
+      title: 'Orchestration',
+      description: 'Monitor tasks and intervene when needed',
+      icon: SquareKanban,
+      iconVariant: 'amber' as const,
+      href: selectedWorkspace
+        ? CONTROL_FRONTEND_ROUTES.orchestration(selectedWorkspace.id)
+        : CONTROL_FRONTEND_ROUTES.root,
+    },
+    {
+      title: 'API Keys',
+      description: 'Manage programmatic access',
+      icon: Key,
+      iconVariant: 'sage' as const,
+      href: selectedWorkspace
+        ? CONTROL_FRONTEND_ROUTES.apiKeys(selectedWorkspace.id)
+        : CONTROL_FRONTEND_ROUTES.root,
+    },
+    {
+      title: 'Webhooks',
+      description: 'Configure event notifications',
+      icon: Webhook,
+      iconVariant: 'terracotta' as const,
+      href: selectedWorkspace
+        ? CONTROL_FRONTEND_ROUTES.webhooks(selectedWorkspace.id)
+        : CONTROL_FRONTEND_ROUTES.root,
+    },
+    {
+      title: 'Settings',
+      description: 'Workspace configuration',
+      icon: Settings,
+      iconVariant: 'primary' as const,
+      href: selectedWorkspace
+        ? CONTROL_FRONTEND_ROUTES.settings(selectedWorkspace.id)
+        : CONTROL_FRONTEND_ROUTES.root,
+    },
+  ]
 
   return (
-    <div className="space-y-6" data-testid="control-welcome-state">
-      <div className="grid gap-4 md:grid-cols-2">
-        <IconActionCard
-          title="Orchestration"
-          description="Monitor active and stalled tasks, then intervene when needed."
-          icon={SquareKanban}
-          iconVariant="secondary"
-          primaryAction={{
-            label: 'Open Orchestration',
-            href: orchestrationHref,
-          }}
-        />
-
-        <IconActionCard
-          title="API Keys"
-          description="Create and revoke machine API keys for backend automation."
-          icon={Key}
-          iconVariant="secondary"
-          primaryAction={{
-            label: 'Manage API Keys',
-            href: apiKeysHref,
-          }}
-        />
-
-        <IconActionCard
-          title="Webhooks"
-          description="Configure outbound events for workspace and folder workflows."
-          icon={Webhook}
-          iconVariant="secondary"
-          primaryAction={{
-            label: 'Configure Webhooks',
-            href: webhooksHref,
-          }}
-        />
-
-        <IconActionCard
-          title="Workspace Settings"
-          description="Rename workspaces and manage rotation and recovery controls."
-          icon={Settings}
-          iconVariant="secondary"
-          primaryAction={{
-            label: 'Open Settings',
-            href: settingsHref,
-          }}
-        />
-      </div>
-
-      <p className="text-xs text-muted-foreground">
-        Need docs?{' '}
-        <a
-          href={`${URLS.DOCS}/docs/web`}
-          className="underline hover:text-foreground"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Web app guide
-        </a>
-        {' '}·{' '}
-        <a
-          href={`${URLS.DOCS}/docs/authentication`}
-          className="underline hover:text-foreground"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Authentication
-        </a>
-        {' '}·{' '}
-        <a
-          href={`${URLS.DOCS}/docs/api-reference`}
-          className="underline hover:text-foreground"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          API reference
-        </a>
-      </p>
+    <div data-testid="control-welcome-state">
+      <nav className="grid gap-2 sm:grid-cols-2">
+        {links.map(({ title, description, icon: Icon, iconVariant, href }) => (
+          <Link
+            key={title}
+            href={href}
+            className="group flex items-center gap-3 rounded-md border border-border bg-card p-4 transition-colors hover:bg-accent"
+          >
+            <BorderedIcon variant={iconVariant} size="md">
+              <Icon aria-hidden="true" />
+            </BorderedIcon>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-foreground">{title}</p>
+              <p className="text-sm text-muted-foreground truncate">{description}</p>
+            </div>
+            <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+          </Link>
+        ))}
+      </nav>
     </div>
   )
 }

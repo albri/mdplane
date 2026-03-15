@@ -22,10 +22,14 @@ test.describe('Owned Indicator - Authenticated Owner', () => {
     await page.waitForLoadState('networkidle')
 
     const ownedButton = page.locator('[data-testid="claimed-workspace-button"]')
+    await expect(ownedButton).toBeVisible({ timeout: 10000 })
     await ownedButton.click()
 
-    const controlLink = page.getByRole('link', { name: /open control panel/i })
-    await expect(controlLink).toBeVisible()
+    // Wait for popover to open
+    await page.waitForTimeout(500)
+
+    const controlLink = page.getByText('Open Control Panel')
+    await expect(controlLink).toBeVisible({ timeout: 5000 })
     await expect(controlLink).toHaveAttribute('href', `/control/${workspaceId}`)
   })
 

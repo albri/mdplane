@@ -258,7 +258,8 @@ export default function WebhooksPage() {
           <ItemsGridSkeleton count={4} />
         ) : error ? (
           <EmptyState
-            icon={<AlertTriangle className="h-12 w-12" />}
+            icon={<AlertTriangle />}
+            iconVariant="error"
             headline="Couldn't load webhooks"
             description={
               errorCode === 'NOT_FOUND'
@@ -271,7 +272,8 @@ export default function WebhooksPage() {
         ) : webhooks.length === 0 ? (
           <div data-testid="empty-webhooks-state">
             <EmptyState
-              icon={<Webhook className="h-12 w-12" />}
+              icon={<Webhook />}
+              iconVariant="primary"
               headline="No webhooks configured"
               description="Create a webhook to receive real-time workspace notifications."
               primaryAction={{ label: 'Create Webhook', onClick: () => setCreateDialogOpen(true) }}

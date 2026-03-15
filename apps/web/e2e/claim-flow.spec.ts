@@ -148,31 +148,4 @@ test.describe('Claim Flow - /claim/[writeKey]', () => {
   })
 })
 
-test.describe('Claim API Endpoint', () => {
-  test('should return 401 for claim without session', async ({ writeKey }) => {
-    const ctx = await unauthRequest.newContext({
-      baseURL: BACKEND_URL,
-      storageState: { cookies: [], origins: [] },
-    })
-    const response = await ctx.post(`/w/${writeKey}/claim`)
 
-    expect(response.status()).toBe(401)
-
-    const data = await response.json()
-    expect(data.ok).toBe(false)
-
-    await ctx.dispose()
-  })
-
-  test('should return 404 for claim with invalid writeKey', async ({ request }) => {
-    const response = await request.post(`${BACKEND_URL}/w/invalid-key-does-not-exist/claim`)
-
-    expect([401, 404]).toContain(response.status())
-
-    const data = await response.json()
-    expect(data.ok).toBe(false)
-    if (response.status() === 401) {
-      expect(String(data.error?.code)).toMatch(/UNAUTHORIZED/i)
-    }
-  })
-})

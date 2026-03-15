@@ -89,7 +89,8 @@ export function ReaderPage({
     return (
       <article data-testid="reader-main" className={mainShellClassName}>
         <EmptyState
-          icon={<AlertTriangle className="h-12 w-12" />}
+          icon={<AlertTriangle />}
+          iconVariant="error"
           headline="Error loading file"
           description={error instanceof Error ? error.message : 'Unknown error'}
           primaryAction={{ label: 'Try again', onClick: () => window.location.reload() }}

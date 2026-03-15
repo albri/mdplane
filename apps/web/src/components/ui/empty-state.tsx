@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { cn } from '@mdplane/ui/lib/utils'
 import { Button } from '@mdplane/ui/ui/button'
+import { BorderedIcon } from '@mdplane/ui/ui/bordered-icon'
 import { Copy, Check, ArrowRight } from 'lucide-react'
 
 interface EmptyStateAction {
@@ -17,8 +18,11 @@ interface EmptyStateLinkAction {
   onClick?: never
 }
 
+type IconVariant = 'primary' | 'terracotta' | 'amber' | 'sage' | 'success' | 'error' | 'warning' | 'info' | 'muted' | 'secondary'
+
 interface EmptyStateProps {
   icon?: React.ReactNode
+  iconVariant?: IconVariant
   headline: string
   description?: string
   command?: string
@@ -29,6 +33,7 @@ interface EmptyStateProps {
 
 export function EmptyState({
   icon,
+  iconVariant = 'muted',
   headline,
   description,
   command,
@@ -55,9 +60,9 @@ export function EmptyState({
       data-testid="empty-state"
     >
       {icon && (
-        <div className="mb-4 text-muted-foreground" aria-hidden="true">
+        <BorderedIcon variant={iconVariant} size="lg" className="mb-4">
           {icon}
-        </div>
+        </BorderedIcon>
       )}
 
       <p className="text-2xl font-semibold tracking-tight">{headline}</p>

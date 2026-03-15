@@ -268,7 +268,8 @@ export default function ApiKeysPage() {
           <ItemsGridSkeleton count={4} />
         ) : error ? (
           <EmptyState
-            icon={<AlertTriangle className="h-12 w-12" />}
+            icon={<AlertTriangle />}
+            iconVariant="error"
             headline="Couldn't load API keys"
             description="Something went wrong loading API keys."
             primaryAction={{ label: 'Try again', onClick: () => window.location.reload() }}
@@ -277,7 +278,8 @@ export default function ApiKeysPage() {
         ) : apiKeys.length === 0 ? (
           <div data-testid="empty-api-keys-state">
             <EmptyState
-              icon={<Key className="h-12 w-12" />}
+              icon={<Key />}
+              iconVariant="primary"
               headline="No API keys yet"
               description="Create your first API key for programmatic workspace access."
               primaryAction={{ label: 'Create API Key', onClick: () => setCreateDialogOpen(true) }}

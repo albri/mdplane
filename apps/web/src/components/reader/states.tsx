@@ -29,7 +29,8 @@ export function ErrorState({
   return (
     <div className="py-8">
       <EmptyState
-        icon={<AlertCircle className="h-12 w-12" />}
+        icon={<AlertCircle />}
+        iconVariant="error"
         headline={title}
         description={message}
         primaryAction={{ label: 'Try again', onClick: () => window.location.reload() }}
@@ -44,8 +45,8 @@ interface NotFoundStateProps {
   itemType?: 'file' | 'folder' | 'path'
 }
 
-export function NotFoundState({ 
-  capabilityKey, 
+export function NotFoundState({
+  capabilityKey,
   keyType,
   itemType = 'path'
 }: NotFoundStateProps) {
@@ -54,7 +55,8 @@ export function NotFoundState({
   return (
     <div className="py-8">
       <EmptyState
-        icon={<AlertCircle className="h-12 w-12" />}
+        icon={<AlertCircle />}
+        iconVariant="warning"
         headline="404 Not Found"
         description={`The ${itemType} you are looking for does not exist or you do not have access to it.`}
         primaryAction={{ label: 'Go to workspace root', href: workspaceRoot }}

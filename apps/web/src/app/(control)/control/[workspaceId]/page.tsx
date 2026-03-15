@@ -3,25 +3,31 @@
 import { ControlContent, ControlHeader, WelcomeState } from '@/components/control'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@mdplane/ui/ui/button'
+import { BorderedIcon } from '@mdplane/ui/ui/bordered-icon'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { StatsGridSkeleton, TableSkeleton } from '@/components/ui/skeletons'
 import { useControlClaims, useWorkspaceId } from '@/hooks'
 import { CONTROL_FRONTEND_ROUTES } from '@mdplane/shared'
 import { Files, Key, Webhook, SquareKanban, Settings, Clock, CheckCircle, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
+import type { VariantProps } from 'class-variance-authority'
 
-function StatCard({ 
-  title, 
-  value, 
-  icon: Icon, 
+type BorderedIconVariant = 'primary' | 'terracotta' | 'amber' | 'sage' | 'muted' | 'secondary'
+
+function StatCard({
+  title,
+  value,
+  icon: Icon,
   href,
-  description 
-}: { 
+  description,
+  iconVariant = 'muted'
+}: {
   title: string
   value: string | number
   icon: React.ElementType
   href: string
   description?: string
+  iconVariant?: BorderedIconVariant
 }) {
   return (
     <Link href={href}>
@@ -30,7 +36,9 @@ function StatCard({
           <CardTitle className="text-sm font-medium text-muted-foreground">
             {title}
           </CardTitle>
-          <Icon className="h-4 w-4 text-muted-foreground" />
+          <BorderedIcon variant={iconVariant} size="sm">
+            <Icon aria-hidden="true" />
+          </BorderedIcon>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{value}</div>
@@ -128,7 +136,8 @@ export default function ControlPage() {
         />
         <ControlContent>
           <EmptyState
-            icon={<AlertTriangle className="h-12 w-12" />}
+            icon={<AlertTriangle />}
+            iconVariant="error"
             headline="Couldn't load workspace activity"
             description="Something went wrong loading the workspace."
             primaryAction={{ label: 'Try again', onClick: () => window.location.reload() }}
@@ -154,6 +163,7 @@ export default function ControlPage() {
             icon={Clock}
             href={orchestrationHref}
             description="Tasks currently being worked on"
+            iconVariant="amber"
           />
           <StatCard
             title="Completed Today"
@@ -161,6 +171,7 @@ export default function ControlPage() {
             icon={CheckCircle}
             href={orchestrationHref}
             description="Tasks finished today"
+            iconVariant="sage"
           />
           <StatCard
             title="Expired Claims"
@@ -168,6 +179,7 @@ export default function ControlPage() {
             icon={AlertTriangle}
             href={orchestrationHref}
             description="Claims that need attention"
+            iconVariant="terracotta"
           />
           <StatCard
             title="Orchestration"
@@ -175,6 +187,7 @@ export default function ControlPage() {
             icon={SquareKanban}
             href={orchestrationHref}
             description="Tasks that need active attention"
+            iconVariant="primary"
           />
         </div>
 
@@ -182,7 +195,7 @@ export default function ControlPage() {
           <Card tone="muted" size="sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <Files className="h-4 w-4" />
+                <Files className="h-4 w-4" aria-hidden="true" />
                 Recent Task Claims
               </CardTitle>
             </CardHeader>
@@ -208,7 +221,7 @@ export default function ControlPage() {
           <Card tone="muted" size="sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <Key className="h-4 w-4" />
+                <Key className="h-4 w-4" aria-hidden="true" />
                 Quick Actions
               </CardTitle>
             </CardHeader>
@@ -217,7 +230,7 @@ export default function ControlPage() {
                 <li>
                   <Button variant="ghost" asChild className="w-full justify-start text-sm">
                     <Link href={apiKeysHref}>
-                      <Key className="h-4 w-4" />
+                      <Key className="h-4 w-4" aria-hidden="true" />
                       Manage API Keys
                     </Link>
                   </Button>
@@ -225,7 +238,7 @@ export default function ControlPage() {
                 <li>
                   <Button variant="ghost" asChild className="w-full justify-start text-sm">
                     <Link href={webhooksHref}>
-                      <Webhook className="h-4 w-4" />
+                      <Webhook className="h-4 w-4" aria-hidden="true" />
                       Configure Webhooks
                     </Link>
                   </Button>
@@ -233,7 +246,7 @@ export default function ControlPage() {
                 <li>
                   <Button variant="ghost" asChild className="w-full justify-start text-sm">
                     <Link href={settingsHref}>
-                      <Settings className="h-4 w-4" />
+                      <Settings className="h-4 w-4" aria-hidden="true" />
                       Workspace Settings
                     </Link>
                   </Button>

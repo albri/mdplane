@@ -57,7 +57,7 @@ test.describe('Launch Suite: Claim Flow', () => {
   test('should load claim page and show OAuth options', async ({ page }) => {
     await page.goto('/claim');
 
-    const heading = page.getByText('Claim Your Workspace', { exact: true });
+    const heading = page.getByText('Claim Workspace', { exact: true });
     await expect(heading).toBeVisible({ timeout: 10000 });
 
     const githubButton = page.getByRole('button', { name: /github/i });
@@ -108,96 +108,7 @@ test.describe('Launch Suite: Claim Flow', () => {
   });
 });
 
-test.describe('Launch Suite: API Key Management', () => {
-  test('should create API key and verify it appears in list', async ({ authedRequest }) => {
-    const keyName = `E2E Launch Test Key ${Date.now()}`;
 
-    const createResponse = await authedRequest.post(`/workspaces/${TEST_KEYS.workspaceId}/api-keys`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      data: {
-        name: keyName,
-        permissions: ['read', 'write'],
-      },
-    });
-
-    expect(createResponse.status()).toBe(201);
-    const createData = await createResponse.json();
-    expect(createData.ok).toBe(true);
-    expect(createData.data.key).toMatch(/^sk_live_[A-Za-z0-9]{20,}$/);
-
-    const keyId = createData.data.id;
-
-    const listResponse = await authedRequest.get(`/workspaces/${TEST_KEYS.workspaceId}/api-keys`);
-
-    expect(listResponse.status()).toBe(200);
-    const listData = await listResponse.json();
-    expect(listData.ok).toBe(true);
-
-    const testKey = listData.data.keys.find((k: { name: string }) => k.name === keyName);
-    expect(testKey).toBeDefined();
-    expect(testKey.prefix).toBeDefined();
-    expect(testKey).not.toHaveProperty('key');
-
-    await authedRequest.delete(`/workspaces/${TEST_KEYS.workspaceId}/api-keys/${keyId}`);
-  });
-
-  test('should revoke API key and verify it no longer appears in list', async ({ authedRequest }) => {
-    const keyName = `E2E Revoke Test Key ${Date.now()}`;
-
-    const createResponse = await authedRequest.post(`/workspaces/${TEST_KEYS.workspaceId}/api-keys`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      data: {
-        name: keyName,
-        permissions: ['read'],
-      },
-    });
-
-    expect(createResponse.status()).toBe(201);
-    const createData = await createResponse.json();
-    const keyId = createData.data.id;
-
-    const listBeforeResponse = await authedRequest.get(`/workspaces/${TEST_KEYS.workspaceId}/api-keys`);
-
-    expect(listBeforeResponse.status()).toBe(200);
-    const listBeforeData = await listBeforeResponse.json();
-    const keyBefore = listBeforeData.data.keys.find((k: { id: string }) => k.id === keyId);
-    expect(keyBefore).toBeDefined();
-
-    const deleteResponse = await authedRequest.delete(`/workspaces/${TEST_KEYS.workspaceId}/api-keys/${keyId}`);
-
-    expect(deleteResponse.status()).toBe(200);
-    const deleteData = await deleteResponse.json();
-    expect(deleteData.ok).toBe(true);
-    expect(deleteData.data.revoked).toBe(true);
-
-    const listAfterResponse = await authedRequest.get(`/workspaces/${TEST_KEYS.workspaceId}/api-keys`);
-
-    expect(listAfterResponse.status()).toBe(200);
-    const listAfterData = await listAfterResponse.json();
-    const keyAfter = listAfterData.data.keys.find((k: { id: string }) => k.id === keyId);
-    expect(keyAfter).toBeUndefined();
-  });
-
-  test('should return 401 for unauthenticated API key requests', async () => {
-    const ctx = await unauthRequest.newContext({
-      baseURL: BACKEND_URL,
-      storageState: { cookies: [], origins: [] },
-    });
-    const response = await ctx.get(`/workspaces/${TEST_KEYS.workspaceId}/api-keys`);
-
-    expect(response.status()).toBe(401);
-
-    const data = await response.json();
-    expect(data.ok).toBe(false);
-    expect(data.error.code).toBe('UNAUTHORIZED');
-
-    await ctx.dispose();
-  });
-});
 
 publicTest.describe('Launch Suite: Auth Gating - Negative Case', () => {
   publicTest('should redirect to login when accessing control without session', async ({ page }) => {

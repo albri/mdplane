@@ -64,7 +64,8 @@ function FolderEmptyState() {
   return (
     <div data-testid="folder-empty">
       <EmptyState
-        icon={<FolderOpen className="h-12 w-12" />}
+        icon={<FolderOpen />}
+        iconVariant="amber"
         headline="This folder is empty"
       />
     </div>

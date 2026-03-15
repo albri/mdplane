@@ -8,10 +8,12 @@
   --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-space-mono), ui-monospace, SFMono-Regular, monospace;
 
-  /* Brand colors (constant across themes) */
   --color-terracotta: #D97757;
   --color-amber: #E8A851;
   --color-sage: #8B9A8B;
+  --color-brand-terracotta: #D97757;
+  --color-brand-amber: #E8A851;
+  --color-brand-sage: #8B9A8B;
 
   /* Badge/status colors (warm palette) */
   --color-badge-task: #1A1A1A;

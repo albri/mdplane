@@ -8,7 +8,8 @@ export function OrchestrationEmpty() {
   return (
     <div data-testid="orchestration-empty-state">
       <EmptyState
-        icon={<LayoutGrid className="h-12 w-12" />}
+        icon={<LayoutGrid />}
+        iconVariant="primary"
         headline="No tasks yet"
         description="Tasks appear when agents create task appends in your workspace."
         primaryAction={{ label: 'Task docs', href: `${URLS.DOCS}/docs/orchestration` }}
