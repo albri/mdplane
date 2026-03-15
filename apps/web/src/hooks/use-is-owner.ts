@@ -26,13 +26,11 @@ interface UseIsOwnerResult {
  */
 export function useIsOwner(capabilityKey: string | undefined): UseIsOwnerResult {
   const { isAuthenticated, isLoading: sessionLoading } = useSession()
-  
-  // Only fetch capability info if user is logged in
+
   const { data: capabilityInfo, isLoading: capabilityLoading } = useCapabilityInfo(
     isAuthenticated ? capabilityKey : undefined
   )
 
-  // Only fetch user workspaces if logged in
   const { data: userWorkspaces = [], isLoading: userLoading } = useQuery<MeResponse['data']['workspaces']>({
     queryKey: AUTH_ME_QUERY_KEY,
     queryFn: async () => {
@@ -43,26 +41,22 @@ export function useIsOwner(capabilityKey: string | undefined): UseIsOwnerResult 
       return response.data?.workspaces ?? []
     },
     enabled: isAuthenticated,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   })
 
   const result = useMemo(() => {
-    // Not logged in - definitely not owner
     if (!isAuthenticated) {
       return { isOwner: false, workspaceId: null, isLoading: false }
     }
 
-    // Still loading
     if (sessionLoading || capabilityLoading || userLoading) {
       return { isOwner: false, workspaceId: null, isLoading: true }
     }
 
-    // No capability info or user data
     if (!capabilityInfo?.scopeId) {
       return { isOwner: false, workspaceId: null, isLoading: false }
     }
 
-    // Check if user owns this workspace
     const workspaceId = capabilityInfo.scopeId
     const isOwner = userWorkspaces.some((ws) => ws.id === workspaceId)
 

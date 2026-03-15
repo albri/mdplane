@@ -108,3 +108,4 @@ export function getMermaidInitializeConfig(isDark: boolean): MermaidInitializeCo
     `,
   }
 }
+

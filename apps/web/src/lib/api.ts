@@ -49,7 +49,6 @@ async function fetchApi<T>(
     },
   })
 
-  // Handle empty or non-JSON responses gracefully
   const text = await response.text()
   if (!text || !text.trim()) {
     return {

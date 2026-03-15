@@ -36,7 +36,6 @@ export function useSession(): Session & {
 } {
   const { data: session, isPending, refetch } = useBetterAuthSession()
 
-  // Map BetterAuth user to our User type (handling undefined -> null)
   const user: User | null = session?.user ? {
     id: session.user.id,
     email: session.user.email,

@@ -24,16 +24,11 @@ interface ShortcutsDialogProps {
  * ⌘ is replaced with platform-specific modifier at runtime.
  */
 const SHORTCUTS: ShortcutItem[] = [
-  // Navigation
   { keys: ['↑', '↓'], description: 'Navigate files', category: 'Navigation' },
   { keys: ['Enter'], description: 'Open selected file', category: 'Navigation' },
   { keys: ['Escape'], description: 'Close / Deselect', category: 'Navigation' },
-  
-  // Actions
   { keys: ['⌘', 'C'], description: 'Copy file content', category: 'Actions' },
   { keys: ['⌘', 'K'], description: 'Open command palette', category: 'Actions' },
-  
-  // Help
   { keys: ['⌘', '/'], description: 'Show this dialog', category: 'Help' },
 ]
 
@@ -43,8 +38,6 @@ const SHORTCUTS: ShortcutItem[] = [
  */
 export function ShortcutsDialog({ open, onOpenChange }: ShortcutsDialogProps) {
   const mod = getModifierSymbol()
-  
-  // Replace ⌘ with platform-specific modifier
   const shortcuts = SHORTCUTS.map(s => ({
     ...s,
     keys: s.keys.map(k => k === '⌘' ? mod : k)

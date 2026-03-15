@@ -20,12 +20,10 @@ interface FileIconProps {
 
 function getIconForExtension(ext?: string): LucideIcon {
   switch (ext) {
-    // Markdown
     case 'md':
     case 'mdx':
       return FileText
 
-    // Code
     case 'js':
     case 'ts':
     case 'tsx':
@@ -49,7 +47,6 @@ function getIconForExtension(ext?: string): LucideIcon {
     case 'bash':
       return FileCode
 
-    // Images
     case 'png':
     case 'jpg':
     case 'jpeg':
@@ -60,11 +57,9 @@ function getIconForExtension(ext?: string): LucideIcon {
     case 'bmp':
       return Image
 
-    // PDF
     case 'pdf':
       return FileType2
 
-    // Archives
     case 'zip':
     case 'tar':
     case 'gz':
@@ -72,7 +67,6 @@ function getIconForExtension(ext?: string): LucideIcon {
     case '7z':
       return FileArchive
 
-    // Default
     default:
       return File
   }

@@ -12,7 +12,7 @@ import { markdownComponents } from './mdx-components'
 import { CodeBlock } from '@mdplane/ui/ui/code-block'
 import { stripLeadingFrontmatter } from '@/lib/markdown/strip-frontmatter'
 
-const MermaidComponent = dynamic(() => import('@/components/mermaid-component'), {
+const MermaidComponent = dynamic(() => import('./mermaid-component'), {
   ssr: false,
   loading: () => (
     <div className="w-full min-h-[220px] rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">

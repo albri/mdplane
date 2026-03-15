@@ -70,8 +70,6 @@ export default function ControlPage() {
   const activeClaims = claims.filter(c => c.status === 'active').length
   const completedClaims = claims.filter(c => c.status === 'completed').length
   const expiredClaims = claims.filter(c => c.status === 'expired').length
-
-  // Show welcome state for empty workspaces
   const isEmpty = !isLoading && !error && claims.length === 0
 
   if (isEmpty) {
@@ -88,7 +86,6 @@ export default function ControlPage() {
     )
   }
 
-  // Show skeleton while loading
   if (isLoading) {
     return (
       <div className="flex flex-col">

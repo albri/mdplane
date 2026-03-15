@@ -20,7 +20,6 @@ export function useRotateAllUrls(workspaceId: string | null) {
       return response.data
     },
     onSuccess: () => {
-      // Invalidate queries that depend on capability URLs
       if (workspaceId) {
         queryClient.invalidateQueries({ queryKey: ['workspace', workspaceId] })
       }
@@ -41,7 +40,6 @@ export function useDeleteWorkspace(workspaceId: string | null) {
       return response.data
     },
     onSuccess: () => {
-      // Invalidate all workspace-related queries
       queryClient.invalidateQueries({ queryKey: AUTH_ME_QUERY_KEY })
     },
   })

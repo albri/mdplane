@@ -80,7 +80,6 @@ export async function validateCapabilityKey(
       return { valid: false, error: result.error || 'Invalid key' }
     }
 
-    // Verify the key type matches what we expect
     const expectedPermission = keyTypeToPermission(expectedKeyType)
     if (result.permission !== expectedPermission) {
       return {

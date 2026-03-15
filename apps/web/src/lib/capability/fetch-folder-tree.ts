@@ -184,7 +184,6 @@ async function buildRecursiveTree(
 
   const nodes: PageTreeNode[] = []
 
-  // Sort: folders first, then files, alphabetically
   const sorted = [...items].sort((a, b) => {
     if (a.type !== b.type) return a.type === 'folder' ? -1 : 1
     return a.name.localeCompare(b.name)
@@ -195,7 +194,6 @@ async function buildRecursiveTree(
     const url = `/${keyType}/${capabilityKey}/${itemPath}`
 
     if (item.type === 'file') {
-      // Remove .md extension from display name if present
       const displayName = item.name.replace(/\.md$/, '')
       nodes.push({
         type: 'page',
@@ -203,7 +201,6 @@ async function buildRecursiveTree(
         url,
       })
     } else {
-      // Folder - fetch children recursively with error handling
       try {
         const children = await fetchFolderContents(capabilityKey, keyType, itemPath)
         const childNodes = await buildRecursiveTree(
@@ -222,7 +219,6 @@ async function buildRecursiveTree(
         })
       } catch (error) {
         logCapabilityFetchError(`[buildRecursiveTree] Failed to fetch folder ${itemPath}:`, error)
-        // Add folder with empty children on error - allows graceful degradation
         nodes.push({
           type: 'folder',
           name: item.name,

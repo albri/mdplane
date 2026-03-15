@@ -84,8 +84,10 @@ authenticatedTest.describe('Control Access (Authenticated)', () => {
     const welcomeState = page.getByTestId('control-welcome-state');
 
     await expect(page.getByRole('heading', { name: /^welcome$/i })).toBeVisible();
-    await expect(welcomeState.getByText('Orchestration', { exact: true })).toBeVisible();
-    await expect(welcomeState.getByRole('button', { name: /open orchestration/i })).toBeVisible();
+    await expect(welcomeState.getByRole('link', { name: /orchestration/i })).toBeVisible();
+    await expect(welcomeState.getByRole('link', { name: /api keys/i })).toBeVisible();
+    await expect(welcomeState.getByRole('link', { name: /webhooks/i })).toBeVisible();
+    await expect(welcomeState.getByRole('link', { name: /settings/i })).toBeVisible();
   });
 
   authenticatedTest('should open and close control drawer on mobile', async ({ page }) => {

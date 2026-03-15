@@ -42,7 +42,6 @@ export function useKeyboardShortcuts({
   enabled = true 
 }: UseKeyboardShortcutsOptions) {
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    // Don't trigger shortcuts when typing in inputs
     const target = event.target as HTMLElement
     if (
       target.tagName === 'INPUT' ||
@@ -57,18 +56,15 @@ export function useKeyboardShortcuts({
 
       const keyMatch = event.key.toLowerCase() === shortcut.key.toLowerCase()
       const modifiers = shortcut.modifiers ?? []
-      
-      // Check modifiers - support both Cmd (Mac) and Ctrl (Windows)
+
       const metaRequired = modifiers.includes('meta')
       const ctrlRequired = modifiers.includes('ctrl')
       const altRequired = modifiers.includes('alt')
       const shiftRequired = modifiers.includes('shift')
-      
-      // Cmd/Ctrl interchangeable for cross-platform
+
       const cmdOrCtrl = metaRequired || ctrlRequired
       const cmdOrCtrlPressed = event.metaKey || event.ctrlKey
-      
-      // If no modifiers required, make sure none are pressed (except for special keys)
+
       const noModifiersRequired = !cmdOrCtrl && !altRequired && !shiftRequired
       const noModifiersPressed = !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey
       
