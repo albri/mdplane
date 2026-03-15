@@ -5,16 +5,14 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --radius-sm: 0.125rem;   /* 2px */
-  --radius-md: 0.1875rem;  /* 3px */
-  --radius-lg: 0.25rem;    /* 4px */
+  --radius-sm: 0.125rem;
+  --radius-md: 0.1875rem;
+  --radius-lg: 0.25rem;
 
-  /* Brand colors */
   --color-brand-terracotta: #D97757;
   --color-brand-amber: #E8A851;
   --color-brand-sage: #8B9A8B;
 
-  /* Semantic colors */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
@@ -34,7 +32,6 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
 
-  /* Sidebar colors */
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
