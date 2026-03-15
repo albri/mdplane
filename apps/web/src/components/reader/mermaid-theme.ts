@@ -31,6 +31,18 @@ export interface MermaidInitializeConfig {
   themeCSS: string
 }
 
+const BRAND = {
+  amber: '#E8A851',
+  amberLight: '#FDF6E9',
+  amberDark: '#3D2E1A',
+  terracotta: '#D97757',
+  terracottaLight: '#FCF0EC',
+  terracottaDark: '#3A211A',
+  sage: '#8B9A8B',
+  sageLight: '#F2F4F2',
+  sageDark: '#252A25',
+}
+
 export function getMermaidInitializeConfig(isDark: boolean): MermaidInitializeConfig {
   if (isDark) {
     return {
@@ -41,31 +53,31 @@ export function getMermaidInitializeConfig(isDark: boolean): MermaidInitializeCo
         darkMode: true,
         background: '#171717',
         fontFamily: 'var(--font-sans, ui-sans-serif, system-ui, sans-serif)',
-        primaryColor: '#222d12',
+        primaryColor: BRAND.amberDark,
         nodeTextColor: '#fafafa',
         primaryTextColor: '#fafafa',
-        primaryBorderColor: '#65a30d',
-        secondaryColor: '#1f1f1f',
+        primaryBorderColor: BRAND.amber,
+        secondaryColor: BRAND.sageDark,
         secondaryTextColor: '#fafafa',
-        secondaryBorderColor: '#404040',
+        secondaryBorderColor: BRAND.sage,
         tertiaryColor: '#1f1f1f',
         tertiaryTextColor: '#fafafa',
         tertiaryBorderColor: '#404040',
         lineColor: '#a3a3a3',
         textColor: '#fafafa',
         clusterBkg: '#1f1f1f',
-        clusterBorder: '#404040',
-        nodeBorder: '#65a30d',
+        clusterBorder: BRAND.sage,
+        nodeBorder: BRAND.amber,
         edgeLabelBackground: '#171717',
-        noteBkgColor: '#1f1f1f',
+        noteBkgColor: BRAND.terracottaDark,
         noteTextColor: '#fafafa',
-        noteBorderColor: '#525252',
+        noteBorderColor: BRAND.terracotta,
       },
       themeCSS: `
         .node rect,
         .node .label-container {
-          rx: 10px;
-          ry: 10px;
+          rx: 4px;
+          ry: 4px;
         }
       `,
     }
@@ -77,33 +89,33 @@ export function getMermaidInitializeConfig(isDark: boolean): MermaidInitializeCo
     theme: 'base',
     themeVariables: {
       darkMode: false,
-      background: '#f5f5f5',
+      background: '#FDFBF7',
       fontFamily: 'var(--font-sans, ui-sans-serif, system-ui, sans-serif)',
-      primaryColor: '#f1f8df',
-      nodeTextColor: '#0d0d0d',
-      primaryTextColor: '#0d0d0d',
-      primaryBorderColor: '#65a30d',
-      secondaryColor: '#e5e5e5',
-      secondaryTextColor: '#171717',
-      secondaryBorderColor: '#a3a3a3',
+      primaryColor: BRAND.amberLight,
+      nodeTextColor: '#1A1A1A',
+      primaryTextColor: '#1A1A1A',
+      primaryBorderColor: BRAND.amber,
+      secondaryColor: BRAND.sageLight,
+      secondaryTextColor: '#1A1A1A',
+      secondaryBorderColor: BRAND.sage,
       tertiaryColor: '#ffffff',
-      tertiaryTextColor: '#171717',
+      tertiaryTextColor: '#1A1A1A',
       tertiaryBorderColor: '#d4d4d4',
       lineColor: '#525252',
-      textColor: '#0d0d0d',
+      textColor: '#1A1A1A',
       clusterBkg: '#fafafa',
-      clusterBorder: '#a3a3a3',
-      nodeBorder: '#65a30d',
-      edgeLabelBackground: '#f5f5f5',
-      noteBkgColor: '#ecfccb',
-      noteTextColor: '#171717',
-      noteBorderColor: '#a3a3a3',
+      clusterBorder: BRAND.sage,
+      nodeBorder: BRAND.amber,
+      edgeLabelBackground: '#FDFBF7',
+      noteBkgColor: BRAND.terracottaLight,
+      noteTextColor: '#1A1A1A',
+      noteBorderColor: BRAND.terracotta,
     },
     themeCSS: `
       .node rect,
       .node .label-container {
-        rx: 10px;
-        ry: 10px;
+        rx: 4px;
+        ry: 4px;
       }
     `,
   }

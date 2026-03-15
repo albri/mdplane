@@ -163,73 +163,66 @@ function formatDateTime(timestampMs: number): string {
   return new Date(timestampMs).toLocaleString();
 }
 
-function setOverallCalloutTone(className: PillClass): void {
-  const callout = requireElement('overall-callout');
-  callout.classList.remove('tone-operational', 'tone-degraded', 'tone-down', 'tone-neutral');
+function setBannerTone(className: PillClass): void {
+  const banner = requireElement('status-banner');
+  banner.classList.remove('operational', 'degraded', 'down');
 
   switch (className) {
     case 'status-operational':
-      callout.classList.add('tone-operational');
+      banner.classList.add('operational');
       break;
     case 'status-degraded':
-      callout.classList.add('tone-degraded');
+      banner.classList.add('degraded');
       break;
     case 'status-down':
-      callout.classList.add('tone-down');
+      banner.classList.add('down');
       break;
-    default:
-      callout.classList.add('tone-neutral');
   }
 }
 
 function setHeadlineStatus(label: string, className: PillClass): void {
-  setText('headline-status', label);
-  setOverallCalloutTone(className);
+  setText('status-headline', label);
+  setBannerTone(className);
 
-  const icon = requireElement('headline-icon');
+  const icon = requireElement('status-icon');
   if (className === 'status-operational') {
     icon.textContent = '✓';
     return;
   }
-  if (className === 'status-degraded') {
+  if (className === 'status-degraded' || className === 'status-down') {
     icon.textContent = '!';
     return;
   }
-  if (className === 'status-down') {
-    icon.textContent = '!';
-    return;
-  }
-  icon.textContent = '...';
+  icon.textContent = '?';
 }
 
 function renderService(id: string, label: string, statusClass: PillClass): void {
   const cell = requireElement(id);
-  const chip = document.createElement('span');
-  chip.className = `status-pill ${statusClass}`;
-  chip.textContent = label;
-  cell.replaceChildren(chip);
+  cell.className = `badge badge-${statusClass.replace('status-', '')}`;
+  cell.textContent = label;
 }
 
-function setStaleIndicator(isStale: boolean): void {
-  requireElement('stale-pill').hidden = !isStale;
+function setStaleIndicator(stale: boolean): void {
+  requireElement('stale-badge').hidden = !stale;
+}
+
+function showError(show: boolean): void {
+  requireElement('services-section').hidden = show;
+  requireElement('error-section').hidden = !show;
 }
 
 function requireRefreshButton(): HTMLButtonElement {
-  const element = requireElement('refresh-button');
+  const element = requireElement('refresh-btn');
   if (!(element instanceof HTMLButtonElement)) {
     throw new Error('Missing required refresh button');
   }
   return element;
 }
 
-function requireRefreshLabel(): HTMLElement {
-  return requireElement('refresh-label');
-}
-
 function setRefreshPending(isPending: boolean): void {
   const button = requireRefreshButton();
   button.disabled = isPending;
-  requireRefreshLabel().textContent = isPending ? 'Refreshing...' : 'Refresh';
+  button.textContent = isPending ? 'Refreshing...' : 'Refresh';
 }
 
 function completePoll(): void {
@@ -287,6 +280,7 @@ async function poll(origin: string): Promise<void> {
     let displayTimestampMs = checkedAtMs;
 
     if (statusPayload !== null) {
+      showError(false);
       const serviceTimestampMs = parseIsoDate(statusPayload.data.timestamp) ?? checkedAtMs;
       state.lastHealthyAtMs = serviceTimestampMs;
       displayTimestampMs = serviceTimestampMs;
@@ -298,27 +292,26 @@ async function poll(origin: string): Promise<void> {
       const storagePresentation = componentPresentation(statusPayload.data.storage.status);
       const realtimePresentation = componentPresentation(statusPayload.data.websocket.status);
 
-      renderService('service-api', apiPresentation.label, apiPresentation.className);
-      renderService('service-storage', storagePresentation.label, storagePresentation.className);
-      renderService('service-realtime', realtimePresentation.label, realtimePresentation.className);
+      renderService('svc-api', apiPresentation.label, apiPresentation.className);
+      renderService('svc-storage', storagePresentation.label, storagePresentation.className);
+      renderService('svc-realtime', realtimePresentation.label, realtimePresentation.className);
     } else if (healthPayload !== null) {
+      showError(false);
       const serviceTimestampMs = parseIsoDate(healthPayload.timestamp) ?? checkedAtMs;
       state.lastHealthyAtMs = serviceTimestampMs;
       displayTimestampMs = serviceTimestampMs;
 
       setHeadlineStatus('Core API healthy', 'status-operational');
 
-      renderService('service-api', 'Operational', 'status-operational');
-      renderService('service-storage', 'Unknown', 'status-neutral');
-      renderService('service-realtime', 'Unknown', 'status-neutral');
+      renderService('svc-api', 'Operational', 'status-operational');
+      renderService('svc-storage', 'Unknown', 'status-neutral');
+      renderService('svc-realtime', 'Unknown', 'status-neutral');
     } else {
-      setHeadlineStatus('Unable to verify platform status', 'status-down');
-      renderService('service-api', 'Unavailable', 'status-down');
-      renderService('service-storage', 'No data', 'status-neutral');
-      renderService('service-realtime', 'No data', 'status-neutral');
+      showError(true);
+      setHeadlineStatus('Unable to reach platform', 'status-down');
     }
 
-    setText('updated-at', `Last fetched: ${formatDateTime(displayTimestampMs)}`);
+    setText('status-meta', `Last checked: ${formatDateTime(displayTimestampMs)}`);
     setStaleIndicator(isStale(state.lastHealthyAtMs, Date.now(), STALE_AFTER_MS));
   } finally {
     completePoll();
@@ -334,22 +327,19 @@ function startPolling(origin: string): void {
 
 function boot(): void {
   const apiOrigin = parseApiOrigin();
-  const apiOriginElement = requireElement('api-origin');
-  if (apiOrigin.isOverridden) {
-    apiOriginElement.hidden = false;
-    apiOriginElement.textContent = `API origin override: ${apiOrigin.origin}`;
-  } else {
-    apiOriginElement.hidden = true;
-  }
 
-  requireElement('refresh-button').addEventListener('click', () => {
+  requireElement('refresh-btn').addEventListener('click', () => {
     void poll(apiOrigin.origin);
   });
 
-  setHeadlineStatus('Checking current platform status...', 'status-neutral');
-  renderService('service-api', 'Checking', 'status-neutral');
-  renderService('service-storage', 'Checking', 'status-neutral');
-  renderService('service-realtime', 'Checking', 'status-neutral');
+  requireElement('retry-btn').addEventListener('click', () => {
+    void poll(apiOrigin.origin);
+  });
+
+  setHeadlineStatus('Checking status...', 'status-neutral');
+  renderService('svc-api', '—', 'status-neutral');
+  renderService('svc-storage', '—', 'status-neutral');
+  renderService('svc-realtime', '—', 'status-neutral');
   startPolling(apiOrigin.origin);
 }
 

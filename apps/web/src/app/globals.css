@@ -9,9 +9,9 @@
   --radius-md: 0.1875rem;
   --radius-lg: 0.25rem;
 
-  --color-brand-terracotta: #D97757;
-  --color-brand-amber: #E8A851;
-  --color-brand-sage: #8B9A8B;
+  --color-brand-terracotta: oklch(0.65 0.14 30);
+  --color-brand-amber: oklch(0.78 0.13 70);
+  --color-brand-sage: oklch(0.65 0.04 145);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -41,16 +41,16 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  --color-badge-task: #1A1A1A;
-  --color-badge-claim: #E8A851;
-  --color-badge-response: #8B9A8B;
-  --color-badge-blocked: #B91C1C;
-  --color-badge-answer: #6B8CAE;
-  --color-badge-comment: #E5E5E5;
-  --color-badge-renew: #5B9A8B;
-  --color-badge-cancel: #78716C;
-  --color-badge-vote: #9F7AEA;
-  --color-badge-heartbeat: #E8857A;
+  --color-badge-task: oklch(0.21 0 0);
+  --color-badge-claim: oklch(0.78 0.13 70);
+  --color-badge-response: oklch(0.65 0.04 145);
+  --color-badge-blocked: oklch(0.44 0.18 25);
+  --color-badge-answer: oklch(0.60 0.08 240);
+  --color-badge-comment: oklch(0.92 0 0);
+  --color-badge-renew: oklch(0.62 0.08 170);
+  --color-badge-cancel: oklch(0.53 0.02 60);
+  --color-badge-vote: oklch(0.62 0.17 300);
+  --color-badge-heartbeat: oklch(0.68 0.14 25);
 
   --color-status-pending: var(--status-pending);
   --color-status-claimed: var(--status-claimed);
@@ -59,84 +59,84 @@
   --color-status-blocked: var(--status-blocked);
   --color-accent-answer: var(--accent-answer);
 
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-sm: 0 1px 2px 0 oklch(0 0 0 / 0.05);
+  --shadow: 0 1px 3px 0 oklch(0 0 0 / 0.1), 0 1px 2px -1px oklch(0 0 0 / 0.1);
+  --shadow-lg: 0 4px 6px -1px oklch(0 0 0 / 0.1), 0 2px 4px -2px oklch(0 0 0 / 0.1);
 }
 
 :root {
   --radius: 0.1875rem;
-  --background: #FDFBF7;
-  --foreground: #1A1A1A;
-  --card: #FFFFFF;
-  --card-foreground: #1A1A1A;
-  --popover: #FFFFFF;
-  --popover-foreground: #1A1A1A;
-  --primary: #1A1A1A;
-  --primary-foreground: #FDFBF7;
-  --secondary: #F4F1EA;
-  --secondary-foreground: #1A1A1A;
-  --muted: #F4F1EA;
-  --muted-foreground: #78716C;
-  --accent: #F4F1EA;
-  --accent-foreground: #1A1A1A;
-  --destructive: #DC2626;
-  --border: #E5E2DB;
-  --input: #E5E2DB;
-  --ring: #1A1A1A;
+  --background: oklch(0.98 0.01 85);
+  --foreground: oklch(0.21 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.21 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.21 0 0);
+  --primary: oklch(0.21 0 0);
+  --primary-foreground: oklch(0.98 0.01 85);
+  --secondary: oklch(0.95 0.01 80);
+  --secondary-foreground: oklch(0.21 0 0);
+  --muted: oklch(0.95 0.01 80);
+  --muted-foreground: oklch(0.53 0.02 60);
+  --accent: oklch(0.95 0.01 80);
+  --accent-foreground: oklch(0.21 0 0);
+  --destructive: oklch(0.53 0.22 25);
+  --border: oklch(0.91 0.01 80);
+  --input: oklch(0.91 0.01 80);
+  --ring: oklch(0.21 0 0);
 
-  --sidebar: #F8F6F1;
-  --sidebar-foreground: #1A1A1A;
-  --sidebar-primary: #1A1A1A;
-  --sidebar-primary-foreground: #FDFBF7;
-  --sidebar-accent: #F4F1EA;
-  --sidebar-accent-foreground: #1A1A1A;
-  --sidebar-border: #E5E2DB;
-  --sidebar-ring: #1A1A1A;
+  --sidebar: oklch(0.97 0.01 80);
+  --sidebar-foreground: oklch(0.21 0 0);
+  --sidebar-primary: oklch(0.21 0 0);
+  --sidebar-primary-foreground: oklch(0.98 0.01 85);
+  --sidebar-accent: oklch(0.95 0.01 80);
+  --sidebar-accent-foreground: oklch(0.21 0 0);
+  --sidebar-border: oklch(0.91 0.01 80);
+  --sidebar-ring: oklch(0.21 0 0);
 
-  --status-pending: #3B82F6;
-  --status-claimed: #E8A851;
-  --status-completed: #8B9A8B;
-  --status-expired: #78716C;
-  --status-blocked: #DC2626;
-  --accent-answer: #6B8CAE;
+  --status-pending: oklch(0.62 0.18 255);
+  --status-claimed: oklch(0.78 0.13 70);
+  --status-completed: oklch(0.65 0.04 145);
+  --status-expired: oklch(0.53 0.02 60);
+  --status-blocked: oklch(0.53 0.22 25);
+  --accent-answer: oklch(0.60 0.08 240);
 }
 
 .dark {
-  --background: #141211;
-  --foreground: #F5F3EF;
-  --card: #141211;
-  --card-foreground: #F5F3EF;
-  --popover: #1C1A18;
-  --popover-foreground: #F5F3EF;
-  --primary: #F5F3EF;
-  --primary-foreground: #141211;
-  --secondary: #262420;
-  --secondary-foreground: #F5F3EF;
-  --muted: #262420;
-  --muted-foreground: #A8A29E;
-  --accent: #262420;
-  --accent-foreground: #F5F3EF;
-  --destructive: #EF4444;
-  --border: #2E2C28;
-  --input: #2E2C28;
-  --ring: #F5F3EF;
+  --background: oklch(0.18 0.01 60);
+  --foreground: oklch(0.96 0.01 80);
+  --card: oklch(0.18 0.01 60);
+  --card-foreground: oklch(0.96 0.01 80);
+  --popover: oklch(0.22 0.01 60);
+  --popover-foreground: oklch(0.96 0.01 80);
+  --primary: oklch(0.96 0.01 80);
+  --primary-foreground: oklch(0.18 0.01 60);
+  --secondary: oklch(0.26 0.01 60);
+  --secondary-foreground: oklch(0.96 0.01 80);
+  --muted: oklch(0.26 0.01 60);
+  --muted-foreground: oklch(0.70 0.02 60);
+  --accent: oklch(0.26 0.01 60);
+  --accent-foreground: oklch(0.96 0.01 80);
+  --destructive: oklch(0.58 0.22 25);
+  --border: oklch(0.30 0.01 60);
+  --input: oklch(0.30 0.01 60);
+  --ring: oklch(0.96 0.01 80);
 
-  --sidebar: #1C1A18;
-  --sidebar-foreground: #F5F3EF;
-  --sidebar-primary: #F5F3EF;
-  --sidebar-primary-foreground: #141211;
-  --sidebar-accent: #262420;
-  --sidebar-accent-foreground: #F5F3EF;
-  --sidebar-border: #2E2C28;
-  --sidebar-ring: #F5F3EF;
+  --sidebar: oklch(0.22 0.01 60);
+  --sidebar-foreground: oklch(0.96 0.01 80);
+  --sidebar-primary: oklch(0.96 0.01 80);
+  --sidebar-primary-foreground: oklch(0.18 0.01 60);
+  --sidebar-accent: oklch(0.26 0.01 60);
+  --sidebar-accent-foreground: oklch(0.96 0.01 80);
+  --sidebar-border: oklch(0.30 0.01 60);
+  --sidebar-ring: oklch(0.96 0.01 80);
 
-  --status-pending: #3B82F6;
-  --status-claimed: #E8A851;
-  --status-completed: #8B9A8B;
-  --status-expired: #78716C;
-  --status-blocked: #EF4444;
-  --accent-answer: #6B8CAE;
+  --status-pending: oklch(0.62 0.18 255);
+  --status-claimed: oklch(0.78 0.13 70);
+  --status-completed: oklch(0.65 0.04 145);
+  --status-expired: oklch(0.53 0.02 60);
+  --status-blocked: oklch(0.58 0.22 25);
+  --accent-answer: oklch(0.60 0.08 240);
 }
 
 .root {

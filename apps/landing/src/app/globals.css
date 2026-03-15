@@ -3,31 +3,28 @@
 @source "../../../../packages/ui/src/**/*.{ts,tsx}";
 
 @theme {
-  /* Fonts */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-space-mono), ui-monospace, SFMono-Regular, monospace;
 
-  --color-terracotta: #D97757;
-  --color-amber: #E8A851;
-  --color-sage: #8B9A8B;
-  --color-brand-terracotta: #D97757;
-  --color-brand-amber: #E8A851;
-  --color-brand-sage: #8B9A8B;
+  --color-terracotta: oklch(0.65 0.14 30);
+  --color-amber: oklch(0.78 0.13 70);
+  --color-sage: oklch(0.65 0.04 145);
+  --color-brand-terracotta: oklch(0.65 0.14 30);
+  --color-brand-amber: oklch(0.78 0.13 70);
+  --color-brand-sage: oklch(0.65 0.04 145);
 
-  /* Badge/status colors (warm palette) */
-  --color-badge-task: #1A1A1A;
-  --color-badge-claim: #E8A851;
-  --color-badge-response: #8B9A8B;
-  --color-badge-blocked: #B91C1C;
-  --color-badge-answer: #6B8CAE;
-  --color-badge-comment: #FFFFFF;
-  --color-badge-renew: #5B9A8B;
-  --color-badge-cancel: #78716C;
-  --color-badge-vote: #9F7AEA;
-  --color-badge-heartbeat: #E8857A;
+  --color-badge-task: oklch(0.21 0 0);
+  --color-badge-claim: oklch(0.78 0.13 70);
+  --color-badge-response: oklch(0.65 0.04 145);
+  --color-badge-blocked: oklch(0.44 0.18 25);
+  --color-badge-answer: oklch(0.60 0.08 240);
+  --color-badge-comment: oklch(1 0 0);
+  --color-badge-renew: oklch(0.62 0.08 170);
+  --color-badge-cancel: oklch(0.53 0.02 60);
+  --color-badge-vote: oklch(0.62 0.17 300);
+  --color-badge-heartbeat: oklch(0.68 0.14 25);
 
-  /* Semantic colors (theme-aware, via CSS vars) */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
@@ -47,12 +44,10 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
 
-  /* Brutal shadows (neo-brutalist hard shadows) */
   --shadow-sm: 4px 4px 0 0 var(--foreground);
   --shadow: 6px 6px 0 0 var(--foreground);
   --shadow-lg: 12px 12px 0 0 var(--foreground);
 
-  /* Radius */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -88,26 +83,24 @@ code, pre {
 
 :root {
   --radius: 0;
-
-  /* Warm brutalist palette - Light mode */
-  --background: #FDFBF7;           /* cream */
-  --foreground: #1A1A1A;           /* ink */
-  --muted: #F4F1EA;                /* cream-dark */
-  --muted-foreground: #8B9A8B;     /* sage */
-  --border: #1A1A1A;               /* ink */
-  --input: #1A1A1A;
-  --ring: #D97757;                 /* terracotta */
-  --card: #FDFBF7;
-  --card-foreground: #1A1A1A;
-  --popover: #FDFBF7;
-  --popover-foreground: #1A1A1A;
-  --primary: #D97757;              /* terracotta */
-  --primary-foreground: #FDFBF7;
-  --secondary: #F4F1EA;            /* cream-dark */
-  --secondary-foreground: #1A1A1A;
-  --accent: #E8A851;               /* amber */
-  --accent-foreground: #1A1A1A;
-  --destructive: hsl(0 72.2% 50.6%);
+  --background: oklch(0.98 0.01 85);
+  --foreground: oklch(0.21 0 0);
+  --muted: oklch(0.95 0.01 80);
+  --muted-foreground: oklch(0.65 0.04 145);
+  --border: oklch(0.21 0 0);
+  --input: oklch(0.21 0 0);
+  --ring: oklch(0.65 0.14 30);
+  --card: oklch(0.98 0.01 85);
+  --card-foreground: oklch(0.21 0 0);
+  --popover: oklch(0.98 0.01 85);
+  --popover-foreground: oklch(0.21 0 0);
+  --primary: oklch(0.65 0.14 30);
+  --primary-foreground: oklch(0.98 0.01 85);
+  --secondary: oklch(0.95 0.01 80);
+  --secondary-foreground: oklch(0.21 0 0);
+  --accent: oklch(0.78 0.13 70);
+  --accent-foreground: oklch(0.21 0 0);
+  --destructive: oklch(0.53 0.22 25);
 }
 
 
