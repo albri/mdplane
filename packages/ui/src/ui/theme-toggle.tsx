@@ -35,17 +35,15 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
     >
       <Sun
         fill='currentColor'
-        className={cn(
-          'size-6.5 p-1.5 text-muted-foreground',
-          mode === 'light' ? 'bg-accent text-accent-foreground' : null
-        )}
+        className={cn('size-6.5 p-1.5 text-muted-foreground', {
+          'bg-accent text-accent-foreground': mode === 'light',
+        })}
       />
       <Moon
         fill='currentColor'
-        className={cn(
-          'size-6.5 p-1.5 text-muted-foreground',
-          mode === 'dark' ? 'bg-accent text-accent-foreground' : null
-        )}
+        className={cn('size-6.5 p-1.5 text-muted-foreground', {
+          'bg-accent text-accent-foreground': mode === 'dark',
+        })}
       />
     </button>
   )

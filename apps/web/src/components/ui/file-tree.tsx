@@ -22,7 +22,7 @@ import {
 import Link from "next/link"
 
 const treeItemClassName =
-  "flex w-full items-center gap-2 rounded-lg p-2 text-start text-muted-foreground wrap-anywhere outline-none transition-[color,box-shadow] [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent/50 hover:text-accent-foreground/80 hover:transition-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+  "flex w-full min-w-0 items-center gap-2 rounded-lg p-2 text-start text-muted-foreground outline-none transition-[color,box-shadow] [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent/50 hover:text-accent-foreground/80 hover:transition-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
 
 const treeItemActiveClassName =
   "bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary hover:transition-colors"
@@ -77,12 +77,12 @@ export const FileTree = ({
     >
       <div
         className={cn(
-          "text-sm",
+          "min-w-0 overflow-hidden text-sm",
           className
         )}
         {...props}
       >
-        <div>{children}</div>
+        <div className="min-w-0">{children}</div>
       </div>
     </FileTreeContext.Provider>
   )

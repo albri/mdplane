@@ -5,10 +5,6 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-space-mono), ui-monospace, SFMono-Regular, monospace;
-
   --radius-sm: 0.125rem;   /* 2px */
   --radius-md: 0.1875rem;  /* 3px */
   --radius-lg: 0.25rem;    /* 4px */
@@ -155,22 +151,27 @@
   isolation: isolate;
 }
 
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  position: relative;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+}
+
+code, pre, .font-mono {
+  font-family: var(--font-space-mono), ui-monospace, SFMono-Regular, monospace;
+  font-feature-settings: "calt" 1, "liga" 1, "ss01" 1;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-[15px] leading-6 text-foreground;
-    font-family: var(--font-sans);
-    position: relative;
-  }
-
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-display);
-  }
-
-  code, pre {
-    font-family: var(--font-mono);
   }
 
   h1 {
@@ -191,10 +192,6 @@
 
   p {
     @apply leading-normal;
-  }
-
-  .font-mono {
-    font-feature-settings: "calt" 1, "liga" 1, "ss01" 1;
   }
 
   .code-js {

@@ -9,7 +9,6 @@ export { LLMCopyButton, CapabilityBadge, ViewOptions } from './reader-actions'
 export { AppendSection, AppendSectionSkeleton, AppendEntry } from './appends'
 
 export { FolderView, type FolderItem } from './folder-view'
-export { OwnerBanner } from './owner-banner'
 
 export { LoadingState, ErrorState, NotFoundState, isNotFoundError } from './states'
 

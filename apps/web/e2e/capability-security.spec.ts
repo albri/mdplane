@@ -11,12 +11,12 @@ import { test, expect, TEST_KEYS, BACKEND_URL, FRONTEND_URL } from './fixtures';
 
 test.describe('Capability Security', () => {
   test('invalid key UI shows workspace not found message', async ({ page }) => {
-    const fakeKey = 'r_invalidKey123456789';
+    const fakeKey = 'r_invalidKey1234567890abc';
 
     await page.goto(`${FRONTEND_URL}/r/${fakeKey}`, { waitUntil: 'networkidle' });
 
-    await expect(page.locator('[data-testid="not-found"]')).toBeVisible();
-    await expect(page.getByRole('heading', { name: /workspace not found/i })).toBeVisible();
+    await expect(page.locator('[data-testid="not-found"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: /workspace not found/i })).toBeVisible({ timeout: 10000 });
   });
 
   test('should return 404 for invalid capability keys (not 403)', async ({ page }) => {

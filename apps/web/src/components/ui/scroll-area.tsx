@@ -16,7 +16,7 @@ function ScrollArea({
       className={cn("relative", className)}
       {...props}
     >
-      <ScrollAreaPrimitive.Viewport className="size-full">
+      <ScrollAreaPrimitive.Viewport className="size-full [&>div]:!min-w-0">
         <ScrollAreaPrimitive.Content>{children}</ScrollAreaPrimitive.Content>
       </ScrollAreaPrimitive.Viewport>
       <ScrollAreaPrimitive.Scrollbar
