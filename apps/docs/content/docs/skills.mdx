@@ -1,0 +1,61 @@
+---
+title: Skills
+description: Give coding agents the mdplane instructions they need to operate safely and correctly.
+---
+
+Skills teach an external coding agent how to use mdplane correctly.
+
+Use them when you want Claude Code, Codex, OpenCode, or a similar tool to understand:
+
+- the capability URL model
+- the append protocol
+- safe defaults like least privilege
+- the difference between raw HTTP and CLI usage
+
+## Quick Setup
+
+```bash
+npx skills add albri/mdplane
+```
+
+## Which Skill to Use
+
+| Skill | Use it when |
+|---|---|
+| `mdplane` | The agent should call the HTTP API directly |
+| `mdplane-cli` | The agent should operate through shell commands |
+
+## What the Agent Needs at Runtime
+
+After installation, the agent usually works in one of two modes:
+
+- bootstrap the workspace itself, then save the returned capability URLs locally
+- or receive an existing base URL, capability URL or API key, and target file path from the prompt or watcher
+
+In both cases, the agent still needs enough context to know:
+
+- which mdplane deployment to talk to
+- whether it should bootstrap a workspace or use an existing one
+- which file or workflow it should operate on
+
+## Minimal Prompt
+
+```text
+Use the mdplane skill.
+Use mdplane as the shared worklog and coordination layer:
+1) bootstrap a workspace or load existing workspace keys
+2) write/read one workflow markdown file
+3) append task, claim, and response updates
+If blocked, append blocked with a clear question.
+```
+
+## Watcher-Oriented Prompt
+
+```text
+Use the mdplane skill.
+Use mdplane as the shared worklog and coordination layer.
+Create a local watcher in TypeScript that reacts to mdplane task.created events,
+reads the file path and append ID from the event,
+starts a reviewer agent,
+and appends claim and response updates back to the same workflow file.
+```

@@ -1,0 +1,280 @@
+# Combined schema index for mdplane API
+# This file aggregates all component schemas using $ref
+# Reference: docs/Obsidian Vault/Projects/mdplane/API Design.md
+
+# =============================================================================
+# Core Schemas
+# =============================================================================
+Error:
+  $ref: 'core.yaml#/Error'
+SuccessResponse:
+  $ref: 'core.yaml#/SuccessResponse'
+PaginatedResponse:
+  $ref: 'core.yaml#/PaginatedResponse'
+CapabilityUrls:
+  $ref: 'core.yaml#/CapabilityUrls'
+FileMetadata:
+  $ref: 'core.yaml#/FileMetadata'
+FileReadResponse:
+  $ref: 'core.yaml#/FileReadResponse'
+FileUpdateRequest:
+  $ref: 'core.yaml#/FileUpdateRequest'
+FileUpdateResponse:
+  $ref: 'core.yaml#/FileUpdateResponse'
+FileDeleteResponse:
+  $ref: 'core.yaml#/FileDeleteResponse'
+FileMoveRequest:
+  $ref: 'core.yaml#/FileMoveRequest'
+FileMoveResponse:
+  $ref: 'core.yaml#/FileMoveResponse'
+FileRenameRequest:
+  $ref: 'core.yaml#/FileRenameRequest'
+TaskStats:
+  $ref: 'core.yaml#/TaskStats'
+
+# =============================================================================
+# Append Schemas
+# =============================================================================
+UserAppendType:
+  $ref: 'appends.yaml#/UserAppendType'
+SystemAppendType:
+  $ref: 'appends.yaml#/SystemAppendType'
+AppendType:
+  $ref: 'appends.yaml#/AppendType'
+Priority:
+  $ref: 'appends.yaml#/Priority'
+AppendStatus:
+  $ref: 'appends.yaml#/AppendStatus'
+Append:
+  $ref: 'appends.yaml#/Append'
+AppendRequest:
+  $ref: 'appends.yaml#/AppendRequest'
+AppendResponse:
+  $ref: 'appends.yaml#/AppendResponse'
+AppendListResponse:
+  $ref: 'appends.yaml#/AppendListResponse'
+AppendUpdateRequest:
+  $ref: 'appends.yaml#/AppendUpdateRequest'
+AppendUpdateResponse:
+  $ref: 'appends.yaml#/AppendUpdateResponse'
+TaskAppendRequest:
+  $ref: 'appends.yaml#/TaskAppendRequest'
+ClaimRequest:
+  $ref: 'appends.yaml#/ClaimRequest'
+ClaimResponse:
+  $ref: 'appends.yaml#/ClaimResponse'
+ClaimRenewRequest:
+  $ref: 'appends.yaml#/ClaimRenewRequest'
+ClaimRenewResponse:
+  $ref: 'appends.yaml#/ClaimRenewResponse'
+ResponseAppendRequest:
+  $ref: 'appends.yaml#/ResponseAppendRequest'
+BlockedAppendRequest:
+  $ref: 'appends.yaml#/BlockedAppendRequest'
+AnswerAppendRequest:
+  $ref: 'appends.yaml#/AnswerAppendRequest'
+CommentAppendRequest:
+  $ref: 'appends.yaml#/CommentAppendRequest'
+CancelAppendRequest:
+  $ref: 'appends.yaml#/CancelAppendRequest'
+VoteAppendRequest:
+  $ref: 'appends.yaml#/VoteAppendRequest'
+BulkAppendRequest:
+  $ref: 'appends.yaml#/BulkAppendRequest'
+BulkAppendResponse:
+  $ref: 'appends.yaml#/BulkAppendResponse'
+
+# =============================================================================
+# Folder Schemas
+# =============================================================================
+FolderItemType:
+  $ref: 'folders.yaml#/FolderItemType'
+FolderItem:
+  $ref: 'folders.yaml#/FolderItem'
+FolderListResponse:
+  $ref: 'folders.yaml#/FolderListResponse'
+FolderCreateRequest:
+  $ref: 'folders.yaml#/FolderCreateRequest'
+FolderCreateResponse:
+  $ref: 'folders.yaml#/FolderCreateResponse'
+FolderMoveRequest:
+  $ref: 'folders.yaml#/FolderMoveRequest'
+FolderMoveResponse:
+  $ref: 'folders.yaml#/FolderMoveResponse'
+FolderRenameRequest:
+  $ref: 'folders.yaml#/FolderRenameRequest'
+FolderDeleteRequest:
+  $ref: 'folders.yaml#/FolderDeleteRequest'
+FolderDeleteResponse:
+  $ref: 'folders.yaml#/FolderDeleteResponse'
+FolderStatsResponse:
+  $ref: 'folders.yaml#/FolderStatsResponse'
+FolderSettings:
+  $ref: 'folders.yaml#/FolderSettings'
+FolderSettingsUpdateRequest:
+  $ref: 'folders.yaml#/FolderSettingsUpdateRequest'
+FolderBulkCreateItem:
+  $ref: 'folders.yaml#/FolderBulkCreateItem'
+FolderBulkCreateRequest:
+  $ref: 'folders.yaml#/FolderBulkCreateRequest'
+FolderBulkCreateResultItem:
+  $ref: 'folders.yaml#/FolderBulkCreateResultItem'
+FolderBulkCreateResponse:
+  $ref: 'folders.yaml#/FolderBulkCreateResponse'
+CreateFileRequest:
+  $ref: 'folders.yaml#/CreateFileRequest'
+CreateFileResponse:
+  $ref: 'folders.yaml#/CreateFileResponse'
+
+# =============================================================================
+# Scoped Key Schemas
+# =============================================================================
+KeyPermission:
+  $ref: 'keys.yaml#/KeyPermission'
+ScopedKeyCreateRequest:
+  $ref: 'keys.yaml#/ScopedKeyCreateRequest'
+ScopedKeyCreateResponse:
+  $ref: 'keys.yaml#/ScopedKeyCreateResponse'
+ScopedKey:
+  $ref: 'keys.yaml#/ScopedKey'
+ScopedKeyListResponse:
+  $ref: 'keys.yaml#/ScopedKeyListResponse'
+KeyRevokeResponse:
+  $ref: 'keys.yaml#/KeyRevokeResponse'
+
+# =============================================================================
+# Authentication Schemas (OAuth via BetterAuth)
+# =============================================================================
+User:
+  $ref: 'auth.yaml#/User'
+Workspace:
+  $ref: 'auth.yaml#/Workspace'
+MeResponse:
+  $ref: 'auth.yaml#/MeResponse'
+LogoutResponse:
+  $ref: 'auth.yaml#/LogoutResponse'
+
+# =============================================================================
+# Webhook Schemas
+# =============================================================================
+WebhookEvent:
+  $ref: 'webhooks.yaml#/WebhookEvent'
+WebhookStatus:
+  $ref: 'webhooks.yaml#/WebhookStatus'
+WebhookCreateRequest:
+  $ref: 'webhooks.yaml#/WebhookCreateRequest'
+WebhookCreateResponse:
+  $ref: 'webhooks.yaml#/WebhookCreateResponse'
+Webhook:
+  $ref: 'webhooks.yaml#/Webhook'
+WebhookListResponse:
+  $ref: 'webhooks.yaml#/WebhookListResponse'
+WebhookUpdateRequest:
+  $ref: 'webhooks.yaml#/WebhookUpdateRequest'
+WebhookUpdateResponse:
+  $ref: 'webhooks.yaml#/WebhookUpdateResponse'
+WebhookDeleteResponse:
+  $ref: 'webhooks.yaml#/WebhookDeleteResponse'
+WebhookLogStatus:
+  $ref: 'webhooks.yaml#/WebhookLogStatus'
+WebhookLogEntry:
+  $ref: 'webhooks.yaml#/WebhookLogEntry'
+WebhookLogsResponse:
+  $ref: 'webhooks.yaml#/WebhookLogsResponse'
+WebhookTestRequest:
+  $ref: 'webhooks.yaml#/WebhookTestRequest'
+WebhookTestResponse:
+  $ref: 'webhooks.yaml#/WebhookTestResponse'
+
+# =============================================================================
+# API Key Schemas
+# =============================================================================
+ApiKey:
+  $ref: 'api-keys.yaml#/ApiKey'
+ApiKeyCreateRequest:
+  $ref: 'api-keys.yaml#/ApiKeyCreateRequest'
+ApiKeyCreateResponse:
+  $ref: 'api-keys.yaml#/ApiKeyCreateResponse'
+ApiKeyListResponse:
+  $ref: 'api-keys.yaml#/ApiKeyListResponse'
+
+# =============================================================================
+# Bootstrap Schemas
+# =============================================================================
+BootstrapRequest:
+  $ref: 'bootstrap.yaml#/BootstrapRequest'
+BootstrapResponse:
+  $ref: 'bootstrap.yaml#/BootstrapResponse'
+RotateAllResponse:
+  $ref: 'workspaces.yaml#/RotateAllResponse'
+WorkspaceRenameRequest:
+  $ref: 'workspaces.yaml#/WorkspaceRenameRequest'
+WorkspaceRenameResponse:
+  $ref: 'workspaces.yaml#/WorkspaceRenameResponse'
+
+# =============================================================================
+# Claiming Schemas
+# =============================================================================
+ClaimWorkspaceRequest:
+  $ref: 'claiming.yaml#/ClaimWorkspaceRequest'
+ClaimWorkspaceResponse:
+  $ref: 'claiming.yaml#/ClaimWorkspaceResponse'
+
+# =============================================================================
+# Job Schemas
+# =============================================================================
+JobStatus:
+  $ref: 'jobs.yaml#/JobStatus'
+ExportFormat:
+  $ref: 'jobs.yaml#/ExportFormat'
+ExportRequest:
+  $ref: 'jobs.yaml#/ExportRequest'
+JobResponse:
+  $ref: 'jobs.yaml#/JobResponse'
+ExportResponse:
+  $ref: 'jobs.yaml#/ExportResponse'
+
+# =============================================================================
+# Realtime Schemas
+# =============================================================================
+HeartbeatStatus:
+  $ref: 'realtime.yaml#/HeartbeatStatus'
+SubscribeMessageType:
+  $ref: 'realtime.yaml#/SubscribeMessageType'
+HeartbeatRequest:
+  $ref: 'realtime.yaml#/HeartbeatRequest'
+HeartbeatResponse:
+  $ref: 'realtime.yaml#/HeartbeatResponse'
+SubscribeMessage:
+  $ref: 'realtime.yaml#/SubscribeMessage'
+AgentLiveness:
+  $ref: 'realtime.yaml#/AgentLiveness'
+AgentLivenessResponse:
+  $ref: 'realtime.yaml#/AgentLivenessResponse'
+
+# =============================================================================
+# Search Schemas
+# =============================================================================
+SearchResultType:
+  $ref: 'search.yaml#/SearchResultType'
+SearchResult:
+  $ref: 'search.yaml#/SearchResult'
+SearchResponse:
+  $ref: 'search.yaml#/SearchResponse'
+
+# =============================================================================
+# System Schemas
+# =============================================================================
+HealthStatus:
+  $ref: 'system.yaml#/HealthStatus'
+ChangeType:
+  $ref: 'system.yaml#/ChangeType'
+HealthResponse:
+  $ref: 'system.yaml#/HealthResponse'
+StatusResponse:
+  $ref: 'system.yaml#/StatusResponse'
+ChangelogEntry:
+  $ref: 'system.yaml#/ChangelogEntry'
+ChangelogResponse:
+  $ref: 'system.yaml#/ChangelogResponse'
+

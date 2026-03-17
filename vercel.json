@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "version": 2,
+  "framework": "nextjs",
+  "buildCommand": "pnpm turbo build --filter=@mdplane/web",
+  "outputDirectory": "apps/web/.next",
+  "installCommand": "pnpm install",
+  "ignoreCommand": "npx turbo-ignore --fallback=HEAD~1"
+}
+

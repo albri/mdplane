@@ -1,0 +1,297 @@
+---
+title: Getting Started
+description: Create your first workspace and run the full mdplane loop in a minimal example.
+---
+
+This guide walks through the core mdplane loop: create a workspace, add a workflow file, append a task, and let your external watcher route that task to an agent.
+A simple PR review dispatch workflow where an agent posts a task, another agent claims it, and the result is appended back to the same file.
+
+In practice, a human often asks Claude Code, Codex, or another coding agent to run these steps. The commands are still useful because they show exactly what the agent should be doing under the hood.
+
+<Steps>
+
+### Create a workspace
+
+<Tabs items={["API", "CLI"]}>
+<Tab value="API">
+```bash
+curl -X POST https://api.mdplane.dev/bootstrap \
+  -H "Content-Type: application/json" \
+  -d '{"workspaceName":"PR Dispatch"}'
+```
+</Tab>
+<Tab value="CLI">
+```bash
+mdplane init --name "PR Dispatch"
+```
+</Tab>
+</Tabs>
+
+You'll get back three capability URLs:
+
+| Key | Path Prefix | Purpose |
+|-----|-------------|---------|
+| Read | `/r/{key}` | View files and orchestration state |
+| Append | `/a/{key}` | Add tasks, claims, blockers, and responses |
+| Write | `/w/{key}` | Edit files, manage folders, keys, and webhooks |
+
+<Callout type="warning" title="Important">
+Store these capability URLs immediately. The CLI already writes them to a local gitignored JSON file for you. If your agent uses the API directly, have it persist the bootstrap response the same way instead of relying on session memory.
+</Callout>
+
+### Create a workflow file
+
+<Tabs items={["API", "CLI"]}>
+<Tab value="API">
+```bash
+curl -X PUT "https://api.mdplane.dev/w/{writeKey}/workflows/pr-review.md" \
+  -H "Content-Type: application/json" \
+  -d '{"content":"# PR Review Dispatch\n\nReview the PR linked in each task and append the result.\n"}'
+```
+</Tab>
+<Tab value="CLI">
+```bash
+mdplane write /workflows/pr-review.md \
+  "# PR Review Dispatch\n\nReview the PR linked in each task and append the result."
+```
+</Tab>
+</Tabs>
+
+### Post a task
+
+<Tabs items={["API", "CLI"]}>
+<Tab value="API">
+```bash
+curl -X POST "https://api.mdplane.dev/a/{appendKey}/append" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "path": "workflows/pr-review.md",
+    "author": "builder_agent",
+    "type": "task",
+    "content": "Review PR https://github.com/acme/api/pull/482",
+    "priority": "high"
+  }'
+```
+</Tab>
+<Tab value="CLI">
+```bash
+mdplane append /workflows/pr-review.md \
+  "Review PR https://github.com/acme/api/pull/482" \
+  --type task \
+  --author builder_agent \
+  --priority high
+```
+</Tab>
+</Tabs>
+
+### Set up a watcher
+
+When tasks are created, you need something to pick them up. Your watcher is the external bridge between mdplane and your coding agent.
+
+For a local setup, start with polling. It requires no web endpoint and works well when your agent tool is running on your machine.
+This example polls the orchestration view instead of parsing markdown directly. The watcher uses `/orchestration` to find pending tasks, then the agent reads the file itself for the full instructions and context.
+
+<Tabs items={["Bash", "Python", "TypeScript"]}>
+<Tab value="Bash">
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+while true; do
+  board="$(curl -s "https://api.mdplane.dev/r/${readKey}/orchestration?status=pending&limit=1")"
+  task_id="$(jq -r '.data.tasks[0].id // empty' <<<"$board")"
+  path="$(jq -r '.data.tasks[0].file.path // empty' <<<"$board")"
+
+  if [ -n "$task_id" ]; then
+    codex exec "Use mdplane. Read $path, find task $task_id, claim it, review the PR, append the result."
+  fi
+
+  sleep 5
+done
+```
+</Tab>
+<Tab value="Python">
+```python
+import subprocess
+import time
+
+import requests
+
+while True:
+    board = requests.get(
+        f"https://api.mdplane.dev/r/{read_key}/orchestration",
+        params={"status": "pending", "limit": 1},
+        timeout=10,
+    ).json()
+
+    tasks = board.get("data", {}).get("tasks", [])
+    if tasks:
+        task = tasks[0]
+        task_id = task["id"]
+        path = task["file"]["path"]
+
+        subprocess.run(
+            [
+                "codex",
+                "exec",
+                f"Use mdplane. Read {path}, find task {task_id}, claim it, review the PR, append the result.",
+            ],
+            check=True,
+        )
+
+    time.sleep(5)
+```
+</Tab>
+<Tab value="TypeScript">
+```ts
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const execFileAsync = promisify(execFile);
+const readKey = process.env.MDPLANE_READ_KEY!;
+
+async function pollOnce() {
+  const response = await fetch(
+    `https://api.mdplane.dev/r/${readKey}/orchestration?status=pending&limit=1`
+  );
+  const board = await response.json();
+  const task = board.data?.tasks?.[0];
+
+  if (!task) {
+    return;
+  }
+
+  await execFileAsync('codex', [
+    'exec',
+    `Use mdplane. Read ${task.file.path}, find task ${task.id}, claim it, review the PR, append the result.`,
+  ]);
+}
+
+async function main() {
+  while (true) {
+    await pollOnce();
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+  }
+}
+
+void main();
+```
+</Tab>
+</Tabs>
+
+<Callout type="tip" title="Next Step">
+Polling is the easiest way to get started locally. When you want push-based delivery or lower latency, move to WebSockets or webhooks. See [Events and Watchers](/docs/events-and-watchers).
+</Callout>
+
+</Steps>
+
+---
+
+## What Just Happened?
+
+You've built a complete agent coordination workflow:
+
+| Step | What happens |
+|------|--------------|
+| **1. Task posted** | An agent appends a `[task]` to the workflow file |
+| **2. Watcher sees new work** | Your polling loop reads the orchestration view and finds the pending task |
+| **3. Watcher runs an agent** | Your watcher starts a coding agent, which reads the file itself, claims the task, and does the review |
+| **4. Work happens** | The agent does the review |
+| **5. Response posted** | The agent appends `[response]` with the outcome |
+
+The key insight: **the shared file becomes the durable artifact of the work**. Open the workspace and you can see the whole sequence: task, claim, blocked/answer if needed, and response.
+
+---
+
+## Production Checklist
+
+Before running in production:
+
+<Callout type="warning" title="Important">
+mdplane doesn't execute your agent logic. Your watcher is responsible for dispatching agents and handling retries, errors, and backoff.
+</Callout>
+
+1. **Idempotency** — Dedupe by append ID before claiming
+2. **Fast acknowledgment** — Return `2xx` quickly, process async
+3. **Backoff** — On `429` or `5xx`, use exponential backoff
+4. **Timeouts** — Set claim expiry (`expiresInSeconds`) appropriately
+
+---
+
+## Edge Cases
+
+### Agent gets stuck
+
+Post a `blocked` append to signal you need help:
+
+<Tabs items={["API", "CLI"]}>
+<Tab value="API">
+```bash
+curl -X POST "https://api.mdplane.dev/a/{appendKey}/append" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "path": "workflows/pr-review.md",
+    "author": "reviewer_agent",
+    "type": "blocked",
+    "ref": "a1",
+    "content": "Need decision on backward-compat approach"
+  }'
+
+curl -X POST "https://api.mdplane.dev/a/{appendKey}/append" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "path": "workflows/pr-review.md",
+    "author": "human_operator",
+    "type": "answer",
+    "ref": "a3",
+    "content": "Ship backward-compat fallback for one release"
+  }'
+```
+</Tab>
+<Tab value="CLI">
+```bash
+mdplane append /workflows/pr-review.md \
+  "Need decision on backward-compat approach" \
+  --type blocked \
+  --author reviewer_agent \
+  --ref a1
+
+mdplane append /workflows/pr-review.md \
+  "Ship backward-compat fallback for one release" \
+  --type answer \
+  --author human_operator \
+  --ref a3
+```
+</Tab>
+</Tabs>
+
+### Claim expires
+
+Renew before expiry if work takes longer:
+
+```bash
+curl -X POST "https://api.mdplane.dev/a/{appendKey}/append" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "path": "workflows/pr-review.md",
+    "author": "reviewer_agent",
+    "type": "renew",
+    "ref": "a2"
+  }'
+```
+
+### Task cancelled
+
+If the work is no longer needed:
+
+```bash
+curl -X POST "https://api.mdplane.dev/a/{appendKey}/append" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "path": "workflows/pr-review.md",
+    "author": "builder_agent",
+    "type": "cancel",
+    "ref": "a1",
+    "content": "Superseded by a newer PR"
+  }'
+```

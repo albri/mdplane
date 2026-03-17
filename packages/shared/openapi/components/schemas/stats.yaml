@@ -1,0 +1,147 @@
+# Stats-related schemas for mdplane API
+# Statistics endpoints for files, folders, and workspaces
+
+# -----------------------------------------------------------------------------
+# Scope Info (for write key stats)
+# -----------------------------------------------------------------------------
+StatsScope:
+  type: object
+  required: [type, id]
+  properties:
+    type:
+      type: string
+      enum: [file, folder, workspace]
+      description: The scope type of the write key
+    id:
+      type: string
+      description: ID of the scoped resource (file ID, folder path, or workspace ID)
+
+StatsCounts:
+  type: object
+  required: [files, appends, tasks, claims, agents]
+  properties:
+    files:
+      type: integer
+      description: Number of files in scope
+    appends:
+      type: integer
+      description: Total number of appends
+    tasks:
+      type: integer
+      description: Number of task appends
+    claims:
+      type: integer
+      description: Number of claim appends
+    agents:
+      type: integer
+      description: Number of unique agents/authors
+
+StatsActivity:
+  type: object
+  required: [lastAppendAt, appendsToday, appendsThisWeek]
+  properties:
+    lastAppendAt:
+      type:
+        - string
+        - 'null'
+      format: date-time
+      description: Timestamp of the most recent append
+    appendsToday:
+      type: integer
+      description: Number of appends today
+    appendsThisWeek:
+      type: integer
+      description: Number of appends in the last 7 days
+
+# -----------------------------------------------------------------------------
+# Stats via Write Key Response
+# -----------------------------------------------------------------------------
+StatsViaWriteKeyResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [scope, counts, activity]
+      properties:
+        scope:
+          $ref: '#/StatsScope'
+        counts:
+          $ref: '#/StatsCounts'
+        activity:
+          $ref: '#/StatsActivity'
+
+# -----------------------------------------------------------------------------
+# File Stats Response (for /r/{key}/ops/file/stats and /a/{key}/ops/file/stats)
+# -----------------------------------------------------------------------------
+FileStatsResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [appendCount, taskStats]
+      properties:
+        appendCount:
+          type: integer
+          description: Total number of appends on this file
+        taskStats:
+          $ref: 'core.yaml#/TaskStats'
+
+# -----------------------------------------------------------------------------
+# Workspace Stats Response
+# -----------------------------------------------------------------------------
+WorkspaceStatsResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [fileCount, folderCount, totalSize, appendCount, taskStats, storageUsed, storageLimit]
+      properties:
+        fileCount:
+          type: integer
+          description: Total number of files in workspace
+        folderCount:
+          type: integer
+          description: Total number of folders in workspace
+        totalSize:
+          type: integer
+          description: Total size of all files in bytes
+        appendCount:
+          type: integer
+          description: Total number of appends across all files
+        taskStats:
+          $ref: 'core.yaml#/TaskStats'
+        storageUsed:
+          type: integer
+          description: Storage used in bytes
+        storageLimit:
+          type: integer
+          description: Storage limit in bytes
+
+# -----------------------------------------------------------------------------
+# Stats Error Response
+# -----------------------------------------------------------------------------
+StatsErrorResponse:
+  type: object
+  properties:
+    ok:
+      type: boolean
+      const: false
+    error:
+      type: object
+      properties:
+        code:
+          type: string
+          enum: [INVALID_KEY, KEY_EXPIRED, KEY_REVOKED, PERMISSION_DENIED]
+

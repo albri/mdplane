@@ -1,0 +1,265 @@
+# ==============================================================================
+# SEARCH ENDPOINTS
+# Operations for searching within files and across workspaces
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# SEARCH WITHIN FILE (via Read Key - scoped search)
+# Reference: API Design doc - "Scoped Search via Capability URL"
+# ------------------------------------------------------------------------------
+
+/r/{key}/search:
+  get:
+    operationId: searchInFileViaReadKey
+    tags:
+      - Search
+    summary: Scoped search via capability URL
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Search within the scope the capability URL grants access to.
+
+      This is **lexical** full-text search (term-based), not semantic/embedding search.
+      Results include **snippets** (relevant chunks) and highlights.
+
+      **Deleted items are excluded**: files with `deleted_at` set are never returned.
+
+      **Scoping:**
+      - **File-scoped key:** Searches that file's content and its appends
+      - **Folder-scoped key:** Searches file contents and appends within that folder scope
+      - **Workspace-scoped key:** Searches file contents and appends within the whole workspace
+
+      **Query semantics:**
+      - `q` is treated as plain text (special operator syntax is not supported in v1).
+
+      **Filters:**
+      - `q`: Full-text search query
+      - `type`: Filter by append type (task, claim, response, comment, etc.)
+      - `status`: Filter tasks by status (pending, claimed, completed, cancelled)
+      - `author`: Filter by author name
+      - `labels`: Filter by labels (comma-separated, OR matching)
+      - `priority`: Filter by priority levels
+      - `since`: Return results after this timestamp
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - name: q
+        in: query
+        description: Full-text search query
+        schema:
+          type: string
+          maxLength: 500
+      - name: type
+        in: query
+        description: Filter by append type
+        schema:
+          type: string
+          enum:
+            - task
+            - claim
+            - response
+            - blocked
+            - answer
+            - renew
+            - cancel
+            - comment
+            - vote
+      - name: status
+        in: query
+        description: Filter by task status
+        schema:
+          type: string
+          enum:
+            - pending
+            - claimed
+            - completed
+            - cancelled
+      - name: author
+        in: query
+        description: Filter by author name
+        schema:
+          type: string
+      - name: labels
+        in: query
+        description: Filter by labels (comma-separated, OR matching)
+        schema:
+          type: string
+      - name: priority
+        in: query
+        description: Filter by priority levels (comma-separated)
+        schema:
+          type: string
+      - name: since
+        in: query
+        description: Return results after this timestamp (ISO 8601)
+        schema:
+          type: string
+          format: date-time
+      - name: limit
+        in: query
+        description: Maximum number of results to return
+        schema:
+          type: integer
+          default: 50
+          minimum: 1
+          maximum: 200
+      - name: cursor
+        in: query
+        description: Pagination cursor from previous response
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Search results retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/search.yaml#/SearchResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# NOTE: /a/{key}/search is intentionally not implemented.
+# Users should use /r/{key}/search instead. Append keys inherit read capabilities.
+
+# ------------------------------------------------------------------------------
+# SEARCH ENTIRE WORKSPACE (via API Key)
+# ------------------------------------------------------------------------------
+
+/api/v1/search:
+  get:
+    operationId: searchWorkspace
+    tags:
+      - Search
+    summary: Search entire workspace
+    description: |
+      Search across all files in the workspace. Requires API key authentication.
+
+      This is **lexical** full-text search (term-based), not semantic/embedding search.
+      Results include **snippets** (relevant chunks) and highlights.
+
+      **Deleted items are excluded**: files with `deleted_at` set are never returned.
+
+      Supports all the same filters as file-level search, plus:
+      - `folder`: Limit search to a specific folder path
+
+      **Frontmatter Query:** Use `frontmatter.` prefix to filter by frontmatter fields.
+      Example: `?frontmatter.skills=security&frontmatter.status=active`
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: q
+        in: query
+        description: Full-text search query
+        schema:
+          type: string
+          maxLength: 500
+      - name: type
+        in: query
+        description: Filter by append type
+        schema:
+          type: string
+          enum:
+            - task
+            - claim
+            - response
+            - blocked
+            - answer
+            - renew
+            - cancel
+            - comment
+            - vote
+      - name: folder
+        in: query
+        description: Limit search to a specific folder path
+        schema:
+          type: string
+      - name: status
+        in: query
+        description: Filter by task status
+        schema:
+          type: string
+          enum:
+            - pending
+            - claimed
+            - completed
+            - cancelled
+      - name: author
+        in: query
+        description: Filter by author name
+        schema:
+          type: string
+      - name: labels
+        in: query
+        description: Filter by labels (comma-separated, OR matching)
+        schema:
+          type: string
+      - name: priority
+        in: query
+        description: Filter by priority levels (comma-separated)
+        schema:
+          type: string
+      - name: since
+        in: query
+        description: Return results after this timestamp (ISO 8601)
+        schema:
+          type: string
+          format: date-time
+      - name: limit
+        in: query
+        description: Maximum number of results to return
+        schema:
+          type: integer
+          default: 50
+          minimum: 1
+          maximum: 200
+      - name: cursor
+        in: query
+        description: Pagination cursor from previous response
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Search results retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/search.yaml#/SearchResponse'
+            example:
+              ok: true
+              data:
+                results:
+                  - type: file
+                    id: file_1
+                    file:
+                      id: file_1
+                      path: /projects/alpha/tasks.md
+                    content: Project Alpha task list
+                    highlights:
+                      - start: 8
+                        end: 13
+                    score: 0.92
+                  - type: task
+                    id: a1
+                    file:
+                      id: file_1
+                      path: /projects/alpha/tasks.md
+                    content: Review API design
+                    highlights:
+                      - start: 7
+                        end: 10
+                    score: 0.88
+                total: 42
+              pagination:
+                cursor: xyz789
+                hasMore: true
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'

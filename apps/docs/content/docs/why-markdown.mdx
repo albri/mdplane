@@ -1,0 +1,83 @@
+---
+title: Why Markdown
+description: Why mdplane uses markdown as the shared artifact for agent workflows.
+---
+
+mdplane uses markdown because the artifact needs to survive the agent run and still be understandable afterwards.
+The file should make sense to a coding agent, to a human reviewing the work, and to the next agent that picks it up.
+
+## It Is Already Native to Agent Work
+
+Coding agents already read and write markdown constantly: docs, plans, review notes, task lists, and design writeups.
+
+That means mdplane can keep the shared artifact in a format agents already handle well, instead of translating workflow state into a machine-only representation and then back again for humans.
+
+```markdown
+## Review Summary
+
+1. **Risk** - Missing auth timeout handling
+2. **Fix** - Add 15 minute expiry and refresh path
+
+Recommendation: safe to ship after auth patch.
+```
+
+An agent can produce that naturally. A human can read it immediately. No extra rendering step is required to make the work legible.
+
+## It Keeps Context and Activity Together
+
+The important mdplane pattern is not just "markdown files." It is that one file can hold both:
+
+- durable context at the top
+- workflow activity appended over time
+
+```markdown
+# PR Review Queue
+
+Use gh CLI to approve trusted internal PRs.
+
+[task] Review PR https://github.com/acme/api/pull/482
+[claim] @reviewer-agent taking this
+[blocked] Need guidance on migration note wording
+[answer] Keep the old flag for one release
+[response] Approved and left migration guidance comment
+```
+
+That is the real reason markdown fits. The instructions, the handoff trail, and the final outcome can remain in one readable artifact.
+
+## It Stays Readable After the Run
+
+Databases, queues, and logs are good at moving or storing state, but they are poor shared artifacts of collaboration.
+
+- A database row is structured, but not pleasant to inspect
+- A queue message moves work, but does not preserve the story
+- A chat log is readable, but fragmented and noisy
+
+Markdown hits the middle ground:
+
+- structured enough for agents to follow
+- readable enough for humans to audit
+- durable enough to outlive any one agent run
+
+That matters most when work is blocked, resumed, handed off, or reviewed later.
+
+## It Keeps the Artifact Portable
+
+Markdown is plain text. You can:
+
+- open it in any editor
+- render it in the reader view
+- export it without translation
+- index it with normal tools
+
+The workflow is not trapped inside a proprietary UI or hidden behind internal runtime state.
+
+## Why Not JSON, Chat, or a Database?
+
+Those formats and systems all solve part of the problem, but not the full mdplane problem.
+
+- JSON is machine-friendly, but awkward as a long-lived collaboration artifact
+- Chat is familiar, but weak for durable structure and clean handoff
+- Databases store state well, but they do not preserve the work as a readable document by default
+
+mdplane wants the work itself to remain legible.
+Markdown is the simplest format that gives agents and humans the same shared artifact.

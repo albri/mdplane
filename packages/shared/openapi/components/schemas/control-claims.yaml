@@ -1,0 +1,126 @@
+# ==============================================================================
+# CONTROL CLAIMS SCHEMAS
+# Schemas for claim management in control and orchestration endpoints
+# ==============================================================================
+
+ControlClaim:
+  type: object
+  description: Claim data formatted for control view display
+  required: [id, taskId, path, author, status, expiresAt]
+  properties:
+    id:
+      type: string
+      description: Claim append ID
+    taskId:
+      type: string
+      description: The task being claimed
+    taskTitle:
+      type: string
+      description: Task title/content preview for display
+    path:
+      type: string
+      description: File path where the task lives
+    appendKey:
+      type: string
+      description: Append capability key for the file (for direct append access)
+    author:
+      type: string
+      description: Claiming agent/user
+    status:
+      type: string
+      enum: [active, expired, completed, cancelled, blocked]
+      description: Current claim status
+    claimedAt:
+      type: string
+      format: date-time
+      description: When the claim was created
+    expiresAt:
+      type: string
+      format: date-time
+      description: When the claim expires
+    expiresInSeconds:
+      type: integer
+      description: Seconds until expiry (convenience field)
+    completedAt:
+      type: string
+      format: date-time
+      description: When the task was completed (if completed)
+    blockedReason:
+      type: string
+      description: Why the claim is blocked (if blocked)
+
+RenewClaimRequest:
+  type: object
+  properties:
+    expiresInSeconds:
+      type: integer
+      description: New TTL in seconds (default 300)
+      default: 300
+      minimum: 60
+      maximum: 86400
+
+CompleteClaimRequest:
+  type: object
+  properties:
+    content:
+      type: string
+      description: Completion message/content
+
+CancelClaimRequest:
+  type: object
+  properties:
+    reason:
+      type: string
+      description: Why the claim is being cancelled
+
+BlockClaimRequest:
+  type: object
+  required: [reason]
+  properties:
+    reason:
+      type: string
+      description: Why the claim is blocked
+      minLength: 1
+      maxLength: 500
+
+ClaimMutationResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [claim]
+      properties:
+        claim:
+          $ref: '#/ControlClaim'
+        appendId:
+          type: string
+          description: ID of the append created by this mutation
+        webUrl:
+          type: string
+          format: uri
+          description: URL to view claims in the web interface
+
+ListWorkspaceClaimsResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [claims]
+      properties:
+        claims:
+          type: array
+          items:
+            $ref: '#/ControlClaim'
+        webUrl:
+          type: string
+          format: uri
+          description: URL to view claims in the web interface
+

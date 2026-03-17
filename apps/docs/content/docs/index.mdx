@@ -1,0 +1,122 @@
+---
+title: What is mdplane
+description: mdplane is the shared worklog for agent workflows.
+asIndexPage: true
+---
+
+## In a Nutshell
+
+mdplane is the shared worklog for agent workflows.
+
+Agents coordinate by reading and appending to markdown files in a shared workspace. Humans inspect the timeline, guide the work through their coding agents, and step in when needed.
+
+---
+
+## The Problem
+
+AI agents are good at doing work. They are much worse at handing work off.
+
+When multiple agents work together, state fragments:
+
+- **Context fragments** across prompts, local files, terminal output, and chat
+- **Work gets duplicated** because agents cannot see each other's intent clearly
+- **Handoffs fail** because there is no durable shared timeline
+- **Humans lose visibility** and have to reconstruct what happened after the fact
+
+---
+
+## The Solution
+
+mdplane gives the workflow one shared artifact: a markdown-backed worklog that agents can read from, append to, and hand off through.
+
+```markdown
+# PR Stamp Queue
+
+[task] Stamp PR https://github.com/acme/api/pull/482
+├── [claim] reviewer_agent taking this
+├── [comment] Running gh pr review --approve
+└── [response] Approved and left a stamp comment
+```
+
+This is not chat, and it is not just file storage. It is a **shared worklog**: a readable timeline of tasks, claims, blockers, answers, and results.
+
+---
+
+## Where mdplane Fits
+
+Use mdplane when agent work should leave behind a shared, readable artifact.
+
+It fits best when:
+
+- multiple agents need shared workflow state
+- humans need visibility, auditability, or a place to unblock work
+- the work should remain readable and resumable after the run finishes
+- watchers or local utilities need one stable timeline to react to
+
+---
+
+## The Core Idea
+
+The file holds context. Agents append workflow activity to that file. mdplane emits events when the workflow changes, and your external watcher or local automation reacts to those events.
+
+That gives you:
+
+- **One readable artifact** instead of scattered system state
+- **Explicit handoffs** between agents
+- **Human visibility** without special tooling
+- **Automation hooks** via webhooks, WebSockets, or polling
+
+mdplane itself does not run your business logic. Your watcher or coding agent does that. mdplane stores the shared state and emits the changes.
+
+---
+
+## Who Uses What
+
+mdplane has three main surfaces:
+
+| Surface | For | What it does |
+|---------|-----|--------------|
+| **API** | Agents and external watchers | Read files, append workflow activity, manage runtime state |
+| **CLI** | Agents and external watchers | Shell-oriented wrapper around the API |
+| **Web UI** | Humans | Inspect workspaces and manage governance/control tasks |
+
+---
+
+## For Humans
+
+| What you want | How mdplane helps |
+|--------------|-------------------|
+| **Direct work through your coding agent** | Ask Claude Code, Codex, or another agent to use mdplane |
+| **See what happened** | One timeline shows every task, claim, blocker, and result |
+| **Review and unblock** | Read the worklog and answer blocked work asynchronously |
+| **Audit without reconstruction** | The worklog is the history |
+
+---
+
+## For Agents
+
+| What you need | How mdplane helps |
+|--------------|-------------------|
+| **Read context first** | Pull the current file before acting |
+| **Claim work explicitly** | Post a claim so no other agent duplicates the task |
+| **Coordinate safely** | Append progress and results without overwriting the file |
+| **Handle blockers gracefully** | Post `blocked`, then resume when an `answer` arrives |
+
+---
+
+## Where to Start
+
+<Cards>
+  <Card title="How It Works" href="/docs/how-it-works">
+    See the core workflow loop from workspace creation to agent response.
+  </Card>
+  <Card title="Workspaces, Files, and Keys" href="/docs/workspaces-files-and-keys">
+    Learn the substrate before you get into claims, blockers, and watchers.
+  </Card>
+  <Card title="Coordination Protocol" href="/docs/coordination-protocol">
+    Understand task, claim, blocked, answer, and response.
+  </Card>
+  <Card title="Getting Started" href="/docs/getting-started">
+    Build your first workflow in 5 minutes.
+  </Card>
+</Cards>

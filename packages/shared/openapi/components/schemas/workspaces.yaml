@@ -1,0 +1,95 @@
+# ==============================================================================
+# WORKSPACE MANAGEMENT SCHEMAS
+# ==============================================================================
+
+RotateAllResponse:
+  type: object
+  required:
+    - ok
+    - data
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required:
+        - workspaceId
+        - message
+        - rotatedCount
+        - keys
+        - urls
+        - keyCustodyWarning
+      properties:
+        workspaceId:
+          type: string
+          description: Workspace ID
+          example: "ws_x8k2mP9qL3nR"
+        message:
+          type: string
+          example: "All capability URLs rotated successfully"
+        rotatedCount:
+          type: integer
+          description: Number of files/folders that had URLs rotated
+          example: 42
+        keys:
+          $ref: 'bootstrap.yaml#/BootstrapKeys'
+        urls:
+          $ref: 'bootstrap.yaml#/BootstrapUrls'
+        keyCustodyWarning:
+          type: string
+          description: Warning that newly generated keys are shown once and must be stored now
+          example: "Store these keys now. They are shown once and cannot be retrieved again."
+
+WorkspaceRenameRequest:
+  type: object
+  required:
+    - name
+  properties:
+    name:
+      type: string
+      description: New workspace name
+      minLength: 1
+      maxLength: 255
+      pattern: '.*\S.*'
+
+WorkspaceRenameResponse:
+  type: object
+  required:
+    - ok
+    - data
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required:
+        - workspaceId
+        - name
+        - updatedAt
+      properties:
+        workspaceId:
+          type: string
+          description: Workspace ID
+          example: "ws_x8k2mP9qL3nR"
+        name:
+          type: string
+          description: Updated workspace name
+          example: "Product Operations"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Time when the workspace name was updated
+
+TransferWorkspaceRequest:
+  type: object
+  required:
+    - newOwnerEmail
+  properties:
+    newOwnerEmail:
+      type: string
+      format: email
+      description: Email of the new owner (must have an OAuth account)
+      example: "new-owner@example.com"
+

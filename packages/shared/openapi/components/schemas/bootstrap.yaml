@@ -1,0 +1,132 @@
+# Bootstrap-related schemas for mdplane API
+# Reference: docs/Obsidian Vault/Projects/mdplane/API Design.md
+
+# -----------------------------------------------------------------------------
+# Request Schemas
+# -----------------------------------------------------------------------------
+BootstrapRequest:
+  type: object
+  description: Required configuration for workspace bootstrap
+  required:
+    - workspaceName
+  properties:
+    workspaceName:
+      type: string
+      description: Human-friendly workspace name
+      minLength: 1
+      maxLength: 255
+      pattern: '.*\S.*'
+
+# -----------------------------------------------------------------------------
+# Response Schemas
+# -----------------------------------------------------------------------------
+BootstrapResponse:
+  type: object
+  description: Response from bootstrap endpoint with workspace details
+  required:
+    - ok
+    - data
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required:
+        - workspaceId
+        - keys
+        - urls
+        - createdAt
+      properties:
+        workspaceId:
+          type: string
+          description: Unique workspace identifier
+          pattern: '^ws_[A-Za-z0-9]{12,}$'
+          example: 'ws_x8k2mP9qL3nR'
+        keys:
+          $ref: '#/BootstrapKeys'
+        urls:
+          $ref: '#/BootstrapUrls'
+        createdAt:
+          type: string
+          format: date-time
+          description: Workspace creation timestamp
+
+# -----------------------------------------------------------------------------
+# Bootstrap Sub-Schemas
+# -----------------------------------------------------------------------------
+BootstrapKeys:
+  type: object
+  description: Capability keys for the workspace (use these with API or web URLs)
+  required:
+    - read
+    - append
+    - write
+  properties:
+    read:
+      type: string
+      description: Read capability key - grants read-only access
+      example: 'm7dXp9lKa2nQe4R8vL5wYt'
+    append:
+      type: string
+      description: Append capability key - grants read + append access
+      example: 'a_nK3pL9mQ2xR8vL5wYt'
+    write:
+      type: string
+      description: Write capability key - grants full access (read + append + write)
+      example: 'w_vT5yU8wX1zA4vL5wYt'
+
+BootstrapUrls:
+  type: object
+  description: Pre-built URLs for API and web access
+  required:
+    - api
+    - web
+  properties:
+    api:
+      $ref: '#/BootstrapApiUrls'
+    web:
+      $ref: '#/BootstrapWebUrls'
+
+BootstrapApiUrls:
+  type: object
+  description: API endpoint URLs (for curl/CLI usage)
+  required:
+    - read
+    - append
+    - write
+  properties:
+    read:
+      type: string
+      format: uri
+      description: Read API base URL
+      example: 'https://api.mdplane.dev/r/m7dXp9lKa2nQe4R8vL5wYt'
+    append:
+      type: string
+      format: uri
+      description: Append API base URL
+      example: 'https://api.mdplane.dev/a/a_nK3pL9mQ2xR8vL5wYt'
+    write:
+      type: string
+      format: uri
+      description: Write API base URL
+      example: 'https://api.mdplane.dev/w/w_vT5yU8wX1zA4vL5wYt'
+
+BootstrapWebUrls:
+  type: object
+  description: Web UI URLs (for browser access)
+  required:
+    - read
+    - claim
+  properties:
+    read:
+      type: string
+      format: uri
+      description: Read-only file browser
+      example: 'https://app.mdplane.dev/r/m7dXp9lKa2nQe4R8vL5wYt'
+    claim:
+      type: string
+      format: uri
+      description: Claim workspace page (requires login to complete)
+      example: 'https://app.mdplane.dev/claim/w_vT5yU8wX1zA4vL5wYt'
+

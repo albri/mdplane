@@ -1,0 +1,232 @@
+# ==============================================================================
+# WORKSPACE ORCHESTRATION ENDPOINTS
+# Session-authenticated orchestration views returning unified OrchestrationBoard shape
+# ==============================================================================
+#
+# These endpoints provide session-authenticated access to the same orchestration
+# data available via capability URLs (/r/{key}/orchestration, /w/{key}/orchestration).
+#
+# The response shape matches the capability endpoints exactly, enabling unified
+# control and SDK logic.
+
+# ------------------------------------------------------------------------------
+# WORKSPACE ORCHESTRATION BOARD
+# ------------------------------------------------------------------------------
+
+/workspaces/{workspaceId}/orchestration:
+  get:
+    operationId: getWorkspaceOrchestration
+    tags:
+      - Orchestration
+    summary: Get workspace orchestration board
+    security:
+      - oauthSession: []
+    description: |
+      Get a comprehensive view of all tasks and claims in a workspace.
+
+      Returns the same shape as `/r/{key}/orchestration` for unified client handling.
+
+      **Requires:** OAuth session and workspace ownership.
+    parameters:
+      - $ref: '../components/parameters.yaml#/workspaceId'
+      - name: status
+        in: query
+        description: Filter by task status (comma-separated; pending, claimed, stalled, completed, cancelled)
+        schema:
+          type: string
+          pattern: '^(pending|claimed|stalled|completed|cancelled)(,(pending|claimed|stalled|completed|cancelled))*$'
+        example: pending,claimed
+      - name: agent
+        in: query
+        description: Filter by claiming agent
+        schema:
+          type: string
+      - name: file
+        in: query
+        description: Filter by filename (partial match)
+        schema:
+          type: string
+      - name: folder
+        in: query
+        description: Filter by folder path
+        schema:
+          type: string
+      - name: priority
+        in: query
+        description: Filter by priority (comma-separated; low, medium, high, critical)
+        schema:
+          type: string
+          pattern: '^(low|medium|high|critical)(,(low|medium|high|critical))*$'
+        example: high,critical
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/cursor'
+    responses:
+      '200':
+        description: Orchestration data retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/OrchestrationReadOnlyResponse'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+
+# ------------------------------------------------------------------------------
+# CLAIM MUTATIONS (under orchestration namespace)
+# ------------------------------------------------------------------------------
+
+/workspaces/{workspaceId}/orchestration/claims/{claimId}/renew:
+  post:
+    operationId: renewClaimWorkspace
+    tags:
+      - Orchestration
+    summary: Renew a claim via workspace orchestration
+    security:
+      - oauthSession: []
+    description: |
+      Extend the expiration time of an active claim.
+
+      **Requires:** OAuth session and workspace ownership.
+    parameters:
+      - $ref: '../components/parameters.yaml#/workspaceId'
+      - $ref: '../components/parameters.yaml#/claimId'
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas.yaml#/RenewClaimRequest'
+    responses:
+      '200':
+        description: Claim renewed successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/ClaimMutationResponse'
+      '400':
+        description: Cannot renew claim
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+
+/workspaces/{workspaceId}/orchestration/claims/{claimId}/complete:
+  post:
+    operationId: completeClaimWorkspace
+    tags:
+      - Orchestration
+    summary: Complete a claim via workspace orchestration
+    security:
+      - oauthSession: []
+    description: |
+      Mark a claimed task as completed.
+
+      **Requires:** OAuth session and workspace ownership.
+    parameters:
+      - $ref: '../components/parameters.yaml#/workspaceId'
+      - $ref: '../components/parameters.yaml#/claimId'
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas.yaml#/CompleteClaimRequest'
+    responses:
+      '200':
+        description: Task completed successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/ClaimMutationResponse'
+      '400':
+        description: Cannot complete claim
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+
+/workspaces/{workspaceId}/orchestration/claims/{claimId}/cancel:
+  post:
+    operationId: cancelClaimWorkspace
+    tags:
+      - Orchestration
+    summary: Cancel a claim via workspace orchestration
+    security:
+      - oauthSession: []
+    description: |
+      Abandon a claim, returning the task to pending status.
+
+      **Requires:** OAuth session and workspace ownership.
+    parameters:
+      - $ref: '../components/parameters.yaml#/workspaceId'
+      - $ref: '../components/parameters.yaml#/claimId'
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas.yaml#/CancelClaimRequest'
+    responses:
+      '200':
+        description: Claim cancelled successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/ClaimMutationResponse'
+      '400':
+        description: Cannot cancel claim
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+
+/workspaces/{workspaceId}/orchestration/claims/{claimId}/block:
+  post:
+    operationId: blockClaimWorkspace
+    tags:
+      - Orchestration
+    summary: Block a claim via workspace orchestration
+    security:
+      - oauthSession: []
+    description: |
+      Mark a claim as blocked with a reason.
+
+      **Requires:** OAuth session and workspace ownership.
+    parameters:
+      - $ref: '../components/parameters.yaml#/workspaceId'
+      - $ref: '../components/parameters.yaml#/claimId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas.yaml#/BlockClaimRequest'
+    responses:
+      '200':
+        description: Claim marked as blocked
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/ClaimMutationResponse'
+      '400':
+        description: Cannot block claim (missing reason or not active)
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'

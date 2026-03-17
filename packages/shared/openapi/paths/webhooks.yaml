@@ -1,0 +1,338 @@
+# ==============================================================================
+# WEBHOOK ENDPOINTS
+# Operations for managing webhooks via write key
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# CREATE AND LIST WEBHOOKS
+# ------------------------------------------------------------------------------
+
+/w/{key}/webhooks:
+  post:
+    operationId: createWebhook
+    tags:
+      - Webhooks
+    summary: Create webhook
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Register a new webhook to receive events for this file.
+
+      Webhook URLs must use HTTPS and resolve to public IP addresses (SSRF protection).
+      If `secret` is omitted, the server generates a secure 32-byte secret and returns
+      it in the response (shown only once at creation).
+
+      **Events:** Subscribe to specific events like `append`, `claim.expired`, `task.blocked`.
+      **Filters:** Optionally narrow which events trigger the webhook by append type, labels, or priority.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/webhooks.yaml#/WebhookCreateRequest'
+          example:
+            url: 'https://example.com/webhook'
+            events: [append, claim.expired, task.blocked]
+            secret: 'my-secure-secret-at-least-32-chars'
+            includeUrls: false
+            filters:
+              types: [task, response]
+              labels: [urgent]
+              priority: [high, critical]
+    responses:
+      '201':
+        description: Webhook created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhooks.yaml#/WebhookCreateResponse'
+            example:
+              ok: true
+              data:
+                id: wh_1
+                url: 'https://example.com/webhook'
+                events: [append, claim.expired, task.blocked]
+                status: active
+                createdAt: '2024-01-08T09:00:00Z'
+      '400':
+        description: |
+          Invalid request. Possible error codes:
+          - `INVALID_WEBHOOK_URL`: URL must use HTTPS and resolve to public IP
+          - `INVALID_REQUEST`: Malformed request body
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '402':
+        description: Webhook limit exceeded
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+            example:
+              ok: false
+              error:
+                code: WEBHOOK_LIMIT_EXCEEDED
+                message: Free tier allows 3 webhook endpoints per file
+                details:
+                  current: 3
+                  limit: 3
+                  tier: free
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+  get:
+    operationId: listWebhooks
+    tags:
+      - Webhooks
+    summary: List webhooks
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      List all webhooks registered for this file.
+
+      Returns webhook status, success rate, and last trigger time.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+    responses:
+      '200':
+        description: Webhooks retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhooks.yaml#/WebhookListResponse'
+            example:
+              ok: true
+              data:
+                - id: wh_1
+                  url: 'https://example.com/webhook'
+                  events: [append]
+                  status: active
+                  lastTriggeredAt: '2024-01-08T10:30:00Z'
+                  successRate: 0.98
+                  createdAt: '2024-01-08T09:00:00Z'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# UPDATE AND DELETE SINGLE WEBHOOK
+# ------------------------------------------------------------------------------
+
+/w/{key}/webhooks/{webhookId}:
+  patch:
+    operationId: updateWebhook
+    tags:
+      - Webhooks
+    summary: Update webhook
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Partially update webhook configuration.
+
+      Supports secret rotation with optional grace period for seamless key rollover.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/webhookId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/webhooks.yaml#/WebhookUpdateRequest'
+          example:
+            events: [append, task.blocked]
+            active: true
+    responses:
+      '200':
+        description: Webhook updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhooks.yaml#/WebhookUpdateResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+  delete:
+    operationId: deleteWebhook
+    tags:
+      - Webhooks
+    summary: Delete webhook
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Delete a webhook. Events will no longer be delivered to this endpoint.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/webhookId'
+    responses:
+      '200':
+        description: Webhook deleted successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhooks.yaml#/WebhookDeleteResponse'
+            example:
+              ok: true
+              data:
+                id: wh_1
+                deleted: true
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# WEBHOOK LOGS
+# ------------------------------------------------------------------------------
+
+/w/{key}/webhooks/{webhookId}/logs:
+  get:
+    operationId: getWebhookLogs
+    tags:
+      - Webhooks
+    summary: Get webhook delivery logs
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Get delivery logs for a webhook. Includes status, response code, duration, and any errors.
+
+      Logs are retained for 7 days.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/webhookId'
+      - name: limit
+        in: query
+        description: Maximum number of log entries to return
+        schema:
+          type: integer
+          default: 50
+          minimum: 1
+          maximum: 200
+      - name: since
+        in: query
+        description: Return logs after this timestamp (ISO 8601)
+        schema:
+          type: string
+          format: date-time
+    responses:
+      '200':
+        description: Webhook logs retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhooks.yaml#/WebhookLogsResponse'
+            example:
+              ok: true
+              data:
+                logs:
+                  - id: log_1
+                    event: append
+                    status: ok
+                    responseCode: 200
+                    timestamp: '2024-01-08T10:30:00Z'
+                    durationMs: 145
+                  - id: log_2
+                    event: task.blocked
+                    status: failed
+                    responseCode: 500
+                    timestamp: '2024-01-08T10:25:00Z'
+                    durationMs: 2500
+                    error: Server returned 500 Internal Server Error
+
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# WEBHOOK TEST
+# ------------------------------------------------------------------------------
+
+/w/{key}/webhooks/{webhookId}/test:
+  post:
+    operationId: testWebhook
+    tags:
+      - Webhooks
+    summary: Test webhook
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Send a test event to the webhook endpoint. Useful for verifying connectivity
+      and signature validation.
+
+      If no event type is specified, defaults to `append.created`.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/webhookId'
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/webhooks.yaml#/WebhookTestRequest'
+          example:
+            event: append.created
+    responses:
+      '200':
+        description: Test webhook delivered (or attempted)
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhooks.yaml#/WebhookTestResponse'
+            examples:
+              success:
+                summary: Successful delivery
+                value:
+                  ok: true
+                  data:
+                    delivered: true
+                    responseCode: 200
+                    durationMs: 145
+              failure:
+                summary: Failed delivery
+                value:
+                  ok: true
+                  data:
+                    delivered: false
+                    responseCode: 500
+                    durationMs: 2500
+                    error: Server returned 500 Internal Server Error
+
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'

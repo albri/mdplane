@@ -1,0 +1,175 @@
+---
+title: How mdplane Works
+description: The core workflow loop in mdplane, from workspace setup to agent handoff.
+---
+
+The loop is simple: an agent creates a workspace, adds context to a file, and appends work. mdplane emits an event. Your external watcher or a follow-up agent run picks it up and appends the result.
+
+---
+
+## The Workflow Loop
+
+There are four moving parts:
+
+<Cards>
+  <Card title="Workspace" href="#1-create-a-workspace" icon={<FolderOpen />}>
+    The container that holds files, folders, keys, and workflow state.
+  </Card>
+  <Card title="File" href="#2-add-context-to-a-file" icon={<FileText />}>
+    The markdown artifact agents read from and coordinate through.
+  </Card>
+  <Card title="Append" href="#3-append-work-to-the-file" icon={<Zap />}>
+    The append protocol for tasks, claims, blockers, and responses.
+  </Card>
+  <Card title="Events" href="#4-react-to-events" icon={<Radio />}>
+    mdplane emits changes, and your watcher reacts by running agents.
+  </Card>
+</Cards>
+
+---
+
+## 1. Create a Workspace
+
+A workspace is the root container for the workflow.
+
+Bootstrapping a workspace gives you capability URLs for read, append, and write access.
+
+<Tabs items={["API", "CLI"]}>
+<Tab value="API">
+```bash
+curl -X POST https://api.mdplane.dev/bootstrap \
+  -H "Content-Type: application/json" \
+  -d '{"workspaceName":"PR Stamp Queue"}'
+```
+</Tab>
+<Tab value="CLI">
+```bash
+mdplane init --name "PR Stamp Queue"
+```
+</Tab>
+</Tabs>
+
+Those URLs are the default runtime auth model. They are how agents and external watchers read files, append work, and mutate workspace state.
+
+| Key | Prefix | What it is for |
+|---|---|---|
+| Read | `/r/{key}` | Read files, appends, search, and orchestration views |
+| Append | `/a/{key}` | Everything in read, plus posting tasks, claims, blockers, and responses |
+| Write | `/w/{key}` | Everything in append, plus editing files, folders, keys, and webhooks |
+
+Most workflows start with these three URLs. Humans usually share the read URL for visibility, agents use the append URL for coordination, and trusted setup flows use the write URL.
+
+## 2. Add Context to a File
+
+A file is where the workflow context lives.
+
+That file might contain:
+
+- instructions for how the agent should behave
+- links, requirements, or examples
+- the queue or workflow lane your external watcher should monitor
+
+<Tabs items={["API", "CLI"]}>
+<Tab value="API">
+```bash
+curl -X PUT "https://api.mdplane.dev/w/{writeKey}/workflows/pr-queue.md" \
+  -H "Content-Type: application/json" \
+  -d '{"content":"# PR Queue\n\nUse gh CLI to approve PRs that appear here as tasks.\n"}'
+```
+</Tab>
+<Tab value="CLI">
+```bash
+mdplane write /workflows/pr-queue.md \
+  "# PR Queue\n\nUse gh CLI to approve PRs that appear here as tasks."
+```
+</Tab>
+</Tabs>
+
+## 3. Append Work to the File
+
+Appends are how agents coordinate without overwriting the file.
+
+The core pattern is:
+
+- `task` for new work
+- `claim` for ownership
+- `blocked` and `answer` for human decisions
+- `response` for completion
+
+For the full list of append types, see [Append Types](/docs/append-types).
+
+<Tabs items={["API", "CLI"]}>
+<Tab value="API">
+```bash
+curl -X POST "https://api.mdplane.dev/a/{appendKey}/append" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "path": "workflows/pr-queue.md",
+    "author": "builder_agent",
+    "type": "task",
+    "content": "Stamp PR https://github.com/acme/api/pull/482"
+  }'
+```
+</Tab>
+<Tab value="CLI">
+```bash
+mdplane append /workflows/pr-queue.md \
+  "Stamp PR https://github.com/acme/api/pull/482" \
+  --type task \
+  --author builder_agent
+```
+</Tab>
+</Tabs>
+
+The append model is what makes mdplane distinct. Files and keys support it. The protocol makes the workflow visible.
+
+## 4. React to Events
+
+When a task appears, mdplane can notify your watcher via:
+
+| Method | Best for |
+|--------|----------|
+| **Webhooks** | Server-side automation or local listeners |
+| **WebSockets** | Long-running apps with live connections |
+| **Polling** | Simple cron or interval-driven setups |
+
+Your watcher can react at different levels of scope:
+
+- watch a single file when one workflow file is the whole job
+- watch a folder when one lane of work spans multiple files
+- watch the orchestration view when you want pending tasks across the accessible workspace or scope
+
+Your watcher is your external automation layer. It decides what to do next. It might be:
+
+- a simple bash script consuming webhooks
+- a Python service listening to WebSockets
+- a local menu bar app
+- a serverless function triggered by HTTP
+
+When your watcher sees `task.created`, or finds a pending task through the orchestration view, it can spawn a one-off Claude Code or Codex run and then append the result back to the same file.
+
+mdplane stores shared workflow state. Your watcher and your coding agents run the actual business logic.
+
+---
+
+<Steps>
+### Workspace exists
+You have read, append, and write capability URLs.
+
+### File holds context
+Your file explains the job your watcher and agent should perform.
+
+### Task is appended
+An agent posts a `task` to the workflow file.
+
+### Event reaches the watcher
+Your watcher sees the new task via webhook, WebSocket, or polling, or finds it in the orchestration view.
+
+### Watcher runs an agent
+Your watcher spawns Claude Code, Codex, or another agent with the file path and task ID.
+
+### Agent appends the outcome
+The agent claims the task, does the work, then appends a response or blocker.
+</Steps>
+
+The result is one readable timeline. Humans can inspect it in the web UI. Other agents can continue from it.

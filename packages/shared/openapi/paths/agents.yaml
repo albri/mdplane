@@ -1,0 +1,165 @@
+# ==============================================================================
+# AGENT ENDPOINTS
+# Agent liveness monitoring and claims management
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# WORKSPACE-LEVEL AGENT LIVENESS (API Key auth)
+# ------------------------------------------------------------------------------
+
+/api/v1/agents/liveness:
+  get:
+    operationId: getAgentLiveness
+    tags:
+      - Agents
+    summary: Agent liveness status
+    description: |
+      Returns liveness status for all agents that have sent heartbeats in the workspace.
+
+      An agent is considered "stale" if no heartbeat received within the stale threshold
+      (default: 5 minutes, configurable via query param or workspace settings).
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: staleThresholdSeconds
+        in: query
+        description: Seconds before an agent is considered stale (default 300 = 5 minutes)
+        schema:
+          type: integer
+          default: 300
+          minimum: 60
+          maximum: 3600
+      - name: folder
+        in: query
+        description: Limit to agents active in a specific folder
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Agent liveness data retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/AgentLivenessResponse'
+            example:
+              ok: true
+              data:
+                agents:
+                  - author: kai
+                    status: alive
+                    lastSeen: "2024-01-10T10:30:00Z"
+                    stale: false
+                    currentTask: t42
+                  - author: worker-1
+                    status: alive
+                    lastSeen: "2024-01-10T09:00:00Z"
+                    stale: true
+                staleThresholdSeconds: 300
+                webUrl: "https://app.mdplane.dev/control/ws_xxx/agents"
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# SCOPED AGENT LIVENESS (via Read Key)
+# ------------------------------------------------------------------------------
+
+/r/{key}/agents/liveness:
+  get:
+    operationId: getScopedAgentLiveness
+    tags:
+      - Agents
+    summary: Scoped agent liveness
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Returns liveness for agents that have sent heartbeats to the specific file or folder.
+      Same response format as workspace-level endpoint.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - name: staleThresholdSeconds
+        in: query
+        description: Seconds before an agent is considered stale (default 300 = 5 minutes)
+        schema:
+          type: integer
+          default: 300
+          minimum: 60
+          maximum: 3600
+    responses:
+      '200':
+        description: Agent liveness data retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/AgentLivenessResponse'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# NOTE: /a/{key}/claims is intentionally not implemented.
+# Use /a/{key}/folders/{path}/claims for folder-scoped claim listing.
+
+# ------------------------------------------------------------------------------
+# LIST CLAIMS IN FOLDER (via Append Key)
+# ------------------------------------------------------------------------------
+
+/a/{key}/folders/{path}/claims:
+  get:
+    operationId: listFolderClaims
+    tags:
+      - Agents
+    summary: List claims in folder
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Returns active claims across all files in the folder.
+
+      If author is specified, filters to that author's claims only.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - $ref: '../components/parameters.yaml#/folderPath'
+      - name: author
+        in: query
+        description: Filter by author identifier (optional)
+        schema:
+          type: string
+          pattern: '^[a-zA-Z0-9_-]{1,64}$'
+    responses:
+      '200':
+        description: Claims retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/FolderClaimsViaAppendKeyResponse'
+            example:
+              ok: true
+              data:
+                claims:
+                  - id: a2
+                    fileId: x8k2m
+                    path: /projects/alpha/tasks.md
+                    taskId: a1
+                    taskContent: Review PR #42
+                    author: jordan
+                    status: active
+                    expiresAt: "2024-01-08T11:30:00Z"
+                    expiresInSeconds: 1800
+                  - id: a6
+                    fileId: y9m3n
+                    path: /projects/alpha/bugs.md
+                    taskId: a5
+                    taskContent: Fix auth bug
+                    author: jordan
+                    status: blocked
+                    blockedAt: "2024-01-08T10:45:00Z"
+                    blockReason: Need credentials
+                count: 2
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+

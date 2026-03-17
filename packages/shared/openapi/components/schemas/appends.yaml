@@ -1,0 +1,428 @@
+# Append-related schemas for mdplane API
+# Reference: docs/Obsidian Vault/Projects/mdplane/API Design.md
+
+# -----------------------------------------------------------------------------
+# Enums
+# -----------------------------------------------------------------------------
+
+# User-facing append types (can be created via API/CLI)
+UserAppendType:
+  type: string
+  description: User-facing append types that can be created via API or CLI
+  enum:
+    - task
+    - claim
+    - response
+    - comment
+    - blocked
+    - answer
+    - renew
+    - cancel
+    - vote
+
+# System-only append types (created internally, not user-facing)
+SystemAppendType:
+  type: string
+  description: System-only append types (heartbeat, etc.) - not user-creatable
+  enum:
+    - heartbeat
+
+# Union of all append types (used in responses where any type may appear)
+AppendType:
+  description: All possible append types (user + system)
+  oneOf:
+    - $ref: '#/UserAppendType'
+    - $ref: '#/SystemAppendType'
+
+Priority:
+  type: string
+  description: Task priority level
+  enum:
+    - low
+    - medium
+    - high
+    - critical
+
+AppendStatus:
+  type: string
+  description: Computed status of a task or claim
+  enum:
+    - pending
+    - open
+    - claimed
+    - completed
+    - done
+    - expired
+    - cancelled
+    - active
+
+# -----------------------------------------------------------------------------
+# Core Append Object (full, for responses)
+# -----------------------------------------------------------------------------
+Append:
+  type: object
+  description: Full append object returned in parsed file responses
+  required:
+    - id
+    - author
+    - ts
+    - type
+  properties:
+    id:
+      type: string
+      description: Append ID (sequential per-file)
+      pattern: '^a[0-9]+$'
+      example: 'a1'
+    author:
+      type: string
+      description: Author identifier
+      pattern: '^[a-zA-Z0-9_-]{1,64}$'
+      example: 'jordan'
+    ts:
+      type: string
+      format: date-time
+      description: ISO 8601 timestamp when append was created
+    type:
+      $ref: '#/AppendType'
+    status:
+      $ref: '#/AppendStatus'
+    content:
+      type: string
+      description: Append content (markdown)
+    priority:
+      $ref: '#/Priority'
+    labels:
+      type: array
+      items:
+        type: string
+      description: Labels array (tasks only)
+    ref:
+      type: string
+      description: Referenced append ID
+      pattern: '^a[0-9]+$'
+    expiresAt:
+      type: string
+      format: date-time
+      description: Claim expiry timestamp (claims only)
+    dueAt:
+      type: string
+      format: date-time
+      description: Due date for tasks
+    claimedBy:
+      type: string
+      description: Current claim holder (tasks only, if claimed)
+      pattern: '^[a-zA-Z0-9_-]{1,64}$'
+    completedAt:
+      type: string
+      format: date-time
+      description: Completion timestamp (tasks only, if completed)
+    value:
+      type: string
+      description: Vote value (votes only)
+      enum:
+        - '+1'
+        - '-1'
+    relatedTo:
+      type: array
+      items:
+        type: string
+        pattern: '^a[0-9]+$'
+      description: Informational linkage to other append IDs
+    stale:
+      type: boolean
+      description: True if content hash changed since append was created
+
+# -----------------------------------------------------------------------------
+# Request Schemas
+# -----------------------------------------------------------------------------
+AppendRequest:
+  type: object
+  description: Request body for creating a single append
+  required:
+    - type
+  properties:
+    path:
+      type: string
+      description: |
+        Target file path for append operations that do not derive file scope from the key.
+        Required for workspace-scoped and folder-scoped keys when using `/a/{key}/append`.
+    author:
+      type: string
+      description: Author identifier (required for root keys)
+      pattern: '^[a-zA-Z0-9_-]{1,64}$'
+    type:
+      $ref: '#/UserAppendType'
+    content:
+      type: string
+      description: Append content
+    ref:
+      type: string
+      description: Referenced append ID (required for claim, response, blocked, answer, renew, cancel, vote)
+      pattern: '^a[0-9]+$'
+    priority:
+      $ref: '#/Priority'
+    labels:
+      type: array
+      items:
+        type: string
+      description: Labels (tasks only)
+    dueAt:
+      type: string
+      format: date-time
+      description: Due date (tasks only)
+    assigned:
+      type: string
+      description: Assigned author (tasks only)
+      pattern: '^[a-zA-Z0-9_-]{1,64}$'
+    value:
+      type: string
+      description: Vote value (votes only)
+      enum:
+        - '+1'
+        - '-1'
+    relatedTo:
+      type: array
+      items:
+        type: string
+        pattern: '^a[0-9]+$'
+      description: Informational linkage to other append IDs
+    expiresInSeconds:
+      type: integer
+      minimum: 60
+      maximum: 86400
+      description: Custom claim expiry in seconds (claims only, default 1800)
+
+AppendItem:
+  type: object
+  description: Single append item for atomic multi-append (author inherited from parent)
+  required:
+    - type
+  properties:
+    type:
+      $ref: '#/UserAppendType'
+    content:
+      type: string
+      description: Append content
+    ref:
+      type: string
+      description: Referenced append ID
+      pattern: '^a[0-9]+$'
+    priority:
+      $ref: '#/Priority'
+    labels:
+      type: array
+      items:
+        type: string
+    dueAt:
+      type: string
+      format: date-time
+    assigned:
+      type: string
+      pattern: '^[a-zA-Z0-9_-]{1,64}$'
+    value:
+      type: string
+      enum:
+        - '+1'
+        - '-1'
+    relatedTo:
+      type: array
+      items:
+        type: string
+        pattern: '^a[0-9]+$'
+    expiresInSeconds:
+      type: integer
+      minimum: 60
+      maximum: 86400
+      description: Custom claim expiry in seconds (claims only, default 1800)
+
+MultiAppendRequest:
+  type: object
+  description: Request body for atomic multi-append operation
+  required:
+    - author
+    - appends
+  properties:
+    path:
+      type: string
+      description: |
+        Target file path for append operations that do not derive file scope from the key.
+        Required for workspace-scoped and folder-scoped keys when using `/a/{key}/append`.
+    author:
+      type: string
+      description: Author for all appends in this request
+      pattern: '^[a-zA-Z0-9_-]{1,64}$'
+    appends:
+      type: array
+      description: Array of append items (max 100)
+      maxItems: 100
+      items:
+        $ref: '#/AppendItem'
+
+# -----------------------------------------------------------------------------
+# Response Schemas
+# -----------------------------------------------------------------------------
+SingleAppendResult:
+  type: object
+  description: Result of a single append operation
+  required:
+    - id
+    - author
+    - ts
+    - type
+  properties:
+    id:
+      type: string
+      pattern: '^a[0-9]+$'
+    author:
+      type: string
+      pattern: '^[a-zA-Z0-9_-]{1,64}$'
+    ts:
+      type: string
+      format: date-time
+    type:
+      $ref: '#/AppendType'
+    ref:
+      type: string
+      pattern: '^a[0-9]+$'
+    expiresAt:
+      type: string
+      format: date-time
+      description: Claim expiry timestamp (for claim type)
+    expiresInSeconds:
+      type: integer
+      description: Seconds until claim expires
+    status:
+      $ref: '#/AppendStatus'
+      description: Initial status (e.g., 'open' for tasks)
+    priority:
+      $ref: '#/Priority'
+      description: Task priority level (tasks only)
+    labels:
+      type: array
+      items:
+        type: string
+      description: Labels array (tasks only)
+    dueAt:
+      type: string
+      format: date-time
+      description: Due date (tasks only)
+    taskStatus:
+      type: string
+      description: Updated task status after operation (for response/cancel)
+      enum:
+        - open
+        - done
+    value:
+      type: string
+      description: Vote value (votes only)
+      enum:
+        - '+1'
+        - '-1'
+
+MultiAppendResult:
+  type: object
+  description: Result of atomic multi-append operation
+  required:
+    - appends
+  properties:
+    appends:
+      type: array
+      items:
+        type: object
+        required:
+          - id
+          - type
+        properties:
+          id:
+            type: string
+            pattern: '^a[0-9]+$'
+          type:
+            $ref: '#/AppendType'
+          ref:
+            type: string
+            pattern: '^a[0-9]+$'
+          expiresAt:
+            type: string
+            format: date-time
+            description: Claim expiry timestamp (for claim type)
+          expiresInSeconds:
+            type: integer
+            description: Seconds until claim expires
+
+AppendResponse:
+  type: object
+  description: Response for append operations
+  required:
+    - ok
+    - serverTime
+    - data
+  properties:
+    ok:
+      type: boolean
+      const: true
+    serverTime:
+      type: string
+      format: date-time
+      description: Server timestamp for synchronization
+    data:
+      oneOf:
+        - $ref: '#/SingleAppendResult'
+        - $ref: '#/MultiAppendResult'
+    webUrl:
+      type: string
+      format: uri
+      description: URL to view this file in the web app
+
+# -----------------------------------------------------------------------------
+# Scoped Append Schemas (for path-based append with scoped keys)
+# -----------------------------------------------------------------------------
+ScopedAppendRequest:
+  type: object
+  description: Request body for scoped path-based append
+  properties:
+    author:
+      type: string
+      description: Author identifier (may be enforced by boundAuthor on key)
+      pattern: '^[a-zA-Z0-9_-]{1,64}$'
+    type:
+      type: string
+      description: Append type (may be restricted by allowedTypes on key)
+    content:
+      type: string
+      description: Append content
+
+ScopedAppendResult:
+  type: object
+  description: Result of a scoped append operation
+  required:
+    - appendId
+    - createdAt
+  properties:
+    appendId:
+      type: string
+      description: Append ID
+      pattern: '^a[0-9]+$'
+    type:
+      type: string
+      description: Append type (if provided)
+    author:
+      type: string
+      description: Author identifier
+      pattern: '^[a-zA-Z0-9_-]{1,64}$'
+    createdAt:
+      type: string
+      format: date-time
+      description: ISO 8601 timestamp when append was created
+
+ScopedAppendResponse:
+  type: object
+  description: Response for scoped path-based append operations
+  required:
+    - ok
+    - data
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      $ref: '#/ScopedAppendResult'

@@ -1,0 +1,244 @@
+# Orchestration-related schemas for mdplane API
+# Reference: docs/Obsidian Vault/Projects/mdplane/API Design.md
+
+# -----------------------------------------------------------------------------
+# Orchestration Task
+# -----------------------------------------------------------------------------
+OrchestrationTask:
+  type: object
+  required: [id, file, content, author, status, createdAt]
+  properties:
+    id:
+      type: string
+      description: Task append ID
+    file:
+      type: object
+      required: [id, path]
+      properties:
+        id:
+          type: string
+        path:
+          type: string
+    content:
+      type: string
+      description: Task content/description
+    author:
+      type: string
+      description: Task creator
+    status:
+      type: string
+      enum: [pending, claimed, stalled, completed, cancelled]
+      description: Current orchestration status for this task
+    priority:
+      type: string
+      enum: [low, medium, high, critical]
+    labels:
+      type: array
+      items:
+        type: string
+    createdAt:
+      type: string
+      format: date-time
+    due:
+      type: string
+      format: date-time
+    claim:
+      type: object
+      description: Current claim info (if claimed)
+      properties:
+        id:
+          type: string
+        author:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        blocked:
+          type: boolean
+        blockReason:
+          type: string
+
+# -----------------------------------------------------------------------------
+# Orchestration Claim
+# -----------------------------------------------------------------------------
+OrchestrationClaim:
+  type: object
+  required: [id, taskId, file, author, expiresAt, status]
+  properties:
+    id:
+      type: string
+      description: Claim append ID
+    taskId:
+      type: string
+      description: Task being claimed
+    file:
+      type: object
+      required: [id, path]
+      properties:
+        id:
+          type: string
+        path:
+          type: string
+    author:
+      type: string
+      description: Claiming agent
+    expiresAt:
+      type: string
+      format: date-time
+    expiresInSeconds:
+      type: integer
+    status:
+      type: string
+      enum: [active, blocked, expired]
+    blocked:
+      type: boolean
+    blockReason:
+      type: string
+
+# -----------------------------------------------------------------------------
+# Agent Status (within orchestration view)
+# -----------------------------------------------------------------------------
+OrchestrationAgentStatus:
+  type: object
+  properties:
+    author:
+      type: string
+    status:
+      type: string
+      enum: [alive, idle, busy, stale]
+    lastSeen:
+      type: string
+      format: date-time
+    currentTask:
+      type: string
+
+# -----------------------------------------------------------------------------
+# Workload Entry
+# -----------------------------------------------------------------------------
+OrchestrationWorkload:
+  type: object
+  properties:
+    activeClaims:
+      type: integer
+    completedToday:
+      type: integer
+
+# -----------------------------------------------------------------------------
+# Orchestration Summary
+# -----------------------------------------------------------------------------
+OrchestrationSummary:
+  type: object
+  required: [pending, claimed, completed, stalled, cancelled]
+  properties:
+    pending:
+      type: integer
+    claimed:
+      type: integer
+    completed:
+      type: integer
+    stalled:
+      type: integer
+    cancelled:
+      type: integer
+
+# -----------------------------------------------------------------------------
+# Read-Only Orchestration Response
+# -----------------------------------------------------------------------------
+OrchestrationReadOnlyResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [summary, tasks, claims, agents, workload]
+      properties:
+        summary:
+          $ref: '#/OrchestrationSummary'
+        tasks:
+          type: array
+          description: Flat orchestration tasks list; group by task.status in consumers
+          items:
+            $ref: '#/OrchestrationTask'
+        claims:
+          type: array
+          description: Active claims across all files
+          items:
+            $ref: '#/OrchestrationClaim'
+        agents:
+          type: array
+          description: Agent liveness status
+          items:
+            $ref: '#/OrchestrationAgentStatus'
+        workload:
+          type: object
+          description: Workload distribution across agents
+          additionalProperties:
+            $ref: '#/OrchestrationWorkload'
+        pagination:
+          type: object
+          properties:
+            cursor:
+              type: string
+            hasMore:
+              type: boolean
+        webUrl:
+          type: string
+          format: uri
+          description: URL to view orchestration in the web interface
+
+# -----------------------------------------------------------------------------
+# Write-Level Orchestration Response (extends read-only with canForceExpire)
+# -----------------------------------------------------------------------------
+OrchestrationAdminResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [summary, tasks, claims, agents, workload]
+      properties:
+        summary:
+          $ref: '#/OrchestrationSummary'
+        tasks:
+          type: array
+          description: Flat orchestration tasks list; group by task.status in consumers
+          items:
+            $ref: '#/OrchestrationTask'
+        claims:
+          type: array
+          description: Active claims with write-level actions
+          items:
+            allOf:
+              - $ref: '#/OrchestrationClaim'
+              - type: object
+                properties:
+                  canForceExpire:
+                    type: boolean
+                    description: Whether this claim can be force-expired
+                    const: true
+        agents:
+          type: array
+          items:
+            $ref: '#/OrchestrationAgentStatus'
+        workload:
+          type: object
+          additionalProperties:
+            $ref: '#/OrchestrationWorkload'
+        pagination:
+          type: object
+          properties:
+            cursor:
+              type: string
+            hasMore:
+              type: boolean
+        webUrl:
+          type: string
+          format: uri
+          description: URL to view orchestration in the web interface
+

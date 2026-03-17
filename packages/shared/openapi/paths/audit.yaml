@@ -1,0 +1,112 @@
+# ==============================================================================
+# AUDIT ENDPOINTS
+# Audit log access for workspace administrators
+# ==============================================================================
+
+/w/{key}/audit:
+  get:
+    operationId: getAuditLogs
+    tags:
+      - Admin
+    summary: Get audit logs
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Returns audit logs for the workspace. Requires write key.
+
+      Audit logs track all significant actions performed in the workspace,
+      including file operations, key management, and webhook changes.
+
+      Supports filtering by action, resource type, actor, and date range.
+      Results are paginated with configurable limit and cursor.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - name: action
+        in: query
+        description: Filter by action type
+        schema:
+          type: string
+          enum:
+            - file.create
+            - file.update
+            - file.delete
+            - append
+            - claim
+            - key.create
+            - key.revoke
+            - webhook.create
+            - webhook.update
+            - webhook.delete
+            - workspace.claim
+      - name: resourceType
+        in: query
+        description: Filter by resource type
+        schema:
+          type: string
+          enum:
+            - file
+            - folder
+            - key
+            - webhook
+            - workspace
+      - name: actor
+        in: query
+        description: Filter by actor (key prefix or identifier)
+        schema:
+          type: string
+      - name: since
+        in: query
+        description: Filter logs from this date (ISO 8601 format)
+        schema:
+          type: string
+          format: date-time
+      - name: until
+        in: query
+        description: Filter logs until this date (ISO 8601 format)
+        schema:
+          type: string
+          format: date-time
+      - name: limit
+        in: query
+        description: Maximum number of logs to return (default 50, max 100)
+        schema:
+          type: integer
+          default: 50
+          minimum: 1
+          maximum: 100
+      - name: cursor
+        in: query
+        description: Cursor for pagination (opaque)
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Audit logs retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/AuditLogsResponse'
+            example:
+              ok: true
+              data:
+                - id: audit_x8k2mP9qL3nR
+                  action: file.create
+                  resourceType: file
+                  resourceId: file_y9m3n
+                  resourcePath: /projects/alpha/tasks.md
+                  actor: w_abc...
+                  actorType: capability_url
+                  metadata: {}
+                  createdAt: "2024-01-08T10:30:00Z"
+              pagination:
+                total: 150
+                limit: 50
+                cursor: "audit_x8k2mP9qL3nR"
+                hasMore: true
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+

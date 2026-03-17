@@ -1,0 +1,214 @@
+# ==============================================================================
+# APPEND ENDPOINTS
+# Operations for appending content to files
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# APPEND TO FILE (via Append Key)
+# ------------------------------------------------------------------------------
+
+/a/{key}/append:
+  post:
+    operationId: createAppend
+    tags:
+      - Appends
+    summary: Create append
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Append content to a file. Supports two modes:
+
+      **Single append:** Provide `type`, `content`, and optional fields directly.
+
+      **Atomic multi-append:** Provide `appends` array for operations that must succeed
+      or fail together (e.g., complete task + create follow-up). If any append fails
+      validation, all are rejected.
+
+      The `appends` array and single-append fields are mutually exclusive.
+
+      Key scope behavior:
+      - **File-scoped key:** file path is derived from the key scope; `path` in body is optional.
+      - **Workspace/folder-scoped key:** `path` in body is required.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '../components/schemas/appends.yaml#/AppendRequest'
+              - $ref: '../components/schemas/appends.yaml#/MultiAppendRequest'
+          examples:
+            singleAppend:
+              summary: Single append
+              value:
+                author: jordan
+                type: task
+                content: Review PR #42 - Add user authentication
+                priority: high
+                labels: [bug, backend]
+            atomicMultiAppend:
+              summary: Atomic multi-append
+              value:
+                author: jordan
+                appends:
+                  - type: response
+                    ref: a1
+                    content: Done - fixed the bug
+                  - type: task
+                    content: 'Follow-up: deploy fix to production'
+                    priority: high
+            workspaceScopedAppend:
+              summary: Workspace-scoped append with explicit path
+              value:
+                path: tasks/backlog.md
+                author: jordan
+                type: task
+                content: Triage production alerts
+    responses:
+      '201':
+        description: Append created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/appends.yaml#/AppendResponse'
+            examples:
+              singleResult:
+                summary: Single append result
+                value:
+                  ok: true
+                  serverTime: '2024-01-08T10:30:00Z'
+                  data:
+                    id: a5
+                    author: jordan
+                    ts: '2024-01-08T10:30:00Z'
+                    type: task
+              multiResult:
+                summary: Multi-append result
+                value:
+                  ok: true
+                  serverTime: '2024-01-08T10:30:00Z'
+                  data:
+                    appends:
+                      - id: a6
+                        type: response
+                        ref: a1
+                      - id: a7
+                        type: task
+      '400':
+        description: |
+          Invalid request. Possible error codes:
+          - `INVALID_APPEND_TYPE`: Unknown type value
+          - `INVALID_REF`: ref points to wrong append type or doesn't exist
+          - `INVALID_VOTE_VALUE`: vote type with value other than +1 or -1
+          - `INVALID_AUTHOR`: Author field fails validation
+          - `TASK_ALREADY_COMPLETE`: Trying to claim a completed task
+          - `TASK_CANCELLED`: Trying to claim, respond to, or renew a cancelled task
+          - `CLAIM_EXPIRED`: Trying to renew, respond to, or mark blocked a claim that has expired
+          - `AUTHOR_MISMATCH`: Append author doesn't match key's boundAuthor
+          - `TYPE_NOT_ALLOWED`: Append type not in key's allowedTypes
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '409':
+        description: |
+          Conflict. Possible error codes:
+          - `ALREADY_CLAIMED`: Task already has active claim
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+      '410':
+        $ref: '../components/responses.yaml#/Gone'
+      '429':
+        description: |
+          Rate limited. Possible error codes:
+          - `RATE_LIMITED`: Too many requests
+          - `WIP_LIMIT_EXCEEDED`: Author at max concurrent claims
+          - `AUTHOR_RATE_LIMITED`: Author exceeded per-file or per-workspace append limit
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+
+# ------------------------------------------------------------------------------
+# SCOPED PATH-BASED APPEND (via Scoped Append Key)
+# ------------------------------------------------------------------------------
+
+/a/{key}/{path}:
+  post:
+    operationId: createScopedAppend
+    tags:
+      - Appends
+    summary: Create scoped append
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Append content to a file at a specific path using a scoped capability key.
+
+      This endpoint is used with scoped keys that have restrictions like:
+      - `scopePath`: Key can only access files within a specific path prefix
+      - `boundAuthor`: Key can only create appends with a specific author
+      - `allowedTypes`: Key can only create appends of specific types
+
+      The file path is specified in the URL, and the append is created with the
+      provided author, type, and content.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - name: path
+        in: path
+        required: true
+        description: Path to the file within the workspace (relative to scopePath if set)
+        schema:
+          type: string
+        example: 'tasks/backlog.md'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/appends.yaml#/ScopedAppendRequest'
+          examples:
+            simpleAppend:
+              summary: Simple append with author and content
+              value:
+                author: agent-01
+                type: comment
+                content: 'Processing complete'
+    responses:
+      '201':
+        description: Append created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/appends.yaml#/ScopedAppendResponse'
+            example:
+              ok: true
+              data:
+                appendId: a1704700200000
+                type: comment
+                author: agent-01
+                createdAt: '2024-01-08T10:30:00Z'
+      '400':
+        description: |
+          Invalid request. Possible error codes:
+          - `AUTHOR_MISMATCH`: Author does not match key's boundAuthor
+          - `TYPE_NOT_ALLOWED`: Append type not in key's allowedTypes
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+      '404':
+        description: |
+          Not found. Possible error codes:
+          - `KEY_NOT_FOUND`: Invalid capability key
+          - `FILE_NOT_FOUND`: File does not exist at the specified path
+          - `PERMISSION_DENIED`: Path outside of key's scopePath
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'

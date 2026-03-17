@@ -1,0 +1,260 @@
+# System-related schemas for mdplane API
+# Reference: docs/Obsidian Vault/Projects/mdplane/API Design.md
+
+# -----------------------------------------------------------------------------
+# Enums
+# -----------------------------------------------------------------------------
+HealthStatus:
+  type: string
+  description: Overall system health status
+  enum:
+    - healthy
+    - degraded
+    - unhealthy
+
+ChangeType:
+  type: string
+  description: Type of changelog entry
+  enum:
+    - added
+    - changed
+    - deprecated
+    - removed
+    - fixed
+    - security
+
+# -----------------------------------------------------------------------------
+# Response Schemas
+# -----------------------------------------------------------------------------
+
+# Simple liveness probe for Docker/Railway health checks
+HealthCheckSimpleResponse:
+  type: object
+  description: Simple health check response for liveness probes
+  required:
+    - ok
+    - status
+  properties:
+    ok:
+      type: boolean
+      const: true
+    status:
+      type: string
+      enum: [healthy]
+      description: Always "healthy" when responding
+    timestamp:
+      type: string
+      format: date-time
+      description: Current server time
+    uptimeSeconds:
+      type: integer
+      description: Server uptime in seconds
+    version:
+      type: string
+      description: API version
+      example: '0.1.0'
+
+# Full health check response (for future comprehensive endpoint)
+HealthResponse:
+  type: object
+  description: Response from health check endpoint
+  required:
+    - ok
+    - status
+    - version
+    - checks
+  properties:
+    ok:
+      type: boolean
+      const: true
+    status:
+      $ref: '#/HealthStatus'
+    version:
+      type: string
+      description: API version
+      example: '1.0.0'
+    checks:
+      type: object
+      description: Individual health check results
+      additionalProperties:
+        type: object
+        properties:
+          status:
+            $ref: '#/HealthStatus'
+          latencyMs:
+            type: integer
+            description: Check latency in milliseconds
+          message:
+            type: string
+            description: Additional status message
+
+StatusResponse:
+  type: object
+  description: Response from status endpoint with system information
+  required:
+    - ok
+    - data
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required:
+        - status
+        - timestamp
+        - environment
+        - uptimeSeconds
+        - version
+        - database
+        - storage
+        - websocket
+        - regions
+      properties:
+        status:
+          type: string
+          enum: [operational, degraded, partial_outage, major_outage]
+          description: Overall service status
+        timestamp:
+          type: string
+          format: date-time
+          description: Current server time in ISO-8601 format
+        environment:
+          type: string
+          enum: [development, test, production]
+          description: Runtime environment
+        uptimeSeconds:
+          type: integer
+          description: Server uptime in seconds
+        version:
+          type: string
+          description: API version
+          example: '0.1.0'
+        database:
+          type: object
+          description: Database status
+          required: [status]
+          properties:
+            status:
+              type: string
+              enum: [operational, degraded, down]
+              description: Database status
+            latencyMs:
+              type: number
+              description: Database latency in milliseconds
+        storage:
+          type: object
+          description: Storage status
+          required: [status]
+          properties:
+            status:
+              type: string
+              enum: [operational, degraded, down]
+              description: Storage service status
+            latencyMs:
+              type: number
+              description: Storage check latency in milliseconds
+        websocket:
+          type: object
+          description: WebSocket subsystem status
+          required: [status]
+          properties:
+            status:
+              type: string
+              enum: [operational, degraded, down]
+              description: WebSocket service status
+            latencyMs:
+              type: number
+              description: WebSocket check latency in milliseconds
+            activeConnections:
+              type: integer
+              minimum: 0
+              description: Number of active WebSocket connections
+        regions:
+          type: array
+          description: Available regions and their status
+          items:
+            $ref: '#/RegionStatus'
+
+RegionStatus:
+  type: object
+  description: Status of a deployment region
+  required:
+    - name
+    - status
+  properties:
+    name:
+      type: string
+      description: Region name
+      example: 'us-east-1'
+    status:
+      type: string
+      enum: [operational, degraded, down]
+      description: Region status
+
+# -----------------------------------------------------------------------------
+# Changelog Schemas
+# -----------------------------------------------------------------------------
+ChangelogEntry:
+  type: object
+  description: Single changelog entry
+  required:
+    - version
+    - date
+    - changes
+  properties:
+    version:
+      type: string
+      description: Version number
+      example: '1.2.0'
+    date:
+      type: string
+      format: date
+      description: Release date
+      example: '2024-01-15'
+    changes:
+      type: array
+      description: List of changes in this version
+      items:
+        type: object
+        required:
+          - type
+          - description
+        properties:
+          type:
+            $ref: '#/ChangeType'
+          description:
+            type: string
+            description: Change description
+
+ChangelogResponse:
+  type: object
+  description: Response containing changelog entries
+  required:
+    - ok
+    - data
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required:
+        - currentVersion
+        - releasedAt
+        - entries
+      properties:
+        currentVersion:
+          type: string
+          description: Current API version
+          example: '1.5.2'
+        releasedAt:
+          type: string
+          format: date-time
+          description: Release date of current version
+          example: '2025-12-15T00:00:00Z'
+        entries:
+          type: array
+          description: List of changelog entries (newest first)
+          items:
+            $ref: '#/ChangelogEntry'

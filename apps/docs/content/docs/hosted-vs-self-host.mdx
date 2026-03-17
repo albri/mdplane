@@ -1,0 +1,95 @@
+---
+title: Deployment Overview
+description: Choose hosted or self-hosted mdplane and understand the minimal and full self-host profiles.
+---
+
+Hosted is the default for most teams. Self-host only when you need control that the hosted service cannot provide.
+
+## Quick Decision
+
+Choose hosted if:
+
+- you want to validate workflows quickly
+- you do not need custom network or compliance boundaries
+- you do not want to operate upgrades, backups, and incidents yourself
+
+Choose self-host if:
+
+- you need strict control over infrastructure and secrets
+- you need to run mdplane inside an existing network boundary
+- your team can operate persistent storage, upgrades, backups, and monitoring
+
+## Deployment Types
+
+| Type | What runs | Best for |
+|---|---|---|
+| Hosted | Managed mdplane infrastructure | Most teams validating or operating workflows quickly |
+| Self-host minimal | `server + web` | Teams that need private infrastructure for runtime and control surfaces |
+| Self-host full | `server + web + docs + landing` | Teams that also want to host the docs and marketing surfaces themselves |
+
+## What Changes When You Self-Host
+
+- You own the SQLite volume and backup strategy.
+- You set public origins like `BASE_URL`, `APP_URL`, and `WS_URL`.
+- You decide whether governance mode is enabled.
+- You handle upgrades, downtime, and rollback.
+
+## Minimal vs Full Profile
+
+The compose files in the repo define two self-host profiles:
+
+- `docker-compose.selfhost.minimal.yml` runs the API and web app only
+- `docker-compose.selfhost.full.yml` also runs docs and landing
+
+For most private deployments, the minimal profile is enough.
+
+## Governance Mode
+
+Self-hosting does not require OAuth or account controls.
+
+If you want capability-first runtime workflows only, keep:
+
+```bash
+MDPLANE_GOVERNED_MODE=false
+NEXT_PUBLIC_GOVERNED_MODE=false
+```
+
+Enable governed mode only when you want claimed-workspace control flows, API-key management, and OAuth-backed control surfaces.
+
+## Required Runtime Inputs
+
+Every real self-host deployment needs these basics wired correctly:
+
+| Variable | Why it matters |
+|---|---|
+| `BASE_URL` | Builds returned API capability URLs |
+| `APP_URL` | Builds returned web URLs and trusted auth origins |
+| `WS_URL` | Advertises the public WebSocket origin |
+| `BETTER_AUTH_SECRET` | Signs auth sessions |
+| `MP_JWT_SECRET` | Signs WebSocket tokens |
+| `DATABASE_URL` | Points at persistent SQLite storage |
+
+If those origins do not match your real public deployment, the returned URLs and browser wiring will drift.
+
+## Storage and Backups
+
+mdplane stores its data in SQLite. In self-hosted deployments, the database must live on persistent storage.
+
+Plan for:
+
+- regular SQLite backups
+- restoring onto a stopped server
+- enough disk for workspace growth and WAL files
+
+The repo includes backup helpers:
+
+```bash
+pnpm db:backup
+pnpm db:restore -- --from ./backups/your-backup.sqlite --yes
+```
+
+## Recommended Path
+
+1. Start hosted if you are still validating the workflow model.
+2. Move to self-host minimal when infrastructure control becomes a real requirement.
+3. Add the full profile only if you also need private docs and landing surfaces.

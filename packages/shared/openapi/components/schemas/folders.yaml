@@ -1,0 +1,501 @@
+# Folder-related schemas for mdplane API
+# Reference: docs/Obsidian Vault/Projects/mdplane/API Design.md
+
+# -----------------------------------------------------------------------------
+# Folder Item Types
+# -----------------------------------------------------------------------------
+FolderItemType:
+  type: string
+  description: Type of item in folder listing
+  enum:
+    - file
+    - folder
+
+FolderItem:
+  type: object
+  description: An item in a folder listing (file or subfolder)
+  required:
+    - name
+    - type
+  properties:
+    name:
+      type: string
+      description: Item name (filename or folder name)
+    type:
+      $ref: '#/FolderItemType'
+    size:
+      type: integer
+      description: File size in bytes (files only)
+    updatedAt:
+      type: string
+      format: date-time
+      description: Last modification timestamp
+    appendCount:
+      type: integer
+      description: Number of appends (files only)
+    childCount:
+      type: integer
+      description: Number of child items (folders only)
+    urls:
+      $ref: 'core.yaml#/CapabilityUrls'
+    items:
+      type: array
+      description: Nested items when depth > 1 (folders only)
+      items:
+        $ref: '#/FolderItem'
+
+# -----------------------------------------------------------------------------
+# List Folder Response
+# -----------------------------------------------------------------------------
+FolderListResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [path, items]
+      properties:
+        path:
+          type: string
+          description: Folder path
+        items:
+          type: array
+          items:
+            $ref: '#/FolderItem'
+        webUrl:
+          type: string
+          format: uri
+          description: URL to view this folder in the web interface
+        workspace:
+          $ref: 'core.yaml#/WorkspaceContext'
+          description: Workspace context for capability URL UI
+    pagination:
+      $ref: 'core.yaml#/PaginatedResponse'
+
+# -----------------------------------------------------------------------------
+# Create Folder
+# -----------------------------------------------------------------------------
+FolderCreateRequest:
+  type: object
+  required: [name]
+  properties:
+    name:
+      type: string
+      description: New folder name
+      maxLength: 255
+    path:
+      type: string
+      description: Parent folder path (defaults to root)
+
+FolderCreateResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [path, urls, createdAt]
+      properties:
+        path:
+          type: string
+          description: Full path of created folder
+        urls:
+          $ref: 'core.yaml#/CapabilityUrls'
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        webUrl:
+          type: string
+          format: uri
+          description: URL to view this folder in the web interface
+
+# -----------------------------------------------------------------------------
+# Move/Rename Folder
+# -----------------------------------------------------------------------------
+FolderMoveRequest:
+  type: object
+  required: [destination]
+  properties:
+    destination:
+      type: string
+      description: Destination folder path
+
+FolderMoveResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [previousPath, newPath]
+      properties:
+        previousPath:
+          type: string
+          description: Original folder path
+        newPath:
+          type: string
+          description: New folder path after move
+        filesUpdated:
+          type: integer
+          description: Number of files affected by the move
+        webUrl:
+          type: string
+          format: uri
+          description: URL to view this folder in the web interface at the new path
+
+FolderRenameRequest:
+  type: object
+  required: [name]
+  properties:
+    name:
+      type: string
+      description: New folder name
+      maxLength: 255
+
+# -----------------------------------------------------------------------------
+# Delete Folder
+# -----------------------------------------------------------------------------
+FolderDeleteRequest:
+  type: object
+  description: Request body for cascade delete of non-empty folders
+  properties:
+    cascade:
+      type: boolean
+      description: Delete folder and all contents
+    confirmPath:
+      type: string
+      description: Must match folder path exactly (without leading slash)
+
+FolderDeleteResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [deleted, path]
+      properties:
+        deleted:
+          type: boolean
+          const: true
+        path:
+          type: string
+          description: Deleted folder path
+        filesDeleted:
+          type: integer
+          description: Number of files deleted (cascade only)
+        foldersDeleted:
+          type: integer
+          description: Number of subfolders deleted (cascade only)
+        recoverable:
+          type: boolean
+          description: Whether deleted content can be recovered
+        expiresAt:
+          type: string
+          format: date-time
+          description: When soft-deleted content will be permanently deleted
+
+# -----------------------------------------------------------------------------
+# Folder Stats
+# -----------------------------------------------------------------------------
+FolderStatsResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [path, fileCount, folderCount, totalSize]
+      properties:
+        path:
+          type: string
+          description: Folder path
+        fileCount:
+          type: integer
+          description: Total number of files
+        folderCount:
+          type: integer
+          description: Total number of subfolders
+        totalSize:
+          type: integer
+          description: Total size in bytes
+        updatedAt:
+          type: string
+          format: date-time
+          description: Most recent modification timestamp
+        taskStats:
+          $ref: 'core.yaml#/TaskStats'
+
+# -----------------------------------------------------------------------------
+# Folder Settings
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# Copy File to Folder Request
+# -----------------------------------------------------------------------------
+CopyFileToFolderRequest:
+  type: object
+  description: Request body for copying a file into a folder
+  required: [sourceKey]
+  properties:
+    sourceKey:
+      type: string
+      description: Read key of the source file to copy
+    filename:
+      type: string
+      description: Optional new filename (defaults to source filename)
+
+FolderSettings:
+  type: object
+  description: Folder-level settings
+  properties:
+    inheritSettings:
+      type: boolean
+      description: Whether to inherit settings from parent folder
+    defaultLabels:
+      type: array
+      items:
+        type: string
+      description: Default labels for files created in this folder
+    allowedTypes:
+      type: array
+      items:
+        type: string
+        enum: [task, claim, response, comment, blocked, answer, renew, cancel, vote]
+      description: Allowed append types for files in this folder
+
+FolderSettingsUpdateRequest:
+  type: object
+  description: Partial update for folder settings
+  properties:
+    inheritSettings:
+      type: boolean
+      description: Whether to inherit settings from parent folder
+    defaultLabels:
+      type: array
+      items:
+        type: string
+      description: Default labels for files created in this folder
+    allowedTypes:
+      type: array
+      items:
+        type: string
+        enum: [task, claim, response, comment, blocked, answer, renew, cancel, vote]
+      description: Allowed append types for files in this folder
+
+FolderSettingsResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      $ref: '#/FolderSettings'
+
+# -----------------------------------------------------------------------------
+# Bulk Create Files in Folder
+# -----------------------------------------------------------------------------
+FolderBulkCreateItem:
+  type: object
+  description: Single file to create in bulk operation
+  required:
+    - filename
+  properties:
+    filename:
+      type: string
+      description: File name
+      maxLength: 255
+    content:
+      type: string
+      description: Initial file content
+
+FolderBulkCreateRequest:
+  type: object
+  description: Request body for bulk file creation
+  required: [files]
+  properties:
+    files:
+      type: array
+      description: Array of files to create (max 100)
+      maxItems: 100
+      items:
+        $ref: '#/FolderBulkCreateItem'
+
+FolderBulkCreateResultItem:
+  type: object
+  description: Result for a single file in bulk create
+  required:
+    - filename
+    - id
+    - urls
+  properties:
+    filename:
+      type: string
+    id:
+      type: string
+    urls:
+      $ref: 'core.yaml#/CapabilityUrls'
+    webUrl:
+      type: string
+      format: uri
+      description: URL to view this file in the web interface
+
+FolderBulkCreateResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [created]
+      properties:
+        created:
+          type: array
+          items:
+            $ref: '#/FolderBulkCreateResultItem'
+        webUrl:
+          type: string
+          format: uri
+          description: URL to view the parent folder in the web interface
+
+FolderBulkCreateJobResponse:
+  type: object
+  description: Response for async bulk file creation (202 Accepted)
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [jobId]
+      properties:
+        jobId:
+          type: string
+          description: Job ID for polling status
+
+# -----------------------------------------------------------------------------
+# Create File in Folder (moved from core for completeness)
+# -----------------------------------------------------------------------------
+CreateFileRequest:
+  type: object
+  required: [filename]
+  properties:
+    filename:
+      type: string
+      description: File name
+      maxLength: 255
+    content:
+      type: string
+      description: Initial file content
+
+CreateFileResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [id, filename, path, urls, createdAt]
+      properties:
+        id:
+          type: string
+          description: File ID
+        filename:
+          type: string
+          description: File name
+        path:
+          type: string
+          description: Full file path
+        urls:
+          $ref: 'core.yaml#/CapabilityUrls'
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        webUrl:
+          type: string
+          format: uri
+          description: URL to view this file in the web interface
+
+# -----------------------------------------------------------------------------
+# Folder Claims
+# -----------------------------------------------------------------------------
+FolderClaimFileInfo:
+  type: object
+  description: File information for a claim
+  required: [id, path]
+  properties:
+    id:
+      type: string
+      description: File ID
+    path:
+      type: string
+      description: File path within folder
+
+FolderClaimItem:
+  type: object
+  description: A single claim in a folder
+  required: [taskId, claimId, file, taskContent, status, expiresAt, expiresInSeconds]
+  properties:
+    taskId:
+      type: string
+      description: ID of the claimed task
+    claimId:
+      type: string
+      description: ID of the claim append
+    file:
+      $ref: '#/FolderClaimFileInfo'
+    taskContent:
+      type: string
+      description: Content of the claimed task
+    status:
+      type: string
+      enum: [active, expired]
+      description: Claim status
+    expiresAt:
+      type: string
+      format: date-time
+      description: Claim expiry timestamp
+    expiresInSeconds:
+      type: integer
+      description: Seconds until claim expires
+
+FolderClaimsResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [claims, count, webUrl]
+      properties:
+        claims:
+          type: array
+          items:
+            $ref: '#/FolderClaimItem'
+        count:
+          type: integer
+          description: Total number of claims
+        webUrl:
+          type: string
+          format: uri
+          description: URL to view claims in the web interface

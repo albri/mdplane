@@ -1,0 +1,128 @@
+# ==============================================================================
+# COMMON PARAMETERS
+# ==============================================================================
+
+capabilityKey:
+  name: key
+  in: path
+  required: true
+  description: Capability key (20+ chars, base62 with underscore)
+  schema:
+    type: string
+    pattern: '^[A-Za-z0-9_]{20,}$'
+    minLength: 20
+
+folderPath:
+  name: path
+  in: path
+  required: true
+  description: URL-encoded folder path
+  schema:
+    type: string
+
+folderPathQuery:
+  name: path
+  in: query
+  required: false
+  description: URL-encoded folder path (omit for workspace root)
+  schema:
+    type: string
+
+appendId:
+  name: appendId
+  in: path
+  required: true
+  description: Append identifier (e.g., a1, a42)
+  schema:
+    type: string
+    pattern: '^a[0-9]+$'
+
+webhookId:
+  name: webhookId
+  in: path
+  required: true
+  description: Webhook identifier
+  schema:
+    type: string
+
+keyId:
+  name: keyId
+  in: path
+  required: true
+  description: Scoped key identifier
+  schema:
+    type: string
+
+jobId:
+  name: jobId
+  in: path
+  required: true
+  description: Background job identifier
+  schema:
+    type: string
+
+workspaceId:
+  name: workspaceId
+  in: path
+  required: true
+  description: Workspace identifier
+  schema:
+    type: string
+    pattern: '^ws_[A-Za-z0-9]{12,}$'
+
+claimId:
+  name: claimId
+  in: path
+  required: true
+  description: The claim's append ID
+  schema:
+    type: string
+  example: "a_x8k2mP9qL3nR7mQ2pN4x"
+
+# ==============================================================================
+# QUERY PARAMETERS
+# ==============================================================================
+
+format:
+  name: format
+  in: query
+  description: Response format
+  schema:
+    type: string
+    enum:
+      - raw
+      - parsed
+      - structure
+
+limit:
+  name: limit
+  in: query
+  description: Maximum number of items to return
+  schema:
+    type: integer
+    default: 50
+    minimum: 1
+    maximum: 1000
+
+cursor:
+  name: cursor
+  in: query
+  description: Pagination cursor for fetching next page
+  schema:
+    type: string
+
+since:
+  name: since
+  in: query
+  description: Return items modified after this timestamp (ISO 8601)
+  schema:
+    type: string
+    format: date-time
+
+author:
+  name: author
+  in: query
+  description: Filter by author identifier
+  schema:
+    type: string
+

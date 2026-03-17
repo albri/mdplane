@@ -1,0 +1,148 @@
+---
+title: Files
+description: How file content works in mdplane and when to edit files versus append to them.
+---
+
+Files are markdown documents in your workspace. They hold context, instructions, and the durable document content.
+**Files** store the document. **Appends** add workflow activity alongside it. Most workflows use both: the file contains instructions and context, and appends contain the work log.
+
+Files can also be read in different ways depending on the job. You can read the full file, fetch raw markdown, inspect structure, tail the latest content, or read a section when an agent only needs part of the document.
+
+---
+
+## Create a File
+
+<Tabs items={["cURL", "CLI"]}>
+<Tab value="cURL">
+```bash
+curl -X PUT "https://api.mdplane.dev/w/{writeKey}/workflows/review.md" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "# Code Review Queue\n\nTasks appear below.\n"}'
+```
+</Tab>
+<Tab value="CLI">
+```bash
+mdplane write /workflows/review.md "# Code Review Queue\n\nTasks appear below."
+```
+</Tab>
+</Tabs>
+
+<Callout type="info">
+`PUT` creates the file if it doesn't exist, or updates it if it does. Folders are created automatically.
+</Callout>
+
+---
+
+## Read a File
+
+<Tabs items={["cURL", "CLI"]}>
+<Tab value="cURL">
+```bash
+curl "https://api.mdplane.dev/r/{readKey}/workflows/review.md"
+```
+</Tab>
+<Tab value="CLI">
+```bash
+mdplane read /workflows/review.md
+```
+</Tab>
+</Tabs>
+
+A normal read returns the file content and metadata such as filename, size, timestamps, append count, and a web URL.
+
+If you also want append activity with the file content, use the parsed format:
+
+```bash
+curl "https://api.mdplane.dev/r/{readKey}/workflows/review.md?format=parsed&appends=20"
+```
+
+Other read surfaces exist for more specific jobs, such as raw markdown, structure, tail, or section reads. Use those when an agent needs a narrower view of the file instead of the whole document.
+
+---
+
+## Update a File
+
+Same endpoint as create — `PUT` is idempotent:
+
+```bash
+curl -X PUT "https://api.mdplane.dev/w/{writeKey}/workflows/review.md" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "# Code Review Queue\n\nUpdated instructions.\n"}'
+```
+
+<Callout type="warning">
+`PUT` replaces the entire file content. Use appends for adding content without overwriting.
+</Callout>
+
+---
+
+## Delete a File
+
+```bash
+curl -X DELETE "https://api.mdplane.dev/w/{writeKey}/workflows/review.md"
+```
+
+Delete is soft by default, so the file can be recovered for 7 days. Use `?permanent=true` only when you want an irreversible delete.
+
+---
+
+## Bulk Create Files
+
+When setting up a workspace, you often need multiple files at once. Use the bulk endpoint to create them in a folder:
+
+```bash
+curl -X POST "https://api.mdplane.dev/w/{writeKey}/folders/workflows/bulk" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "files": [
+      {"filename": "pr-review.md", "content": "# PR Review Queue\n"},
+      {"filename": "deployments.md", "content": "# Deployment Log\n"},
+      {"filename": "support.md", "content": "# Support Tickets\n"}
+    ]
+  }'
+```
+
+<Callout type="tip">
+Bulk create is useful for scaffolding a new workspace. Create all files in a folder with one API call.
+</Callout>
+
+---
+
+## List Files
+
+Get all files in a folder:
+
+```bash
+curl "https://api.mdplane.dev/r/{readKey}/folders/workflows"
+```
+
+The folder listing response returns `data.path` plus an `items` array. Each item is either a file or a folder and includes the fields available for that item type.
+
+---
+
+## Search Files
+
+Search file content and appends within the scope of your read key:
+
+```bash
+curl "https://api.mdplane.dev/r/{readKey}/search?q=OAuth"
+```
+
+Search returns `data.results` with scored matches. Each result includes the result type, file reference, matched content, and highlight positions.
+
+---
+
+## File Paths
+
+File paths follow standard conventions:
+
+| Path | Valid | Notes |
+|------|-------|-------|
+| `/workflows/review.md` | ✓ | Absolute path |
+| `workflows/review.md` | ✓ | Relative path (leading slash optional) |
+| `/review.md` | ✓ | Root-level file |
+| `/deep/nested/path/file.md` | ✓ | Nested paths work |
+
+<Callout type="info">
+Folders are created automatically when you create a file in a nested path.
+</Callout>

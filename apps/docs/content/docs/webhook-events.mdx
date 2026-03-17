@@ -1,0 +1,358 @@
+---
+title: Webhook Events
+---
+
+mdplane emits webhook events for workspace activity.
+
+<Callout type="warning" title="Webhook vs WebSocket Payloads">
+Webhook deliveries and WebSocket events do not have the same envelope. This page describes webhook payloads only.
+</Callout>
+
+---
+
+## Event Categories
+
+| Category | Events |
+|----------|--------|
+| **File** | `file.created`, `file.updated`, `file.deleted` |
+| **Append** | `append` (all append activity) |
+| **Task** | `task.created`, `task.completed`, `task.blocked`, `task.unblocked` |
+| **Claim** | `claim.created`, `claim.expired`, `claim.renewed`, `claim.released` |
+| **Agent** | `heartbeat` |
+| **System** | `webhook.failed`, `settings.changed` |
+
+---
+
+## Event Reference
+
+### File Events
+
+#### file.created
+
+Emitted when a file is created.
+
+```json
+{
+  "event": "file.created",
+  "timestamp": "2024-01-15T10:00:00Z",
+  "data": {
+    "file": {
+      "id": "file_xyz789",
+      "path": "/tasks.md"
+    }
+  }
+}
+```
+
+#### file.updated
+
+Emitted when a file's content changes.
+
+```json
+{
+  "event": "file.updated",
+  "timestamp": "2024-01-15T10:05:00Z",
+  "data": {
+    "file": {
+      "id": "file_xyz789",
+      "path": "/tasks.md"
+    }
+  }
+}
+```
+
+#### file.deleted
+
+Emitted when a file is soft deleted.
+
+```json
+{
+  "event": "file.deleted",
+  "timestamp": "2024-01-15T10:10:00Z",
+  "data": {
+    "file": {
+      "id": "file_xyz789",
+      "path": "/old-file.md",
+      "recoverable": true,
+      "expiresAt": "2024-01-22T10:10:00Z"
+    }
+  }
+}
+```
+
+---
+
+### Append Events
+
+#### append
+
+Emitted for any append (universal event).
+
+```json
+{
+  "event": "append",
+  "timestamp": "2024-01-15T10:15:00Z",
+  "data": {
+    "append": {
+      "id": "a1",
+      "type": "task",
+      "author": "agent"
+    },
+    "file": {
+      "id": "file_xyz789",
+      "path": "/tasks.md"
+    }
+  }
+}
+```
+
+---
+
+### Task Events
+
+#### task.created
+
+Emitted when a task append is created.
+
+```json
+{
+  "event": "task.created",
+  "timestamp": "2024-01-15T10:20:00Z",
+  "data": {
+    "append": {
+      "id": "a1",
+      "type": "task",
+      "author": "agent"
+    },
+    "file": {
+      "id": "file_xyz789",
+      "path": "/tasks.md"
+    }
+  }
+}
+```
+
+#### task.completed
+
+Emitted when a task is completed with a response.
+
+```json
+{
+  "event": "task.completed",
+  "timestamp": "2024-01-15T10:25:00Z",
+  "data": {
+    "append": {
+      "id": "a2",
+      "type": "response",
+      "author": "agent",
+      "ref": "a1"
+    },
+    "file": { "id": "file_xyz789", "path": "/tasks.md" }
+  }
+}
+```
+
+#### task.blocked
+
+Emitted when a task is blocked.
+
+```json
+{
+  "event": "task.blocked",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "data": {
+    "append": {
+      "id": "a3",
+      "type": "blocked",
+      "author": "human",
+      "ref": "a1"
+    },
+    "file": { "id": "file_xyz789", "path": "/tasks.md" }
+  }
+}
+```
+
+#### task.unblocked
+
+Emitted when a blocked task is unblocked.
+
+```json
+{
+  "event": "task.unblocked",
+  "timestamp": "2024-01-15T10:35:00Z",
+  "data": {
+    "append": {
+      "id": "a4",
+      "type": "answer",
+      "author": "human_operator",
+      "ref": "a3"
+    },
+    "file": { "id": "file_xyz789", "path": "/tasks.md" }
+  }
+}
+```
+
+---
+
+### Claim Events
+
+#### claim.created
+
+Emitted when a task is claimed.
+
+```json
+{
+  "event": "claim.created",
+  "timestamp": "2024-01-15T10:40:00Z",
+  "data": {
+    "append": {
+      "id": "a5",
+      "type": "claim",
+      "author": "agent",
+      "ref": "a1"
+    },
+    "file": { "id": "file_xyz789", "path": "/tasks.md" }
+  }
+}
+```
+
+#### claim.expired
+
+Emitted when a claim expires (not renewed).
+
+```json
+{
+  "event": "claim.expired",
+  "timestamp": "2024-01-15T10:45:00Z",
+  "data": {
+    "claimId": "c1",
+    "taskId": "a1",
+    "file": { "path": "/tasks.md" }
+  }
+}
+```
+
+#### claim.renewed
+
+Emitted when a claim is renewed.
+
+```json
+{
+  "event": "claim.renewed",
+  "timestamp": "2024-01-15T10:50:00Z",
+  "data": {
+    "append": {
+      "id": "a6",
+      "type": "renew",
+      "author": "agent",
+      "ref": "a5"
+    },
+    "file": { "id": "file_xyz789", "path": "/tasks.md" }
+  }
+}
+```
+
+#### claim.released
+
+Emitted when a claim is released.
+
+```json
+{
+  "event": "claim.released",
+  "timestamp": "2024-01-15T10:55:00Z",
+  "data": {
+    "append": {
+      "id": "a7",
+      "type": "cancel",
+      "author": "agent",
+      "ref": "a5"
+    },
+    "file": { "id": "file_xyz789", "path": "/tasks.md" }
+  }
+}
+```
+
+---
+
+### Agent Events
+
+#### heartbeat
+
+Emitted when an agent sends a heartbeat.
+
+```json
+{
+  "event": "heartbeat",
+  "timestamp": "2024-01-15T11:00:00Z",
+  "data": {
+    "author": "security-agent",
+    "status": "busy",
+    "currentTask": "a1"
+  }
+}
+```
+
+---
+
+### System Events
+
+#### webhook.failed
+
+Emitted when a webhook delivery fails.
+
+```json
+{
+  "event": "webhook.failed",
+  "timestamp": "2024-01-15T11:05:00Z",
+  "data": {
+    "webhookId": "wh_abc123",
+    "url": "https://example.com/webhook",
+    "event": "task.created",
+    "error": "Connection timeout",
+    "retryCount": 5
+  }
+}
+```
+
+#### settings.changed
+
+Emitted when file or folder settings change.
+
+```json
+{
+  "event": "settings.changed",
+  "timestamp": "2024-01-15T11:10:00Z",
+  "data": {
+    "file": {
+      "id": "file_1",
+      "path": "/tasks.md"
+    },
+    "changes": {
+      "wipLimit": [3, 5]
+    }
+  }
+}
+```
+
+---
+
+## Event Payload Structure
+
+All webhook deliveries follow this structure:
+
+```json
+{
+  "event": "task.created",
+  "timestamp": "2024-01-15T10:00:00Z",
+  "data": { "...": "..." }
+}
+```
+
+---
+
+## Event Naming
+
+| Format | Example | Description |
+|--------|---------|-------------|
+| `{category}.{action}` | `task.created` | Most events |
+| `{type}` | `append`, `heartbeat` | Universal events |

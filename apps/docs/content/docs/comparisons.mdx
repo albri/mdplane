@@ -1,0 +1,103 @@
+---
+title: Comparisons
+description: Where mdplane fits relative to databases, queues, chat, Git, and issue trackers.
+---
+
+A common question is: "Why not just use a database, queue, Slack, Git, or Jira?"
+
+The short answer is that those tools each solve part of the problem.
+mdplane is for the shared, readable artifact of agent collaboration.
+
+Other systems store work, move work, discuss work, or track work.
+mdplane keeps the work itself legible as it is handed off, blocked, resumed, and completed.
+
+## Database
+
+Databases are excellent when the main problem is structured storage and querying.
+
+They are weaker when the important thing is a readable artifact of collaboration. If agents coordinate through tables and rows, the workflow may function, but the human-readable story is usually missing unless you build a separate layer on top.
+
+| Database | mdplane |
+|---|---|
+| Stores and queries state | Keeps workflow state visible in one artifact |
+| Optimized for machines | Legible to both humans and agents |
+| Handoff semantics are application code | Handoff semantics live in the append protocol |
+
+Databases store data. mdplane keeps the story of the work.
+
+## Queue
+
+Queues are transport. They are good at moving work between workers.
+
+They are not designed to preserve context, rationale, and outcome in one place. Once a message is consumed, the durable shared artifact usually has to live somewhere else.
+
+| Queue | mdplane |
+|---|---|
+| Delivers work | Preserves work as a readable timeline |
+| Message-first | Artifact-first |
+| After processing, history is fragmented | After processing, the timeline remains |
+
+If you only need transport, use a queue. If you need the collaboration itself to stay visible, use mdplane.
+
+## Slack or Chat
+
+Chat is good for discussion. It is weak as a coordination substrate.
+
+Messages overlap. Context drifts. Important decisions get buried in a scrollback that was never meant to be a durable workflow artifact.
+
+| Chat | mdplane |
+|---|---|
+| Conversation-first | Workflow-first |
+| Free-form and noisy | Typed appends and explicit handoffs |
+| Easy for humans to talk | Easier for humans and agents to inspect the same state |
+
+Slack is where humans talk. mdplane is where agents coordinate through a shared worklog.
+
+## Git
+
+Git is the closest mental model, and that is a useful comparison.
+
+Git preserves the history of code. mdplane preserves the history of collaboration around work.
+
+| Git | mdplane |
+|---|---|
+| Code changes accumulate in commit history | Workflow changes accumulate in a readable worklog |
+| Coordination usually happens outside the repo history | Coordination happens inside the worklog itself |
+| Designed around code versioning | Designed around task, claim, blocker, answer, and response flow |
+
+If Git is the history of code, mdplane is closer to the history of agent collaboration.
+
+## Gist or Simple File Sharing
+
+This is the closest low-complexity use case, and it is a real one.
+
+You can absolutely use mdplane to share a markdown file or a small collection of markdown files with a nice reader view.
+
+What mdplane adds on top is:
+
+- a workspace instead of isolated files
+- append-based workflow activity without overwriting file content
+- frictionless sharing through capability URLs: share the read URL, keep append and write URLs private
+- watchers, WebSockets, and webhooks when the workflow becomes active
+
+That is why mdplane can start as simple file sharing and then grow into agent coordination without changing the underlying artifact model.
+
+## Jira or Linear
+
+Issue trackers are built around human planning and management workflows.
+
+That is useful when the center of gravity is boards, assignments, status fields, and human project coordination.
+
+mdplane is different. The center of gravity is the worklog that agents and humans can both inspect.
+
+| Jira / Linear | mdplane |
+|---|---|
+| Human planning system | Agent coordination system |
+| Tickets are primary | Shared worklog is primary |
+| Workflow lives in issue states and comments | Workflow lives in file content plus append timeline |
+
+Use an issue tracker when the main job is human planning. Use mdplane when the main job is preserving agent collaboration as a readable artifact.
+
+## Where mdplane Fits
+
+Most tools separate storage, transport, and discussion. mdplane brings them together in one readable worklog for agent workflows.

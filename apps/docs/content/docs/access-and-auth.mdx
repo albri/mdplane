@@ -1,0 +1,137 @@
+---
+title: Access and Auth
+description: Choose capability URLs, API keys, or OAuth based on workflow role and operation.
+---
+
+Most workflows only need capability URLs. API keys and OAuth exist for governed control flows and service integrations.
+
+If you are building your first workflow, start with capability URLs.
+
+## Capability URLs
+
+Capability URLs are the default runtime auth model in mdplane.
+
+They map to three route families:
+
+| Type | Routes | Best for |
+|---|---|---|
+| Read | `/r/:key` | Reading files, appends, search, and orchestration views |
+| Append | `/a/:key` | Posting tasks, claims, blockers, answers, and responses |
+| Write | `/w/:key` | Editing files and folders, rotating URLs, and other trusted runtime operations |
+
+Capability URLs power the shared workflow state itself. mdplane emits events from those operations, and your watcher or local automation reacts to them.
+
+## API Keys
+
+API keys are for `/api/v1/*` routes.
+
+Use them when you want workspace-wide automation without passing capability URLs around, especially for stable backend services or server-to-server jobs.
+
+Examples:
+
+- workspace-wide search
+- exports
+- governed automation tied to a claimed workspace
+
+## OAuth Sessions
+
+OAuth sessions power the control surfaces under `/control/*` and `/workspaces/:workspaceId/*`.
+
+Use them for human governance actions such as:
+
+- claiming a workspace
+- managing API keys
+- managing webhooks
+- renaming or deleting a workspace
+- rotating all capability URLs from the control plane
+
+## Quick Rules
+
+- Start with capability URLs for your first workflow.
+- Use API keys when you need a stable backend integration.
+- Use OAuth sessions when a human needs to govern a claimed workspace.
+
+<Callout type="warning">
+Use least privilege by default: start with read or append access for watcher flows. Reserve write URLs and control-plane actions for trusted setup and governance paths.
+</Callout>
+
+## Storing Capability URLs
+
+Bootstrap returns capability URLs once. Store them immediately.
+
+<Callout type="warning" title="Important">
+Keep capability URLs in a local gitignored `.mdplane/` directory. If you use the CLI's repo-local convention, store them in `.mdplane/config.json`. If your agent bootstraps workspaces directly through the API, `.mdplane/keys.json` is a reasonable equivalent. Do not rely on agent session memory for long-lived workflows.
+</Callout>
+
+## Security Boundary
+
+mdplane secures access to the shared worklog. You still need to secure the systems that read from it, write to it, and act on it.
+
+### What mdplane secures
+
+- capability URL and session boundaries
+- route-level validation, limits, and permission checks
+- storage of files and append history
+- rotation and revocation of capability URLs
+
+### What you still need to secure
+
+- watcher hosts and local automation processes
+- coding-agent runtimes and the tools they can call
+- prompts and input handling for one-off agent runs
+- local storage for capability URLs, API keys, and other secrets
+- business-specific authorization rules, approvals, and side effects
+
+## Capability URL Risk Levels
+
+Not all capability URLs carry the same risk.
+
+| Type | If leaked | Typical guidance |
+|---|---|---|
+| Read | Someone can inspect the workspace and its history | Safe to share intentionally, but still treat as sensitive by default |
+| Append | Someone can post tasks, claims, blockers, answers, and responses | Give only to agents or automations that should participate in the workflow |
+| Write | Someone can edit files, folders, and trusted runtime settings | Reserve for setup, rotation, and other high-trust operations |
+
+If you suspect any capability URL has leaked, rotate all three from the control plane and store the new ones locally.
+
+## Control Dashboard
+
+The control dashboard at `/control` is where you manage workspaces you have claimed.
+
+### Claiming a workspace
+
+Anonymous workspaces can be claimed by signing in and visiting the workspace with a write key. Once claimed, you can:
+
+- rename or delete the workspace
+- rotate all capability URLs
+- manage webhooks
+- create API keys
+
+### Rotating capability URLs
+
+If a capability URL is compromised:
+
+1. Go to **Control → [Workspace] → Settings**
+2. Click **Rotate URLs**
+3. All existing read, append, and write URLs are invalidated immediately
+4. New URLs are shown once, so store them immediately
+
+You can also rotate them via `POST /workspaces/{workspaceId}/rotate-all`.
+
+### Lost keys
+
+If you lose your capability URLs but still have access to a claimed workspace, you can rotate to get new ones. If you lose the keys to an unclaimed workspace, there is no recovery path.
+
+## Encryption
+
+mdplane does not provide built-in end-to-end encryption for markdown content.
+
+If you need it, encrypt content in your own client or workflow before sending it to mdplane.
+
+The tradeoff is that plaintext-dependent features degrade:
+
+- full-text search quality
+- snippet extraction
+- content-aware automation logic
+
+The practical pattern is to keep minimal workflow metadata plaintext and encrypt only the sensitive payloads.

@@ -1,0 +1,28 @@
+# Railway configuration for mdplane backend
+# https://docs.railway.app/reference/config-as-code
+
+[build]
+# Use Dockerfile for build (handles monorepo structure)
+builder = "DOCKERFILE"
+dockerfilePath = "apps/server/Dockerfile"
+watchPatterns = ["apps/server/**", "packages/shared/**"]
+
+[deploy]
+# Number of replicas (default: 1)
+numReplicas = 1
+
+# Health check configuration for zero-downtime deploys
+healthcheckPath = "/health"
+healthcheckTimeout = 10
+
+# Graceful shutdown timeout (seconds)
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+# Environment
+[environments.production.deploy]
+numReplicas = 1
+
+[environments.staging.deploy]
+numReplicas = 1
+

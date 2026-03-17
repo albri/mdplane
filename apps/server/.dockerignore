@@ -1,0 +1,51 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build artifacts (we build fresh in container)
+dist
+build
+
+# Version control
+.git
+.gitignore
+
+# Test files
+**/__tests__
+**/*.test.ts
+**/*.spec.ts
+coverage
+
+# Documentation
+*.md
+!README.md
+
+# Environment files (secrets should be passed at runtime)
+.env*
+!.env.example
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Database files (should be mounted via volume)
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+data/
+
+# Misc
+*.bak
+*.tmp
+.turbo
+*.tsbuildinfo
+

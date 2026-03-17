@@ -1,0 +1,124 @@
+---
+title: Limits & Quotas
+---
+
+mdplane enforces runtime limits to protect shared infrastructure and keep workflows predictable.
+
+Some limits are fixed defaults. Others can be tuned in self-hosted deployments through environment variables.
+
+## Content Limits
+
+| Limit | Default | Notes |
+|---|---|---|
+| Max file size | 10 MB | Controlled by `MAX_FILE_SIZE_BYTES` |
+| Max append size | 1 MB | Enforced on append content |
+| Max filename length | 255 characters | Filename only |
+| Max path length | 1024 characters | Full nested path |
+
+<Callout type="warning">
+mdplane is text-first. Large binary artifacts are not a good fit for the file layer.
+</Callout>
+
+## Rate Limits
+
+These are the current server defaults.
+
+### Capability and Anonymous Operations
+
+| Operation | Default | Window | Env override |
+|---|---|---|---|
+| Bootstrap | 10 | 1 hour | `RATE_LIMIT_BOOTSTRAP_*` |
+| Read | 1000 | 1 minute | `RATE_LIMIT_READ_*` |
+| Write | 100 | 1 minute | `RATE_LIMIT_WRITE_*` |
+| Append | 400 | 1 minute | `RATE_LIMIT_APPEND_*` |
+| Search | 60 | 1 minute | `RATE_LIMIT_SEARCH_*` |
+| Subscribe | 10 | 1 minute | `RATE_LIMIT_SUBSCRIBE_*` |
+| Bulk create | 30 | 1 minute | `RATE_LIMIT_BULK_*` |
+| Webhook create | 20 | 1 hour | `RATE_LIMIT_WEBHOOK_CREATE_*` |
+| Capability check | 5 | 1 minute | `RATE_LIMIT_CAPABILITY_CHECK_*` |
+
+### Typical Rate Limit Error
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "RATE_LIMITED",
+    "message": "Rate limit exceeded. Try again later."
+  }
+}
+```
+
+## Workspace Storage
+
+| Limit | Default | Notes |
+|---|---|---|
+| Workspace storage limit | 100 MB | Controlled by `MAX_WORKSPACE_STORAGE_BYTES` |
+
+Storage limits apply to the workspace as a whole, not just one file.
+
+## WebSocket Limits
+
+| Limit | Default | Notes |
+|---|---|---|
+| Connections per capability key | 10 | Fixed runtime default |
+| Connections per workspace | 100 | Fixed runtime default |
+
+These are separate from subscribe rate limiting.
+
+## Claim Limits
+
+| Limit | Default | Notes |
+|---|---|---|
+| Min claim duration | 60 seconds | `expiresInSeconds` minimum |
+| Max claim duration | 86400 seconds | `expiresInSeconds` maximum |
+| Default claim duration | 1800 seconds | 30 minutes |
+| WIP limit | No global default | Set through file, folder, or scoped-key settings |
+
+## Search Limits
+
+| Limit | Default | Notes |
+|---|---|---|
+| Max query length | 500 characters | Query string length |
+| Max results per request | 200 | Search `limit` maximum |
+| Default search results | 50 | Search `limit` default |
+
+## Webhook and Folder Limits
+
+| Limit | Default | Notes |
+|---|---|---|
+| Webhooks per folder | 10 | Fixed runtime default |
+| Consecutive webhook failures before disable | 5 | Webhook is disabled automatically |
+
+## Self-Hosted Tuning
+
+If you self-host mdplane, rate limits can be tuned through `.env.selfhost` or your deployment environment.
+
+Common examples:
+
+```bash
+RATE_LIMIT_READ_LIMIT=2000
+RATE_LIMIT_APPEND_LIMIT=800
+RATE_LIMIT_SEARCH_LIMIT=120
+MAX_WORKSPACE_STORAGE_BYTES=524288000
+MAX_FILE_SIZE_BYTES=20971520
+```
+
+Only raise limits when you understand the workload and the operational cost.
+
+## Practical Advice
+
+When you hit limits repeatedly:
+
+- move large context into file content instead of append bodies
+- poll less aggressively or switch to WebSockets or webhooks
+- deduplicate watcher work before spawning agents
+- use backoff on `429` and `5xx`
+- inspect WIP limits before retrying claims blindly
+
+## Related Reference
+
+- [Error Codes](/docs/errors)
+- [Troubleshooting](/docs/troubleshooting)
+- [Self-Hosting](/docs/self-hosting)
+- [API Reference](/docs/api-reference)

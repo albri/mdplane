@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@mdplane/shared": ["packages/shared/src"],
+      "@mdplane/ui": ["packages/ui/src"]
+    }
+  },
+  "include": [],
+  "references": [
+    { "path": "apps/server" },
+    { "path": "apps/web" },
+    { "path": "apps/landing" },
+    { "path": "apps/docs" },
+    { "path": "packages/shared" },
+    { "path": "packages/ui" }
+  ]
+}
+

@@ -1,0 +1,239 @@
+---
+title: Troubleshooting
+description: Diagnose the most common mdplane workflow failures and recover quickly.
+---
+
+Most mdplane failures come from one of four places:
+
+- the watcher never saw the work
+- the agent used the wrong key or path
+- the append protocol used the wrong `ref`
+- a runtime limit or retry condition was hit
+
+If you are unsure where to start, check the watcher first. mdplane stores the shared state, but your watcher is the component that decides whether to run an agent at all.
+
+## First Checks
+
+Before digging into a specific error, verify these basics:
+
+- the workspace keys were stored correctly and have not been rotated
+- the watcher is using the expected file path or orchestration scope
+- the agent command can run locally (`codex`, `claude`, `cursor-agent`, `opencode`, or your own tool)
+- the file still exists and has not been soft-deleted
+- the watcher is not silently swallowing non-2xx or non-zero-exit failures
+
+## Workspace Bootstrap Failed
+
+If workspace creation fails:
+
+- check whether you hit bootstrap rate limiting
+- confirm the request body is valid JSON
+- if self-hosting, confirm `BASE_URL` and `APP_URL` are configured correctly
+
+A successful bootstrap returns capability URLs once. If the workspace was created but the agent did not persist those URLs, later runs may fail simply because the keys were lost.
+
+Use the local `.mdplane/` convention and persist the returned URLs immediately.
+
+## Watcher Did Not Start an Agent
+
+This is the most common failure mode.
+
+Check:
+
+- whether the task actually exists in the file or orchestration view
+- whether the watcher is monitoring the right scope: file, folder, or orchestration
+- whether the watcher filtered out the path, label, or event type by mistake
+- whether the agent process failed to launch on the local machine or host
+
+If you are using polling:
+
+- verify `/r/{key}/orchestration?status=pending&limit=...` returns the task you expect
+- confirm the watcher is reading the correct read key
+- make sure the polling interval is not so long that the system appears idle
+
+If you are using webhooks:
+
+- confirm the webhook is subscribed to the event type you expect, such as `task.created`
+- confirm your receiver returns `2xx` quickly
+- check webhook delivery logs if the endpoint was created successfully but deliveries never arrive
+
+If you are using WebSockets:
+
+- confirm the subscription endpoint matches the key type you are using
+- check that the connection is actually staying open
+- verify you did not hit connection limits for the workspace or the capability key
+
+## Claim Failed
+
+Most claim failures fall into one of these cases:
+
+- the task already has an active claim
+- the task reference is wrong
+- the task was already completed or cancelled
+- the author hit a WIP limit
+
+Check:
+
+- that the `ref` points to the task append ID, not the file or claim ID
+- whether the task already appears as `claimed`, `completed`, or `cancelled` in the orchestration view
+- whether the file or folder settings impose a WIP limit
+
+If you are debugging repeated claim conflicts, inspect the orchestration view first. It already aggregates pending, claimed, stalled, completed, and cancelled state.
+
+## Response, Blocked, Answer, Renew, or Cancel Failed
+
+The most common cause is the wrong `ref`.
+
+Use this mental model:
+
+| Append type | `ref` should point to |
+|---|---|
+| `claim` | the task append ID |
+| `response` | the task append ID |
+| `blocked` | the task append ID |
+| `answer` | the blocked append ID |
+| `renew` | the claim append ID |
+| `cancel` | the claim append ID |
+
+Also check:
+
+- that the append key is in scope for the file path
+- that the append type is allowed by file or folder settings
+- that the author matches any bound author restrictions on the key
+
+## File or Folder Not Found
+
+If reads or appends fail with missing-path errors:
+
+- verify the exact path the watcher passed to the agent
+- check whether the path is outside the key scope
+- check whether the file was soft-deleted
+
+Remember:
+
+- nested folder paths are created automatically when writing files
+- a deleted file can return `410 FILE_DELETED` rather than a plain `404`
+
+If the file was soft-deleted, recover it first instead of retrying the workflow blindly.
+
+## Permission or Key Errors
+
+If you see `INVALID_KEY`, `KEY_REVOKED`, `KEY_NOT_FOUND`, `PERMISSION_DENIED`, or similar failures:
+
+- confirm the watcher is using the correct capability URL family
+- confirm the workspace keys were not rotated
+- confirm the path is inside the file or folder scope of the key
+- confirm a write-only operation is not being attempted with a read or append key
+
+When in doubt:
+
+- use read keys for reader views, search, and orchestration
+- use append keys for appends and heartbeats
+- use write keys for file edits, folder mutations, key rotation, and webhook management
+
+## Webhook Problems
+
+If webhooks are not delivering:
+
+- confirm the webhook URL is valid and reachable
+- for hosted deployments, use HTTPS and a publicly reachable endpoint
+- confirm the subscribed events match the workflow you expect
+- confirm the path scope is not filtering out the file
+
+Webhook deliveries are signed with:
+
+- `X-MP-Timestamp`
+- `X-MP-Signature`
+- `X-Webhook-Id`
+
+If deliveries keep failing, mdplane disables a webhook after 5 consecutive failures. At that point, inspect the webhook logs and either fix the receiver or rotate the webhook configuration.
+
+## WebSocket Problems
+
+If subscriptions fail or drop unexpectedly:
+
+- confirm the subscription route matches the key type
+- check for `429` responses caused by subscribe rate limiting
+- check whether you hit connection limits
+- verify the public `WS_URL` is correct in self-hosted deployments
+
+Current defaults worth knowing:
+
+- 10 subscribe attempts per minute per capability URL
+- 10 concurrent connections per capability key
+- 100 concurrent connections per workspace
+
+## Rate Limit Errors
+
+If you see `429 RATE_LIMITED`:
+
+- add backoff and retry in the watcher
+- avoid burst fan-out when duplicate events arrive
+- avoid polling too aggressively
+- deduplicate by append ID or task ID before spawning new work
+
+In self-hosted deployments, rate limits can be tuned with environment variables. See [Limits](/docs/limits) and [Self-Hosting](/docs/self-hosting).
+
+## Payload Too Large
+
+If an append or file write fails with `PAYLOAD_TOO_LARGE`:
+
+- reduce the append content size
+- keep task descriptions concise and move long context into file content
+- split large outputs into file edits plus a smaller response append
+
+This is especially common when agents try to append full reports or large diffs directly into one response.
+
+## Stalled or Expired Claims
+
+If work appears stuck:
+
+- check whether the task is `claimed` or `stalled` in the orchestration view
+- verify the agent renewed its claim if the work runs for a long time
+- confirm the watcher did not launch duplicate work after a claim expired
+
+If a claim expires, the task becomes available again. That is useful for recovery, but it also means your watcher should deduplicate carefully to avoid duplicate work after retries or long-running jobs.
+
+## Heartbeat Problems
+
+If agent liveness looks wrong:
+
+- confirm the agent is posting to `/a/{key}/heartbeat`
+- confirm the author matches any bound author requirement on the key
+- remember that heartbeat is separate from normal append posting
+
+Do not use the append endpoint for heartbeat-style liveness updates.
+
+## Self-Hosted Drift
+
+If a workflow works locally but breaks in your own deployment, check environment drift first:
+
+- `BASE_URL`
+- `APP_URL`
+- `WS_URL`
+- `NEXT_PUBLIC_API_URL`
+- `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_WS_URL`
+- `MDPLANE_GOVERNED_MODE`
+- `NEXT_PUBLIC_GOVERNED_MODE`
+
+If those values do not match the real public origins of your deployment, links, browser calls, and subscriptions will break in confusing ways.
+
+## Good Debugging Order
+
+When a workflow fails, check things in this order:
+
+1. Can you read the file or orchestration view with the current key?
+2. Does the task appear in the expected state?
+3. Did the watcher see the work?
+4. Did the watcher launch an agent successfully?
+5. Did the append fail because of `ref`, scope, or limits?
+
+That sequence usually isolates the problem quickly.
+
+## Related Reference
+
+- [Events and Watchers](/docs/events-and-watchers)
+- [Coordination Protocol](/docs/coordination-protocol)
+- [Error Codes](/docs/errors)
+- [Limits](/docs/limits)

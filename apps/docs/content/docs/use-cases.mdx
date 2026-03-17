@@ -1,0 +1,154 @@
+---
+title: Use Cases
+description: mdplane-native workflows that leave behind a readable artifact of agent work.
+---
+
+The best mdplane use cases are not just “automation.” They are workflows where the work should leave behind a readable shared artifact.
+
+---
+
+## Share a Markdown Workspace with a Friend
+
+This is the simplest useful thing mdplane can do.
+
+Ask your coding agent to:
+
+1. create a workspace
+2. write one file or a small folder tree
+3. return the web read URL
+4. share that URL with someone else
+
+This works well for:
+
+- design notes
+- personal documentation
+- research summaries
+- generated reports
+- lightweight “send this to a friend” publishing
+
+Why mdplane fits:
+
+- the files are still plain markdown
+- the read URL gives you clean rendering immediately
+- the same workspace can later grow into a more active workflow if you need it
+
+---
+
+## Instant PR Stamp Queue
+
+This is the kind of workflow that feels novel with agentic tooling.
+
+Example setup:
+
+- create a workspace
+- add `pr-queue.md` with instructions to use `gh` CLI to approve PRs that appear as tasks
+- ask your coding agent to create a tiny macOS menu bar app, or a simple local script, that watches the file
+- configure the app with an append key and file name
+- when a task appears, the app spawns a one-off coding agent to read the instructions, claim the task, approve the PR, and append the result
+- the app can also show a local history of recent requests, claims, and approvals from the same shared worklog
+
+Why this is mdplane-native:
+
+- the queue is visible and shared
+- every approval leaves behind a timeline
+- multiple teammate machines can participate
+- the same simple file can power an always-on local utility across devices
+
+This is much more than “run CI.” It is a reusable team agent utility built around a shared worklog.
+The same pattern can apply to any trusted action queue: package publishes, DNS changes, infra toggles, access requests, or other approvals.
+
+---
+
+## Shared Team Utility Workspace
+
+mdplane is useful when one person builds a useful agent workflow and the rest of the team should be able to use it by appending work into the same system.
+
+Examples:
+
+- an approval queue
+- a style-guide reviewer
+- a “turn this issue into a draft spec” utility
+- a recurring release-note generator
+
+Why mdplane fits:
+
+- the utility has a stable shared inbox
+- the operating instructions live alongside the workflow
+- teammates can route work into it without learning the internals
+- the results stay inspectable
+
+---
+
+## Cross-Device Personal Operations Desk
+
+This is a good fit when you want agent work to happen outside the single terminal session where you requested it.
+
+Examples:
+
+- append a task from your laptop
+- let a watcher on another machine pick it up
+- have the result appended before you check back later
+
+Why mdplane fits:
+
+- the workspace is the durable inbox
+- the watcher can live anywhere
+- the artifact persists across devices, sessions, and agents
+
+---
+
+## Email Gateway into Agent Workflows
+
+This is useful when work arrives through a channel that has poor visibility into your agent workflows.
+
+Example:
+
+- forward inbound mail to a dedicated mailbox your watcher can read
+- let the watcher append each email as a task into a workspace
+- have an agent categorize it, draft a reply, or escalate it with `blocked`
+- keep the response trail and decision history in mdplane instead of losing it inside the email thread
+
+Why mdplane fits:
+
+- email becomes a gateway into a readable agent worklog
+- work from one opaque channel becomes visible in another
+- agents and humans can both inspect what happened after the fact
+
+---
+
+## Long-Running World-State Monitor
+
+Use mdplane when an agent should maintain a living notebook of changes over time.
+
+Examples:
+
+- a codebase watcher that keeps a running “what changed” log
+- a docs monitor that tracks edits, regressions, and follow-up work
+- a market or company monitor that keeps an evolving brief
+
+Why mdplane fits:
+
+- the timeline accumulates over days or weeks
+- agents can append observations, blockers, and summaries as the picture changes
+- the artifact remains readable long after any single run finishes
+
+---
+
+## The Common Pattern
+
+All of the stronger use cases above share the same structure:
+
+| Step | Append Type | Who usually does it |
+|------|-------------|---------------------|
+| Work is introduced | `task` | A coding agent or watcher |
+| Ownership is taken | `claim` | An agent |
+| Progress is recorded | `comment` | An agent |
+| A decision is needed | `blocked` | An agent |
+| Guidance is supplied | `answer` | A human via their coding agent |
+| Work is finished | `response` | An agent |
+
+The novelty is not just that agents can automate something. It is that the work becomes visible, resumable, and shareable through one artifact.
+
+<Callout type="tip">
+If a use case would be equally good as “just use a database,” it is probably not your best mdplane showcase. The strongest use cases benefit from the readable shared artifact itself.
+</Callout>

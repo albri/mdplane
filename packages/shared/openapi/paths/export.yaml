@@ -1,0 +1,362 @@
+# ==============================================================================
+# EXPORT ENDPOINTS
+# Workspace export and deleted files recovery
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# SYNCHRONOUS EXPORT
+# ------------------------------------------------------------------------------
+
+/api/v1/export:
+  get:
+    operationId: exportWorkspace
+    tags:
+      - Export
+    summary: Export workspace (synchronous)
+    description: |
+      Download all workspace data as a single archive. For workspaces under 500MB.
+
+      **Required scope:** API key must have `export` scope.
+
+      **Security Note:** All exports are logged with full context (who, when, scope, IP).
+      Workspace owners receive email notification when exports occur.
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: format
+        in: query
+        description: Archive format
+        schema:
+          type: string
+          enum: [zip, tar.gz]
+          default: zip
+      - name: includeAppends
+        in: query
+        description: Include append history in metadata
+        schema:
+          type: boolean
+          default: false
+      - name: includeDeleted
+        in: query
+        description: Include soft-deleted files
+        schema:
+          type: boolean
+          default: false
+      - name: paths
+        in: query
+        description: Comma-separated folder paths to export (exports all if omitted)
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Binary file download
+        headers:
+          Content-Disposition:
+            description: Attachment filename
+            schema:
+              type: string
+              example: 'attachment; filename="workspace-export-2026-01-11.zip"'
+          X-Export-Checksum:
+            description: SHA-256 checksum for integrity verification
+            schema:
+              type: string
+              example: 'sha256:abc123...'
+        content:
+          application/zip:
+            schema:
+              type: string
+              format: binary
+          application/gzip:
+            schema:
+              type: string
+              format: binary
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '413':
+        description: Workspace too large for synchronous export
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+            example:
+              ok: false
+              error:
+                code: WORKSPACE_TOO_LARGE
+                message: Workspace exceeds 500MB sync export limit. Use async export.
+                details:
+                  currentSize: "750MB"
+                  syncLimit: "500MB"
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# ASYNC EXPORT JOBS
+# ------------------------------------------------------------------------------
+
+/api/v1/export/jobs:
+  post:
+    operationId: createExportJob
+    tags:
+      - Export
+    summary: Create async export job
+    description: |
+      Create an asynchronous export job for large workspaces (over 500MB) or by preference.
+
+      **Required scope:** API key must have `export` scope.
+
+      Download links expire after 24 hours.
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              format:
+                type: string
+                enum: [zip, tar.gz]
+                default: zip
+              includeAppends:
+                type: boolean
+                default: false
+                description: Include append history in metadata
+              includeDeleted:
+                type: boolean
+                default: false
+                description: Include soft-deleted files
+              paths:
+                type: array
+                items:
+                  type: string
+                description: Folder paths to export (exports all if omitted)
+              notifyEmail:
+                type: string
+                format: email
+                description: Email to notify when export is ready
+    responses:
+      '202':
+        description: Export job created
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/ExportJobCreateResponse'
+            example:
+              ok: true
+              data:
+                jobId: exp_abc123
+                status: queued
+                statusUrl: /api/v1/export/jobs/exp_abc123
+                estimatedSize: "2.3GB"
+                position: 3
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '413':
+        description: Workspace exceeds maximum export size
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+            example:
+              ok: false
+              error:
+                code: WORKSPACE_TOO_LARGE
+                message: Workspace exceeds 10GB export limit
+                details:
+                  currentSize: "12.4GB"
+                  limit: "10GB"
+                  suggestion: Use folder-level export for individual folders
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# GET EXPORT JOB STATUS
+# ------------------------------------------------------------------------------
+
+/api/v1/export/jobs/{jobId}:
+  get:
+    operationId: getExportJobStatus
+    tags:
+      - Export
+    summary: Get export job status
+    description: |
+      Check the status of an async export job. When complete, includes a download URL.
+
+      Download URLs expire after 24 hours.
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/jobId'
+    responses:
+      '200':
+        description: Export job status
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/ExportJobStatusResponse'
+            examples:
+              processing:
+                summary: Export in progress
+                value:
+                  ok: true
+                  data:
+                    id: exp_abc123
+                    status: processing
+                    progress:
+                      filesProcessed: 1250
+                      totalFiles: 3400
+                      bytesWritten: "2.1GB"
+                    startedAt: "2026-01-11T14:30:00Z"
+              ready:
+                summary: Export ready for download
+                value:
+                  ok: true
+                  data:
+                    id: exp_abc123
+                    status: ready
+                    downloadUrl: /api/v1/export/jobs/exp_abc123/download
+                    expiresAt: "2026-01-12T14:30:00Z"
+                    checksum: "sha256:abc123..."
+                    size: "2.4GB"
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# DOWNLOAD EXPORT ARCHIVE
+# ------------------------------------------------------------------------------
+
+/api/v1/export/jobs/{jobId}/download:
+  get:
+    operationId: downloadExportJob
+    tags:
+      - Export
+    summary: Download export archive
+    description: |
+      Download the completed export archive for a specific job.
+
+      **Required scope:** API key must have `export` scope.
+
+      Download is only available when job status is `ready`. Returns binary stream
+      of the archive file (ZIP or tar.gz format).
+
+      Security note: All downloads are logged with full context for audit purposes.
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/jobId'
+    responses:
+      '200':
+        description: Binary file download
+        headers:
+          Content-Disposition:
+            description: Attachment filename
+            schema:
+              type: string
+              example: 'attachment; filename="workspace-export-2026-01-11.zip"'
+          X-Export-Checksum:
+            description: SHA-256 checksum for integrity verification
+            schema:
+              type: string
+              example: 'sha256:abc123...'
+        content:
+          application/zip:
+            schema:
+              type: string
+              format: binary
+          application/gzip:
+            schema:
+              type: string
+              format: binary
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        description: Job not ready for download
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+            example:
+              ok: false
+              error:
+                code: JOB_NOT_READY
+                message: Export job is not ready for download yet
+                details:
+                  status: processing
+      '404':
+        description: Export job not found
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Error'
+            example:
+              ok: false
+              error:
+                code: JOB_NOT_FOUND
+                message: Export job not found
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# LIST DELETED FILES
+# ------------------------------------------------------------------------------
+
+/api/v1/deleted:
+  get:
+    operationId: listDeletedFiles
+    tags:
+      - Export
+    summary: List deleted files (recoverable)
+    description: |
+      List soft-deleted files that are still recoverable. Files are recoverable for 7 days
+      after deletion.
+
+      **Required scope:** API key must have `admin` scope.
+
+      Deleted content may contain sensitive data. This endpoint is for compliance/backup
+      scenarios requiring deleted file recovery.
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/cursor'
+    responses:
+      '200':
+        description: List of recoverable deleted files
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/DeletedFilesListResponse'
+            example:
+              ok: true
+              data:
+                files:
+                  - id: x8k2m
+                    path: /projects/alpha/old-notes.md
+                    deletedAt: "2026-01-08T10:00:00Z"
+                    expiresAt: "2026-01-15T10:00:00Z"
+                    size: 2048
+                  - id: y9m3n
+                    path: /archive/deprecated.md
+                    deletedAt: "2026-01-07T14:30:00Z"
+                    expiresAt: "2026-01-14T14:30:00Z"
+                    deletedBy: admin
+                    size: 4096
+              pagination:
+                hasMore: false
+                total: 2
+      '401':
+        $ref: '../components/responses.yaml#/Unauthorized'
+      '403':
+        $ref: '../components/responses.yaml#/Forbidden'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+

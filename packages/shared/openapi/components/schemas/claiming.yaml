@@ -1,0 +1,107 @@
+# Claiming-related schemas for mdplane API
+# Reference: docs/Obsidian Vault/Projects/mdplane/API Design.md
+
+# -----------------------------------------------------------------------------
+# Request Schemas
+# -----------------------------------------------------------------------------
+ClaimWorkspaceRequest:
+  type: object
+  description: Request to claim a workspace (OAuth session provides identity)
+  properties: {}
+  additionalProperties: false
+
+# -----------------------------------------------------------------------------
+# Response Schemas
+# -----------------------------------------------------------------------------
+ClaimWorkspaceResponse:
+  type: object
+  description: Response from claim workspace endpoint (always instant with OAuth)
+  required:
+    - ok
+    - data
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required:
+        - workspaceId
+        - message
+        - claimed
+      properties:
+        workspaceId:
+          type: string
+          description: Workspace identifier
+          pattern: '^ws_[A-Za-z0-9]{12,}$'
+        claimed:
+          type: boolean
+          description: Whether the workspace was successfully claimed
+          const: true
+        message:
+          type: string
+          description: Status message
+          example: "claimed"
+        webUrl:
+          type: string
+          format: uri
+          description: URL to access the workspace control panel
+
+# -----------------------------------------------------------------------------
+# Folder Claim Entry (for listing claims in a folder)
+# -----------------------------------------------------------------------------
+FolderClaimEntry:
+  type: object
+  required: [id, fileId, path, taskId, expiresAt, status, author]
+  properties:
+    id:
+      type: string
+    fileId:
+      type: string
+    path:
+      type: string
+    taskId:
+      type: string
+    taskContent:
+      type: string
+    author:
+      type: string
+      description: Author who made the claim
+    expiresAt:
+      type: string
+      format: date-time
+    expiresInSeconds:
+      type: integer
+    status:
+      type: string
+      enum: [active, blocked, expired]
+    blockedAt:
+      type: string
+      format: date-time
+    blockReason:
+      type: string
+
+# -----------------------------------------------------------------------------
+# Folder Claims Response (via append key)
+# -----------------------------------------------------------------------------
+FolderClaimsViaAppendKeyResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [claims, count]
+      properties:
+        claims:
+          type: array
+          items:
+            $ref: '#/FolderClaimEntry'
+        count:
+          type: integer
+        webUrl:
+          type: string
+          format: uri
+          description: URL to view claims in the web interface

@@ -1,0 +1,57 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build artifacts (we build fresh in container)
+.next
+out
+build
+dist
+
+# Version control
+.git
+.gitignore
+
+# Test files
+**/__tests__
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+coverage
+
+# Documentation
+*.md
+!README.md
+
+# Environment files (secrets should be passed at runtime)
+.env*
+!.env.example
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Vercel
+.vercel
+
+# Misc
+*.bak
+*.tmp
+.turbo
+*.tsbuildinfo
+next-env.d.ts
+
+# Storybook (if used)
+.storybook
+storybook-static
+

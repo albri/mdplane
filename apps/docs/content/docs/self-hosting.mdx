@@ -1,0 +1,124 @@
+---
+title: Self-Hosting
+description: Run mdplane yourself with the minimal or full Docker Compose profiles.
+---
+
+Self-hosting is for teams that need private infrastructure and are prepared to operate it.
+
+## What You Are Running
+
+The repo ships two Docker Compose profiles:
+
+| Profile | Services |
+|---|---|
+| Minimal | `server`, `web` |
+| Full | `server`, `web`, `docs`, `landing` |
+
+Minimal is the right default. Full is only for teams that also want to host the docs and marketing surfaces privately.
+
+## Quick Start
+
+1. Copy the example environment file:
+
+```bash
+cp .env.selfhost.example .env.selfhost
+```
+
+2. Set real secrets and public origins in `.env.selfhost`.
+
+3. Start the minimal profile:
+
+```bash
+pnpm run selfhost:min:up
+```
+
+4. Or start the full profile:
+
+```bash
+pnpm run selfhost:full:up
+```
+
+## Important Environment Variables
+
+These are the variables you should get right first:
+
+| Variable | Purpose |
+|---|---|
+| `BASE_URL` | Public API origin used in returned capability URLs |
+| `APP_URL` | Public app origin used in reader and control links |
+| `WS_URL` | Public WebSocket origin |
+| `BETTER_AUTH_URL` | Auth backend origin |
+| `BETTER_AUTH_SECRET` | Better Auth signing secret |
+| `MP_JWT_SECRET` | WebSocket token signing secret |
+| `NEXT_PUBLIC_API_URL` | Browser-facing API origin |
+| `NEXT_PUBLIC_APP_URL` | Browser-facing app origin |
+| `NEXT_PUBLIC_WS_URL` | Browser-facing WebSocket origin |
+
+For the minimal profile, `API_INTERNAL_URL=http://server:3001` is already the expected service-to-service default.
+
+## Governance Mode
+
+The self-host profiles default to capability-first mode:
+
+```bash
+MDPLANE_GOVERNED_MODE=false
+NEXT_PUBLIC_GOVERNED_MODE=false
+```
+
+That means runtime capability routes work, but OAuth-governed control flows stay off.
+
+Turn governed mode on only if you also configure the relevant auth providers and want claimed-workspace governance in the web app.
+
+## Persistence
+
+The compose profiles mount SQLite at `/data/mdplane.sqlite` through the `mdplane-data` volume.
+
+That means:
+
+- the server needs persistent storage
+- backups must include the SQLite database files
+- restore operations should happen while the server is stopped
+
+The repo includes helper scripts:
+
+```bash
+pnpm db:backup
+pnpm db:restore -- --from ./backups/your-backup.sqlite --yes
+```
+
+## Optional Services
+
+You do not need every app in the monorepo for a working self-hosted deployment.
+
+- `server` is required
+- `web` is required for the reader and control UI
+- `docs` is optional
+- `landing` is optional
+
+That is why the minimal profile is usually the right production starting point.
+
+## Operational Responsibilities
+
+When you self-host, you own:
+
+- upgrades and rollback
+- SQLite backups and restore testing
+- observability and incident response
+- TLS termination and public URL correctness
+- secret management
+
+## Useful Commands
+
+```bash
+pnpm run selfhost:min:up
+pnpm run selfhost:min:down
+pnpm run selfhost:min:logs
+
+pnpm run selfhost:full:up
+pnpm run selfhost:full:down
+pnpm run selfhost:full:logs
+```
+
+## When Not to Self-Host
+
+Do not self-host just because you can. If you are still validating workflows and do not have a real infrastructure requirement, hosted mdplane is the simpler choice.

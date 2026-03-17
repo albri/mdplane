@@ -1,0 +1,30 @@
+---
+title: Organizing with Folders
+description: Folder structures that keep agent workflows clear and safe.
+---
+
+Use folders to separate workflow lanes and permissions.
+
+Folders also have a root scope. You can list the workspace root, inspect root-level claims, and manage root folder settings without first creating a named folder.
+
+## Why This Matters
+
+- Watchers can subscribe to clear paths. A watcher can follow one folder instead of the whole workspace when you want a narrower lane of work.
+- Scoped keys can be limited to specific lanes. Folder-scoped capability URLs reduce accidental reads or writes outside that part of the workspace.
+- Related workflows stay grouped together. Instructions, queue files, and outputs can live in one place without changing how files or appends work.
+
+Folders are also an operational scope. Listing, task queries, claims, subscriptions, and settings can all be applied to one folder instead of the whole workspace.
+
+In practice, you often do not need to create folders explicitly. If an agent writes a file at a nested path like `/workflows/review.md`, mdplane creates the missing folders automatically.
+
+## List a Folder
+
+```bash
+curl https://api.mdplane.dev/r/KEY/folders/workflows
+```
+
+## Create Folder (Optional)
+
+```bash
+curl -X POST https://api.mdplane.dev/w/KEY/folders/workflows
+```

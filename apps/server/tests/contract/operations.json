@@ -1,0 +1,1276 @@
+{
+  "operations": [
+    {
+      "id": "apiAppendToFileByPath",
+      "method": "POST",
+      "path": "/api/v1/files/{path}/append",
+      "responses": [
+        "201",
+        "400",
+        "401",
+        "403",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "apiCreateFileByPath",
+      "method": "POST",
+      "path": "/api/v1/files/{path}",
+      "responses": [
+        "201",
+        "400",
+        "401",
+        "403",
+        "409",
+        "429"
+      ]
+    },
+    {
+      "id": "apiCreateFolderByPath",
+      "method": "POST",
+      "path": "/api/v1/folders/{path}",
+      "responses": [
+        "201",
+        "400",
+        "401",
+        "403",
+        "409",
+        "429"
+      ]
+    },
+    {
+      "id": "apiCreateRootFolder",
+      "method": "POST",
+      "path": "/api/v1/folders",
+      "responses": [
+        "201",
+        "400",
+        "401",
+        "403",
+        "409",
+        "429"
+      ]
+    },
+    {
+      "id": "apiDeleteFileByPath",
+      "method": "DELETE",
+      "path": "/api/v1/files/{path}",
+      "responses": [
+        "200",
+        "401",
+        "403",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "apiDeleteFolderByPath",
+      "method": "DELETE",
+      "path": "/api/v1/folders/{path}",
+      "responses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "404",
+        "409",
+        "429"
+      ]
+    },
+    {
+      "id": "apiListFolderByPath",
+      "method": "GET",
+      "path": "/api/v1/folders/{path}",
+      "responses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "apiListRootFolder",
+      "method": "GET",
+      "path": "/api/v1/folders",
+      "responses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "429"
+      ]
+    },
+    {
+      "id": "apiReadFileByPath",
+      "method": "GET",
+      "path": "/api/v1/files/{path}",
+      "responses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "apiUpdateFileByPath",
+      "method": "PUT",
+      "path": "/api/v1/files/{path}",
+      "responses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "404",
+        "410",
+        "412",
+        "429"
+      ]
+    },
+    {
+      "id": "blockClaimWorkspace",
+      "method": "POST",
+      "path": "/workspaces/{workspaceId}/orchestration/claims/{claimId}/block",
+      "responses": [
+        "200",
+        "400",
+        "401",
+        "404"
+      ]
+    },
+    {
+      "id": "bulkCreateFiles",
+      "method": "POST",
+      "path": "/a/{key}/folders/{path}/bulk",
+      "responses": [
+        "201",
+        "202",
+        "400",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "cancelClaimWorkspace",
+      "method": "POST",
+      "path": "/workspaces/{workspaceId}/orchestration/claims/{claimId}/cancel",
+      "responses": [
+        "200",
+        "400",
+        "401",
+        "404"
+      ]
+    },
+    {
+      "id": "checkCapabilities",
+      "method": "POST",
+      "path": "/capabilities/check",
+      "responses": [
+        "200",
+        "400"
+      ]
+    },
+    {
+      "id": "checkCapabilitiesInWorkspace",
+      "method": "POST",
+      "path": "/w/{key}/capabilities/check",
+      "responses": [
+        "200",
+        "400",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "claimWorkspace",
+      "method": "POST",
+      "path": "/w/{key}/claim",
+      "responses": [
+        "200",
+        "400",
+        "401",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "completeClaimWorkspace",
+      "method": "POST",
+      "path": "/workspaces/{workspaceId}/orchestration/claims/{claimId}/complete",
+      "responses": [
+        "200",
+        "400",
+        "401",
+        "404"
+      ]
+    },
+    {
+      "id": "copyFileToFolder",
+      "method": "POST",
+      "path": "/a/{key}/folders/{path}/copy",
+      "responses": [
+        "201",
+        "400",
+        "404",
+        "409",
+        "429"
+      ]
+    },
+    {
+      "id": "createApiKey",
+      "method": "POST",
+      "path": "/workspaces/{workspaceId}/api-keys",
+      "responses": [
+        "201",
+        "400",
+        "401",
+        "403",
+        "404",
+        "500"
+      ]
+    },
+    {
+      "id": "createAppend",
+      "method": "POST",
+      "path": "/a/{key}/append",
+      "responses": [
+        "201",
+        "400",
+        "404",
+        "409",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "createExportJob",
+      "method": "POST",
+      "path": "/api/v1/export/jobs",
+      "responses": [
+        "202",
+        "401",
+        "403",
+        "413",
+        "429"
+      ]
+    },
+    {
+      "id": "createFileInFolder",
+      "method": "POST",
+      "path": "/a/{key}/folders/{path}/files",
+      "responses": [
+        "201",
+        "400",
+        "404",
+        "409",
+        "429"
+      ]
+    },
+    {
+      "id": "createFolder",
+      "method": "POST",
+      "path": "/w/{key}/folders",
+      "responses": [
+        "201",
+        "400",
+        "401",
+        "409",
+        "429"
+      ]
+    },
+    {
+      "id": "createFolderWebhook",
+      "method": "POST",
+      "path": "/w/{key}/folders/{path}/webhooks",
+      "responses": [
+        "201",
+        "400",
+        "401",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "createScopedAppend",
+      "method": "POST",
+      "path": "/a/{key}/{path}",
+      "responses": [
+        "201",
+        "400",
+        "404"
+      ]
+    },
+    {
+      "id": "createScopedKey",
+      "method": "POST",
+      "path": "/w/{key}/keys",
+      "responses": [
+        "201",
+        "400",
+        "401",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "createWebhook",
+      "method": "POST",
+      "path": "/w/{key}/webhooks",
+      "responses": [
+        "201",
+        "400",
+        "401",
+        "402",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "createWorkspace",
+      "method": "POST",
+      "path": "/bootstrap",
+      "responses": [
+        "201",
+        "400",
+        "429"
+      ]
+    },
+    {
+      "id": "createWorkspaceWebhook",
+      "method": "POST",
+      "path": "/workspaces/{workspaceId}/webhooks",
+      "responses": [
+        "201",
+        "400",
+        "401",
+        "404"
+      ]
+    },
+    {
+      "id": "deleteFile",
+      "method": "DELETE",
+      "path": "/w/{key}",
+      "responses": [
+        "200",
+        "401",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "deleteFolder",
+      "method": "DELETE",
+      "path": "/w/{key}/folders/{path}",
+      "responses": [
+        "200",
+        "400",
+        "401",
+        "404",
+        "409",
+        "429"
+      ]
+    },
+    {
+      "id": "deleteFolderWebhook",
+      "method": "DELETE",
+      "path": "/w/{key}/folders/{path}/webhooks/{webhookId}",
+      "responses": [
+        "200",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "deleteWebhook",
+      "method": "DELETE",
+      "path": "/w/{key}/webhooks/{webhookId}",
+      "responses": [
+        "200",
+        "401",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "deleteWorkspace",
+      "method": "DELETE",
+      "path": "/workspaces/{workspaceId}",
+      "responses": [
+        "200",
+        "401",
+        "404"
+      ]
+    },
+    {
+      "id": "deleteWorkspaceWebhook",
+      "method": "DELETE",
+      "path": "/workspaces/{workspaceId}/webhooks/{webhookId}",
+      "responses": [
+        "200",
+        "401",
+        "404"
+      ]
+    },
+    {
+      "id": "downloadExportJob",
+      "method": "GET",
+      "path": "/api/v1/export/jobs/{jobId}/download",
+      "responses": [
+        "200",
+        "401",
+        "403",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "exportWorkspace",
+      "method": "GET",
+      "path": "/api/v1/export",
+      "responses": [
+        "200",
+        "401",
+        "403",
+        "413",
+        "429"
+      ]
+    },
+    {
+      "id": "getAdminMetrics",
+      "method": "GET",
+      "path": "/api/v1/admin/metrics",
+      "responses": [
+        "200",
+        "401",
+        "403"
+      ]
+    },
+    {
+      "id": "getAgentLiveness",
+      "method": "GET",
+      "path": "/api/v1/agents/liveness",
+      "responses": [
+        "200",
+        "401",
+        "429"
+      ]
+    },
+    {
+      "id": "getApiDocs",
+      "method": "GET",
+      "path": "/docs",
+      "responses": [
+        "200",
+        "429"
+      ]
+    },
+    {
+      "id": "getAuditLogs",
+      "method": "GET",
+      "path": "/w/{key}/audit",
+      "responses": [
+        "200",
+        "400",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "getChangelog",
+      "method": "GET",
+      "path": "/api/v1/changelog",
+      "responses": [
+        "200",
+        "429"
+      ]
+    },
+    {
+      "id": "getCurrentUser",
+      "method": "GET",
+      "path": "/auth/me",
+      "responses": [
+        "200",
+        "401"
+      ]
+    },
+    {
+      "id": "getExportJobStatus",
+      "method": "GET",
+      "path": "/api/v1/export/jobs/{jobId}",
+      "responses": [
+        "200",
+        "401",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "getFileSettings",
+      "method": "GET",
+      "path": "/w/{key}/settings",
+      "responses": [
+        "200",
+        "401",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "getFileStats",
+      "method": "GET",
+      "path": "/a/{key}/ops/file/stats",
+      "responses": [
+        "200",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "getFileStatsViaReadKey",
+      "method": "GET",
+      "path": "/r/{key}/ops/file/stats",
+      "responses": [
+        "200",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "getFolderSettings",
+      "method": "GET",
+      "path": "/w/{key}/folders/{path}/settings",
+      "responses": [
+        "200",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "getFolderStats",
+      "method": "GET",
+      "path": "/r/{key}/ops/folders/stats",
+      "responses": [
+        "200",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "getOpenApiSpec",
+      "method": "GET",
+      "path": "/openapi.json",
+      "responses": [
+        "200",
+        "429"
+      ]
+    },
+    {
+      "id": "getOrchestrationAdmin",
+      "method": "GET",
+      "path": "/w/{key}/orchestration",
+      "responses": [
+        "200",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "getOrchestrationReadOnly",
+      "method": "GET",
+      "path": "/r/{key}/orchestration",
+      "responses": [
+        "200",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "getScopedAgentLiveness",
+      "method": "GET",
+      "path": "/r/{key}/agents/liveness",
+      "responses": [
+        "200",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "getServiceStatus",
+      "method": "GET",
+      "path": "/api/v1/status",
+      "responses": [
+        "200",
+        "429"
+      ]
+    },
+    {
+      "id": "getStatsViaWriteKey",
+      "method": "GET",
+      "path": "/w/{key}/ops/stats",
+      "responses": [
+        "200",
+        "403",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "getWebhookLogs",
+      "method": "GET",
+      "path": "/w/{key}/webhooks/{webhookId}/logs",
+      "responses": [
+        "200",
+        "401",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "getWorkspaceOrchestration",
+      "method": "GET",
+      "path": "/workspaces/{workspaceId}/orchestration",
+      "responses": [
+        "200",
+        "401",
+        "403",
+        "404"
+      ]
+    },
+    {
+      "id": "getWorkspaceStats",
+      "method": "GET",
+      "path": "/api/v1/stats",
+      "responses": [
+        "200",
+        "401",
+        "429"
+      ]
+    },
+    {
+      "id": "healthCheck",
+      "method": "GET",
+      "path": "/health",
+      "responses": [
+        "200",
+        "429"
+      ]
+    },
+    {
+      "id": "listApiKeys",
+      "method": "GET",
+      "path": "/workspaces/{workspaceId}/api-keys",
+      "responses": [
+        "200",
+        "401",
+        "403",
+        "404"
+      ]
+    },
+    {
+      "id": "listDeletedFiles",
+      "method": "GET",
+      "path": "/api/v1/deleted",
+      "responses": [
+        "200",
+        "401",
+        "403",
+        "429"
+      ]
+    },
+    {
+      "id": "listFolderClaims",
+      "method": "GET",
+      "path": "/a/{key}/folders/{path}/claims",
+      "responses": [
+        "200",
+        "400",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "listFolderContents",
+      "method": "GET",
+      "path": "/r/{key}/folders/{path}",
+      "responses": [
+        "200",
+        "400",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "listFolderContentsViaAppendKey",
+      "method": "GET",
+      "path": "/a/{key}/folders/{path}",
+      "responses": [
+        "200",
+        "400",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "listFolderContentsViaWriteKey",
+      "method": "GET",
+      "path": "/w/{key}/folders/{path}",
+      "responses": [
+        "200",
+        "400",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "listFolderWebhooks",
+      "method": "GET",
+      "path": "/w/{key}/folders/{path}/webhooks",
+      "responses": [
+        "200",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "listScopedKeys",
+      "method": "GET",
+      "path": "/w/{key}/keys",
+      "responses": [
+        "200",
+        "401",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "listWebhooks",
+      "method": "GET",
+      "path": "/w/{key}/webhooks",
+      "responses": [
+        "200",
+        "401",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "listWorkspaceWebhooks",
+      "method": "GET",
+      "path": "/workspaces/{workspaceId}/webhooks",
+      "responses": [
+        "200",
+        "401",
+        "404"
+      ]
+    },
+    {
+      "id": "logout",
+      "method": "POST",
+      "path": "/auth/logout",
+      "responses": [
+        "200",
+        "401"
+      ]
+    },
+    {
+      "id": "moveFile",
+      "method": "POST",
+      "path": "/w/{key}/move",
+      "responses": [
+        "200",
+        "400",
+        "401",
+        "404",
+        "409",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "moveFolder",
+      "method": "POST",
+      "path": "/w/{key}/folders/{path}/move",
+      "responses": [
+        "200",
+        "400",
+        "401",
+        "404",
+        "409",
+        "429"
+      ]
+    },
+    {
+      "id": "pollJobStatus",
+      "method": "GET",
+      "path": "/j/{key}",
+      "responses": [
+        "200",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "queryFolderTasks",
+      "method": "GET",
+      "path": "/r/{key}/ops/folders/tasks",
+      "responses": [
+        "200",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "readAppend",
+      "method": "GET",
+      "path": "/r/{key}/ops/file/append/{appendId}",
+      "responses": [
+        "200",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "readFile",
+      "method": "GET",
+      "path": "/r/{key}",
+      "responses": [
+        "200",
+        "400",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "readFileMeta",
+      "method": "GET",
+      "path": "/r/{key}/meta",
+      "responses": [
+        "200",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "readFileRaw",
+      "method": "GET",
+      "path": "/r/{key}/raw",
+      "responses": [
+        "200",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "readFileSection",
+      "method": "GET",
+      "path": "/r/{key}/section/{heading}",
+      "responses": [
+        "200",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "readFileStructure",
+      "method": "GET",
+      "path": "/r/{key}/structure",
+      "responses": [
+        "200",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "readFileTail",
+      "method": "GET",
+      "path": "/r/{key}/tail",
+      "responses": [
+        "200",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "readFileViaWriteKey",
+      "method": "GET",
+      "path": "/w/{key}",
+      "responses": [
+        "200",
+        "400",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "recordHeartbeat",
+      "method": "POST",
+      "path": "/a/{key}/heartbeat",
+      "responses": [
+        "201",
+        "400",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "recoverFile",
+      "method": "POST",
+      "path": "/w/{key}/recover",
+      "responses": [
+        "200",
+        "401",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "renameFile",
+      "method": "PATCH",
+      "path": "/w/{key}",
+      "responses": [
+        "200",
+        "400",
+        "401",
+        "404",
+        "409",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "renameFolder",
+      "method": "PATCH",
+      "path": "/w/{key}/folders/{path}",
+      "responses": [
+        "200",
+        "400",
+        "401",
+        "404",
+        "409",
+        "429"
+      ]
+    },
+    {
+      "id": "renameWorkspace",
+      "method": "PATCH",
+      "path": "/workspaces/{workspaceId}/name",
+      "responses": [
+        "200",
+        "400",
+        "401",
+        "404"
+      ]
+    },
+    {
+      "id": "renameWorkspaceViaWriteKey",
+      "method": "PATCH",
+      "path": "/w/{key}/workspace",
+      "responses": [
+        "200",
+        "400",
+        "403",
+        "404"
+      ]
+    },
+    {
+      "id": "renewClaimWorkspace",
+      "method": "POST",
+      "path": "/workspaces/{workspaceId}/orchestration/claims/{claimId}/renew",
+      "responses": [
+        "200",
+        "400",
+        "401",
+        "404"
+      ]
+    },
+    {
+      "id": "revokeApiKey",
+      "method": "DELETE",
+      "path": "/workspaces/{workspaceId}/api-keys/{keyId}",
+      "responses": [
+        "200",
+        "401",
+        "403",
+        "404"
+      ]
+    },
+    {
+      "id": "revokeScopedKey",
+      "method": "DELETE",
+      "path": "/w/{key}/keys/{keyId}",
+      "responses": [
+        "200",
+        "401",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "rotateAllUrls",
+      "method": "POST",
+      "path": "/workspaces/{workspaceId}/rotate-all",
+      "responses": [
+        "200",
+        "401",
+        "404"
+      ]
+    },
+    {
+      "id": "rotateCapabilityUrls",
+      "method": "POST",
+      "path": "/w/{key}/rotate",
+      "responses": [
+        "200",
+        "401",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "searchInFileViaReadKey",
+      "method": "GET",
+      "path": "/r/{key}/search",
+      "responses": [
+        "200",
+        "400",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "searchInFolder",
+      "method": "GET",
+      "path": "/r/{key}/ops/folders/search",
+      "responses": [
+        "200",
+        "400",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "searchWorkspace",
+      "method": "GET",
+      "path": "/api/v1/search",
+      "responses": [
+        "200",
+        "400",
+        "401",
+        "429"
+      ]
+    },
+    {
+      "id": "signInWithGitHub",
+      "method": "GET",
+      "path": "/api/auth/signin/github",
+      "responses": [
+        "200",
+        "302",
+        "429"
+      ]
+    },
+    {
+      "id": "signInWithGoogle",
+      "method": "GET",
+      "path": "/api/auth/signin/google",
+      "responses": [
+        "200",
+        "302",
+        "429"
+      ]
+    },
+    {
+      "id": "subscribeAppendKey",
+      "method": "GET",
+      "path": "/a/{key}/ops/subscribe",
+      "responses": [
+        "101",
+        "200",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "subscribeFolderEvents",
+      "method": "GET",
+      "path": "/r/{key}/ops/folders/subscribe",
+      "responses": [
+        "101",
+        "200",
+        "400",
+        "404"
+      ]
+    },
+    {
+      "id": "subscribeFolderEventsViaAppendKey",
+      "method": "GET",
+      "path": "/a/{key}/ops/folders/subscribe",
+      "responses": [
+        "101",
+        "200",
+        "400",
+        "404"
+      ]
+    },
+    {
+      "id": "subscribeFolderEventsViaWriteKey",
+      "method": "GET",
+      "path": "/w/{key}/ops/folders/subscribe",
+      "responses": [
+        "101",
+        "200",
+        "400",
+        "404"
+      ]
+    },
+    {
+      "id": "subscribeReadKey",
+      "method": "GET",
+      "path": "/r/{key}/ops/subscribe",
+      "responses": [
+        "101",
+        "200",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "subscribeWriteKey",
+      "method": "GET",
+      "path": "/w/{key}/ops/subscribe",
+      "responses": [
+        "101",
+        "200",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "testWebhook",
+      "method": "POST",
+      "path": "/w/{key}/webhooks/{webhookId}/test",
+      "responses": [
+        "200",
+        "401",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "testWorkspaceWebhook",
+      "method": "POST",
+      "path": "/workspaces/{workspaceId}/webhooks/{webhookId}/test",
+      "responses": [
+        "200",
+        "401",
+        "404"
+      ]
+    },
+    {
+      "id": "updateFile",
+      "method": "PUT",
+      "path": "/w/{key}",
+      "responses": [
+        "200",
+        "400",
+        "401",
+        "404",
+        "409",
+        "410",
+        "412",
+        "429"
+      ]
+    },
+    {
+      "id": "updateFileSettings",
+      "method": "PATCH",
+      "path": "/w/{key}/settings",
+      "responses": [
+        "200",
+        "400",
+        "401",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "updateFolderSettings",
+      "method": "PATCH",
+      "path": "/w/{key}/folders/{path}/settings",
+      "responses": [
+        "200",
+        "400",
+        "401",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "updateFolderWebhook",
+      "method": "PATCH",
+      "path": "/w/{key}/folders/{path}/webhooks/{webhookId}",
+      "responses": [
+        "200",
+        "400",
+        "404",
+        "429"
+      ]
+    },
+    {
+      "id": "updateWebhook",
+      "method": "PATCH",
+      "path": "/w/{key}/webhooks/{webhookId}",
+      "responses": [
+        "200",
+        "400",
+        "401",
+        "404",
+        "410",
+        "429"
+      ]
+    },
+    {
+      "id": "updateWorkspaceWebhook",
+      "method": "PATCH",
+      "path": "/workspaces/{workspaceId}/webhooks/{webhookId}",
+      "responses": [
+        "200",
+        "400",
+        "401",
+        "404"
+      ]
+    }
+  ],
+  "generatedAt": "2026-02-16T12:53:50.182Z"
+}

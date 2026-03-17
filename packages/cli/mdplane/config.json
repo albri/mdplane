@@ -1,0 +1,15 @@
+{
+  "defaultProfile": "cap",
+  "profiles": {
+    "cap": {
+      "name": "cap",
+      "baseUrl": "https://api.mdplane.dev",
+      "mode": "capability",
+      "capabilityUrls": {
+        "read": "read_global",
+        "append": "append_global",
+        "write": "write_global"
+      }
+    }
+  }
+}

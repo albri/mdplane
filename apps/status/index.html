@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mdplane Status</title>
+    <meta name="description" content="Live service status for mdplane." />
+    <meta name="theme-color" content="#FDFBF7" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="./favicon.ico" sizes="32x32" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="header-content">
+        <a href="https://mdplane.dev" class="logo">
+          <img src="./icon.svg" alt="mdplane" class="logo-img" width="32" height="32" />
+          <span class="logo-text">mdplane</span>
+        </a>
+        <nav class="nav">
+          <a href="https://mdplane.dev">Home</a>
+          <a href="https://docs.mdplane.dev">Docs</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="main-content">
+        <div class="title-row">
+          <h1>System Status</h1>
+          <button id="refresh-btn" class="btn" type="button">Refresh</button>
+        </div>
+
+        <section id="status-banner" class="banner" aria-live="polite">
+          <div class="banner-content">
+            <span id="status-icon" class="banner-icon" aria-hidden="true">?</span>
+            <div class="banner-text">
+              <p id="status-headline" class="banner-headline">Checking status...</p>
+              <p id="status-meta" class="banner-meta">—</p>
+            </div>
+          </div>
+          <span id="stale-badge" class="badge badge-warning" hidden>Stale</span>
+        </section>
+
+        <section id="services-section" class="section">
+          <h2 class="section-title">Services</h2>
+          <div id="services-grid" class="services">
+            <div class="service">
+              <div class="service-info">
+                <span class="service-name">Core API</span>
+                <span class="service-desc">Primary backend · If down, app is unavailable</span>
+              </div>
+              <span id="svc-api" class="badge">—</span>
+            </div>
+            <div class="service">
+              <div class="service-info">
+                <span class="service-name">File Storage</span>
+                <span class="service-desc">File reads and writes · If degraded, file operations may fail</span>
+              </div>
+              <span id="svc-storage" class="badge">—</span>
+            </div>
+            <div class="service">
+              <div class="service-info">
+                <span class="service-name">Realtime</span>
+                <span class="service-desc">Live updates via WebSocket · If down, changes won't sync automatically</span>
+              </div>
+              <span id="svc-realtime" class="badge">—</span>
+            </div>
+          </div>
+        </section>
+
+        <section id="error-section" class="section error-state" hidden>
+          <div class="error-content">
+            <span class="error-icon">!</span>
+            <p class="error-text">Unable to fetch status. Please try again.</p>
+            <button id="retry-btn" class="btn" type="button">Retry</button>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <p>© <span id="year"></span> mdplane. All rights reserved.</p>
+    </footer>
+
+    <script type="module" src="./main.js"></script>
+    <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+  </body>
+</html>

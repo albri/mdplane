@@ -1,0 +1,288 @@
+# Scoped capability key schemas for mdplane API
+# Reference: docs/Obsidian Vault/Projects/mdplane/API Design.md
+
+# -----------------------------------------------------------------------------
+# Capabilities Check
+# -----------------------------------------------------------------------------
+CapabilitiesCheckRequest:
+  type: object
+  required: [keys]
+  properties:
+    keys:
+      type: array
+      description: Array of capability keys to validate
+      items:
+        type: string
+      maxItems: 100
+
+CapabilitiesCheckResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/CapabilityCheckResult'
+
+CapabilityCheckResult:
+  type: object
+  required: [key, valid]
+  properties:
+    key:
+      type: string
+      description: Truncated key (first 8 chars + "...")
+    valid:
+      type: boolean
+      description: Whether the key is valid
+    permission:
+      type: string
+      enum: [read, append, write]
+      description: Permission level (only present if valid)
+    scope:
+      type: string
+      enum: [file, folder, workspace]
+      description: Scope type (only present if valid)
+    scopeId:
+      type: string
+      description: Workspace, folder, or file ID (only present if valid)
+    error:
+      type: string
+      description: Error code (NOT_FOUND, EXPIRED, REVOKED) - only present if invalid
+
+# -----------------------------------------------------------------------------
+# Permission Enum
+# -----------------------------------------------------------------------------
+KeyPermission:
+  type: string
+  description: Permission level for scoped keys
+  enum:
+    - read
+    - append
+    - write
+
+# -----------------------------------------------------------------------------
+# Create Scoped Key
+# -----------------------------------------------------------------------------
+ScopedKeyCreateRequest:
+  type: object
+  description: Request to create a scoped capability key
+  required: [permission]
+  properties:
+    permission:
+      $ref: '#/KeyPermission'
+    boundAuthor:
+      type: string
+      description: If set, all appends must use this author name
+      pattern: '^[a-zA-Z0-9_-]{1,64}$'
+    displayName:
+      type: string
+      description: Human-readable name for the key (e.g., "Alpha Research Agent")
+      maxLength: 64
+    wipLimit:
+      type: integer
+      minimum: 1
+      description: Override WIP limit for this key
+    allowedTypes:
+      type: array
+      items:
+        type: string
+        enum: [task, claim, response, comment, blocked, answer, renew, cancel, vote]
+      description: Restrict which append types this key can create
+    expiresAt:
+      type: string
+      format: date-time
+      description: Key expiration timestamp
+    paths:
+      type: array
+      items:
+        type: string
+      description: Restrict key to specific paths
+
+ScopedKeyCreateResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [id, key, permission, createdAt]
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the key (used for revocation)
+        key:
+          type: string
+          description: The scoped capability key (prefixed with r_/a_/w_)
+          pattern: '^(r|a|w)_[A-Za-z0-9]{20,}$'
+        permission:
+          $ref: '#/KeyPermission'
+        boundAuthor:
+          type: string
+          description: Bound author if set
+        displayName:
+          type: string
+          description: Human-readable name
+        wipLimit:
+          type: integer
+          description: WIP limit for this key
+        allowedTypes:
+          type: array
+          items:
+            type: string
+          description: Allowed append types
+        expiresAt:
+          type: string
+          format: date-time
+          description: Expiration timestamp if set
+        createdAt:
+          type: string
+          format: date-time
+          description: Key creation timestamp
+        webUrl:
+          type: string
+          format: uri
+          description: URL to manage API keys in the web interface
+
+# -----------------------------------------------------------------------------
+# List Scoped Keys
+# -----------------------------------------------------------------------------
+ScopedKey:
+  type: object
+  description: Scoped key metadata (key itself is partially redacted)
+  required: [id, permission, createdAt]
+  properties:
+    id:
+      type: string
+      description: Key ID for management operations
+    key:
+      type: string
+      description: Partially visible key (e.g., "a_x8k2...nR")
+    permission:
+      $ref: '#/KeyPermission'
+    boundAuthor:
+      type: string
+      description: Bound author if set
+    displayName:
+      type: string
+      description: Human-readable name
+    wipLimit:
+      type: integer
+      description: WIP limit for this key
+    allowedTypes:
+      type: array
+      items:
+        type: string
+      description: Allowed append types
+    createdAt:
+      type: string
+      format: date-time
+      description: Key creation timestamp
+    expiresAt:
+      type: string
+      format: date-time
+      description: Expiration timestamp if set
+    lastUsedAt:
+      type: string
+      format: date-time
+      description: Last usage timestamp
+    revoked:
+      type: boolean
+      description: Whether key has been revoked
+
+ScopedKeyListResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: array
+      items:
+        $ref: '#/ScopedKey'
+    webUrl:
+      type: string
+      format: uri
+      description: URL to manage API keys in the web interface
+
+# -----------------------------------------------------------------------------
+# Workspace-Scoped Capabilities Check
+# -----------------------------------------------------------------------------
+CapabilitiesCheckInWorkspaceResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/CapabilityCheckInWorkspaceResult'
+
+CapabilityCheckInWorkspaceResult:
+  type: object
+  required: [key, valid]
+  properties:
+    key:
+      type: string
+      description: Truncated key (first 8 chars + "...")
+    valid:
+      type: boolean
+      description: Whether the key is valid
+    permission:
+      type: string
+      enum: [read, append, write]
+      description: Permission level (only present if valid)
+    scope:
+      type: string
+      enum: [file, folder, workspace]
+      description: Scope type (only present if valid)
+    scopeId:
+      type: string
+      description: Workspace, folder, or file ID (only present if valid)
+    path:
+      type: string
+      description: Resource path (only present if valid and belongs to workspace)
+    status:
+      type: string
+      enum: [active, expired, revoked]
+      description: Key status (only present if valid and belongs to workspace)
+    error:
+      type: string
+      description: Error code (NOT_FOUND, EXPIRED, REVOKED) - only present if invalid
+
+# -----------------------------------------------------------------------------
+# Revoke Key
+# -----------------------------------------------------------------------------
+KeyRevokeResponse:
+  type: object
+  required: [ok, data]
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required: [id, revoked]
+      properties:
+        id:
+          type: string
+          description: Key ID
+        revoked:
+          type: boolean
+          const: true
+

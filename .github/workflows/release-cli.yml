@@ -1,0 +1,60 @@
+name: Release CLI
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run npm publish as dry-run only'
+        required: true
+        type: boolean
+        default: true
+
+jobs:
+  release-cli:
+    name: Publish @mdplane/cli
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.21
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared package
+        run: pnpm --filter @mdplane/shared build
+
+      - name: Verify CLI publish tarball (pack smoke)
+        run: pnpm --filter @mdplane/cli pack:smoke
+
+      - name: Publish @mdplane/cli (dry-run)
+        if: ${{ inputs.dry_run }}
+        run: npm publish --access public --dry-run
+        working-directory: packages/cli
+
+      - name: Publish @mdplane/cli
+        if: ${{ !inputs.dry_run }}
+        run: npm publish --access public
+        working-directory: packages/cli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

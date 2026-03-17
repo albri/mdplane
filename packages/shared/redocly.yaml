@@ -1,0 +1,19 @@
+# Redocly configuration for OpenAPI linting
+# https://redocly.com/docs/cli/configuration/
+
+extends:
+  - recommended
+
+rules:
+  # Allow localhost for development server
+  no-server-example.com: off
+
+  # WebSocket endpoints use 101 status code, not 2xx
+  operation-2xx-response: warn
+
+  # Some endpoints intentionally don't have 4xx responses (health, docs)
+  operation-4xx-response: warn
+
+  # Allow unused components (PayloadTooLarge is defined for future use)
+  no-unused-components: off
+

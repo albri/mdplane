@@ -1,0 +1,130 @@
+# ==============================================================================
+# ORCHESTRATION ENDPOINTS
+# Task monitoring and orchestration views
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# READ-ONLY ORCHESTRATION VIEW (via Read Key)
+# ------------------------------------------------------------------------------
+
+/r/{key}/orchestration:
+  get:
+    operationId: getOrchestrationReadOnly
+    tags:
+      - Orchestration
+    summary: Read-only orchestration view
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Get a comprehensive view of all tasks and claims across the accessible scope.
+      Designed for orchestrators and account controls views that need to monitor agent activity.
+
+      Returns pending tasks, active claims, agent liveness, and workload distribution.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - name: status
+        in: query
+        description: Filter by task status (comma-separated; pending, claimed, stalled, completed, cancelled)
+        schema:
+          type: string
+          pattern: '^(pending|claimed|stalled|completed|cancelled)(,(pending|claimed|stalled|completed|cancelled))*$'
+        example: pending,claimed
+      - name: agent
+        in: query
+        description: Filter by claiming agent
+        schema:
+          type: string
+      - name: file
+        in: query
+        description: Filter by filename (partial match)
+        schema:
+          type: string
+      - name: folder
+        in: query
+        description: Filter by folder path
+        schema:
+          type: string
+      - name: priority
+        in: query
+        description: Filter by priority (comma-separated; low, medium, high, critical)
+        schema:
+          type: string
+          pattern: '^(low|medium|high|critical)(,(low|medium|high|critical))*$'
+        example: high,critical
+      - $ref: '../components/parameters.yaml#/since'
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/cursor'
+    responses:
+      '200':
+        description: Orchestration data retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/OrchestrationReadOnlyResponse'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'
+
+# ------------------------------------------------------------------------------
+# WRITE-LEVEL ORCHESTRATION VIEW (via Write Key)
+# ------------------------------------------------------------------------------
+
+/w/{key}/orchestration:
+  get:
+    operationId: getOrchestrationAdmin
+    tags:
+      - Orchestration
+    summary: Write-level orchestration view
+    security:
+      - capabilityKeyAuth: []
+    description: |
+      Get a comprehensive view of all tasks and claims with write-level capabilities.
+
+      Same response as read-only view, plus ability to force-expire claims
+      via the returned claim IDs.
+    parameters:
+      - $ref: '../components/parameters.yaml#/capabilityKey'
+      - name: status
+        in: query
+        description: Filter by task status (comma-separated; pending, claimed, stalled, completed, cancelled)
+        schema:
+          type: string
+          pattern: '^(pending|claimed|stalled|completed|cancelled)(,(pending|claimed|stalled|completed|cancelled))*$'
+        example: pending,claimed
+      - name: agent
+        in: query
+        description: Filter by claiming agent
+        schema:
+          type: string
+      - name: file
+        in: query
+        description: Filter by filename (partial match)
+        schema:
+          type: string
+      - name: folder
+        in: query
+        description: Filter by folder path
+        schema:
+          type: string
+      - name: priority
+        in: query
+        description: Filter by priority (comma-separated; low, medium, high, critical)
+        schema:
+          type: string
+          pattern: '^(low|medium|high|critical)(,(low|medium|high|critical))*$'
+        example: high,critical
+      - $ref: '../components/parameters.yaml#/since'
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/cursor'
+    responses:
+      '200':
+        description: Orchestration data retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/OrchestrationAdminResponse'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimited'

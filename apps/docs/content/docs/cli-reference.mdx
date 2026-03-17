@@ -1,0 +1,229 @@
+---
+title: CLI Reference
+description: Exhaustive reference for the mdplane CLI command surface.
+---
+
+This page documents the current CLI corpus implemented in `packages/cli/src/commands/`.
+For the conceptual overview, operator model, and recommended workflows, see [CLI](/docs/cli).
+
+Most commands support:
+
+- `--profile <name>` to select a configured profile
+- `--json` to emit structured output instead of formatted terminal text
+
+## Most Common Command Paths
+
+### Create a workspace
+
+```bash
+mdplane init --name "My Workspace"
+mdplane status
+```
+
+### Read and write files
+
+```bash
+mdplane ls
+mdplane read /notes/README.md
+mdplane write /notes/README.md "# Updated notes"
+```
+
+### Run a workflow
+
+```bash
+mdplane append /workflows/pr-queue.md "Review PR https://github.com/acme/api/pull/482" \
+  --type task \
+  --author builder_agent
+```
+
+### Search and inspect
+
+```bash
+mdplane search "auth timeout"
+mdplane status
+mdplane check-keys
+```
+
+### Operate the workspace
+
+```bash
+mdplane settings --wip-limit 5
+mdplane rotate
+mdplane recover /notes/deleted.md
+```
+
+## Auth Modes
+
+| Mode | Meaning |
+|---|---|
+| None | No existing profile or key required |
+| Local config | Requires an existing CLI profile, but does not need to call capability or API-key routes directly |
+| Capability | Uses read, append, or write capability URLs |
+| API key | Uses an authenticated `/api/v1/*` profile |
+| Either | Supports capability mode and API key mode |
+
+## Command Inventory
+
+| Command | Auth | Purpose | Notes |
+|---|---|---|---|
+| `init` | None | Create or update a CLI profile | Bootstraps capability mode or stores an API key |
+| `status` | Local config | Inspect current profile and stored keys | `--show-keys` reveals full capability keys |
+| `login` | Local config | Open OAuth login flow | Opens browser unless `--no-browser` |
+| `claim` | Capability | Claim an anonymous workspace | Requires a write capability URL |
+| `check-keys` | Local config | Validate capability keys are still active | Uses supplied keys or keys from the active profile |
+| `files` | Capability | List files in scope | Alias: `ls` |
+| `ls` | Capability | Alias for `files` | Same options and output as `files` |
+| `read` | Capability | Read file content or structure | Alias: `cat` |
+| `cat` | Capability | Alias for `read` | Same options and output as `read` |
+| `search` | Either | Search file content and appends | Workspace-wide with API key, scoped with read key |
+| `append` | Capability | Append workflow activity to a file | Uses the append protocol |
+| `write` | Either | Create or overwrite file content | Supports optimistic concurrency with `--etag` |
+| `mkdir` | Either | Create a folder | Uses write capability or API key |
+| `mv` | Capability | Move a file | Only supports capability mode in the current CLI |
+| `rm` | Either | Delete a file or folder | Soft delete by default for files |
+| `settings` | Capability | Get or update file settings | Only supports capability mode in the current CLI |
+| `rotate` | Capability | Rotate capability URLs | Only supports capability mode in the current CLI |
+| `recover` | Capability | Recover a soft-deleted file | Optional URL rotation on recovery |
+| `export` | API key | Export workspace data | Sync and async modes |
+| `export-status` | API key | Check status of an export job | For async exports |
+| `export-download` | API key | Download a completed export archive | Saves file locally |
+| `agents` | API key | List agent liveness state | Reads heartbeat-based status |
+| `deleted` | API key | List recoverable deleted files | Use with `recover` |
+
+## Setup and Auth Commands
+
+| Command | Syntax | Auth | Key options | JSON output |
+|---|---|---|---|---|
+| `mdplane init` | `mdplane init [options]` | None | `--api-key KEY`, `--name NAME`, `--profile NAME`, `--base-url URL`, `--global`, `--force` | `profile`, `baseUrl`, `mode`, `workspaceId`, `workspaceName`, `capabilityUrls`, `webUrl`, `configPath` |
+| `mdplane status` | `mdplane status [options]` | Local config | `--profile NAME`, `--show-keys` | `initialized`, `configPath`, `defaultProfile`, `profile`, `mode`, `baseUrl`, `workspaceId`, `workspaceName`, `webUrl`, `claimed`, `hasApiKey`, masked or full `keys` |
+| `mdplane login` | `mdplane login [options]` | Local config | `--provider github|google`, `--no-browser` | `status`, `provider`, `url` |
+| `mdplane claim` | `mdplane claim [options]` | Capability | `--provider github|google`, `--no-browser` | `status`, `provider`, `url`, `message` |
+| `mdplane check-keys` | `mdplane check-keys [keys...] [options]` | Local config | Uses explicit key arguments or falls back to configured capability URLs | `checked`, `results`, `summary.valid`, `summary.invalid` |
+
+### `mdplane init`
+
+- `--api-key <key>` creates or updates an API key profile.
+- `--name <name>` bootstraps a new workspace and stores read, append, and write capability URLs.
+- `--global` writes config to the global config location instead of the repo-local `.mdplane` file.
+- Capability mode warns users to keep `.mdplane` gitignored because it stores capability URLs.
+
+### `mdplane claim`
+
+- This command is capability-only.
+- It requires a write capability URL in the active profile.
+- It opens the browser to a claim URL in the control plane and does not claim the workspace inline from the terminal.
+
+## Read, Browse, and Search Commands
+
+| Command | Syntax | Auth | Key options | JSON output |
+|---|---|---|---|---|
+| `mdplane files` | `mdplane files [options]` | Capability | `--path PATH`, `--sort name|modified|size`, `--order asc|desc` | `path`, `items`, `folders`, `files`, `totalFolders`, `totalFiles` |
+| `mdplane ls` | `mdplane ls [options]` | Capability | Same as `files` | Same as `files` |
+| `mdplane read` | `mdplane read PATH [options]` | Capability | `--raw`, `--meta`, `--tail [bytes]`, `--structure`, `--section HEADING` | Depends on mode: raw text, metadata object, tail object, structure object, section object, or file object |
+| `mdplane cat` | `mdplane cat PATH [options]` | Capability | Same as `read` | Same as `read` |
+| `mdplane search` | `mdplane search QUERY [options]` | Either | `--type`, `--path`, `--status`, `--author`, `--labels`, `--priority`, `--since`, `--limit` | Full search response with `results`, `total`, and optional `pagination` |
+
+### `mdplane read` and `mdplane cat`
+
+The same command surface supports several read modes:
+
+- default: file content plus metadata summary
+- `--raw`: raw content only
+- `--meta`: file metadata only
+- `--tail [bytes]`: trailing bytes from the file
+- `--structure`: heading outline plus append summary
+- `--section <heading>`: one extracted section
+
+### `mdplane search`
+
+- With an API key, search is workspace-wide and supports `--path` folder filtering.
+- With a read capability URL, search is limited to the scope of that key.
+- Search results include typed matches across files and appends.
+
+## Write and Workflow Commands
+
+| Command | Syntax | Auth | Key options | JSON output |
+|---|---|---|---|---|
+| `mdplane append` | `mdplane append PATH [content] [options]` | Capability | `--type`, `--author`, `--ref`, `--priority`, `--labels`, `--due`, `--value`, `--stdin` | `id`, `author`, `type`, `timestamp`, optional `ref`, `priority`, `labels`, `dueAt`, `expiresAt` |
+| `mdplane write` | `mdplane write PATH [content] [options]` | Either | `--stdin`, `--etag ETAG`, `--force` | `id`, `etag`, `updatedAt`, `size` |
+| `mdplane mkdir` | `mdplane mkdir PATH [options]` | Either | No special flags beyond common options | `path`, `createdAt` |
+| `mdplane mv` | `mdplane mv SOURCE DESTINATION [options]` | Capability | Only supports capability mode in the current CLI | `id`, `previousPath`, `newPath` |
+| `mdplane rm` | `mdplane rm PATH [options]` | Either | `--permanent`, `--force` | File delete: `id`, `deleted`, `recoverable`, `expiresAt`; folder delete: `path`, `filesDeleted`, `foldersDeleted`, `recoverable`, `expiresAt` |
+| `mdplane settings` | `mdplane settings [options]` | Capability | `--claim-duration`, `--max-append-size`, `--wip-limit`, `--labels`, `--allowed-types` | File settings object |
+| `mdplane rotate` | `mdplane rotate [options]` | Capability | Only supports capability mode in the current CLI | `id`, `urls`, `previousUrlsInvalidated`, `webUrl` |
+| `mdplane recover` | `mdplane recover PATH [options]` | Capability | `--rotate-urls` | `id`, `path`, `recovered`, `urls`, `webUrl` |
+
+### `mdplane append`
+
+Supported user append types come from the shared append protocol:
+
+- `task`
+- `claim`
+- `response`
+- `comment`
+- `blocked`
+- `answer`
+- `renew`
+- `cancel`
+- `vote`
+
+Important command-specific options:
+
+- `--ref <ref>` links the append to another append ID
+- `--priority`, `--labels`, and `--due` apply to task-style workflow use
+- `--value <+1|-1>` is only for vote appends
+- `--stdin` reads content from standard input
+
+### `mdplane write`
+
+- In API key mode, the CLI will try to read the current ETag automatically unless `--force` is used.
+- In capability mode, explicit `--etag` values are supported, but the CLI does not auto-fetch ETags for optimistic writes.
+
+### `mdplane settings`
+
+Without update flags, `mdplane settings` reads the current file settings.
+With one or more update flags, it writes new settings and returns the updated settings object.
+
+## Export and Operations Commands
+
+| Command | Syntax | Auth | Key options | JSON output |
+|---|---|---|---|---|
+| `mdplane export` | `mdplane export [options]` | API key | `--format zip|tar.gz`, `--include-appends`, `--include-deleted`, `--paths`, `--output`, `--async`, `--notify-email` | Sync: `outputPath`, `size`, `format`, `checksum`; async: `jobId`, `status`, `statusUrl`, `estimatedSize`, `position` |
+| `mdplane export-status` | `mdplane export-status JOB_ID [options]` | API key | No special flags beyond common options | Full export job status response |
+| `mdplane export-download` | `mdplane export-download JOB_ID [options]` | API key | `--output FILE` | `jobId`, `outputPath`, `size`, `checksum` |
+| `mdplane agents` | `mdplane agents [options]` | API key | `--stale-threshold SECONDS`, `--folder PATH` | Agent liveness response with `agents`, `staleThresholdSeconds`, optional `webUrl` |
+| `mdplane deleted` | `mdplane deleted [options]` | API key | `--limit NUMBER`, `--cursor CURSOR` | Deleted-files response with `files` and `pagination` |
+
+### `mdplane export`
+
+Two modes are exposed through one command:
+
+- synchronous export: downloads and writes the archive immediately
+- asynchronous export: creates a job and returns a job ID for later polling and download
+
+Use async export for large workspaces or when you want email notification.
+
+### `mdplane agents`
+
+- This command reads heartbeat-based liveness state.
+- `--stale-threshold` is bounded to `60-3600` seconds in the CLI.
+- `--folder` filters to agents active in a specific folder.
+
+### `mdplane deleted`
+
+- This command lists soft-deleted files that are still within the recovery window.
+- Use the returned paths with `mdplane recover <path>`.
+- Pagination is exposed through `--limit` and `--cursor`.
+
+## Notes and Caveats
+
+- `files`, `read`, `cat`, and `append` are capability-oriented commands and expect capability URLs in the active profile.
+- `mv`, `recover`, `rotate`, and `settings` only support capability mode in the current CLI.
+- `export`, `export-status`, `export-download`, `agents`, and `deleted` are API-key-only.
+- `search`, `write`, `mkdir`, and `rm` can operate in either capability mode or API key mode, depending on the active profile.
+- For the exact latest terminal help text, run:
+
+```bash
+mdplane --help
+mdplane <command> --help
+```

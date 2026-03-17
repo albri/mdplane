@@ -1,0 +1,323 @@
+# Search-related schemas for mdplane API
+# Reference: docs/Obsidian Vault/Projects/mdplane/API Design.md
+
+# -----------------------------------------------------------------------------
+# Enums
+# -----------------------------------------------------------------------------
+SearchResultType:
+  type: string
+  description: Type of search result
+  enum:
+    - file
+    - append
+    - task
+
+# -----------------------------------------------------------------------------
+# Shared Components
+# -----------------------------------------------------------------------------
+FileReference:
+  type: object
+  description: Reference to a file with ID and path
+  required:
+    - id
+    - path
+  properties:
+    id:
+      type: string
+      description: Unique file identifier
+    path:
+      type: string
+      description: File path relative to workspace root
+
+FileUrls:
+  type: object
+  description: Capability URLs for file access (only includes URLs the key has access to)
+  properties:
+    read:
+      type: string
+      format: uri
+      description: Read-only capability URL
+    append:
+      type: string
+      format: uri
+      description: Append capability URL
+    write:
+      type: string
+      format: uri
+      description: Admin/write capability URL
+
+# -----------------------------------------------------------------------------
+# Folder Search Schemas
+# -----------------------------------------------------------------------------
+FolderSearchMatch:
+  type: object
+  description: Single match within a file for folder search
+  required:
+    - appendId
+    - type
+    - content
+  properties:
+    appendId:
+      type: string
+      description: Unique append identifier
+    type:
+      type: string
+      description: Type of append (task, comment, etc.)
+    content:
+      type: string
+      description: Content snippet matching the search query
+    priority:
+      type: string
+      description: Priority level (if applicable)
+    status:
+      type: string
+      description: Status (if applicable)
+    labels:
+      type: array
+      items:
+        type: string
+      description: Labels attached to this append
+    author:
+      type: string
+      description: Author of the append
+    createdAt:
+      type: string
+      format: date-time
+      description: Creation timestamp
+
+FolderSearchResult:
+  type: object
+  description: Search results grouped by file
+  required:
+    - file
+  properties:
+    file:
+      $ref: '#/FileReference'
+    fileUrls:
+      $ref: '#/FileUrls'
+    matches:
+      type: array
+      items:
+        $ref: '#/FolderSearchMatch'
+
+FolderSearchResponse:
+  type: object
+  description: Response from folder search endpoint
+  required:
+    - ok
+    - data
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required:
+        - results
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/FolderSearchResult'
+        truncated:
+          type: boolean
+          description: Whether search was truncated due to timeout
+    pagination:
+      $ref: '../schemas.yaml#/PaginatedResponse'
+
+# -----------------------------------------------------------------------------
+# Task Query Schemas
+# -----------------------------------------------------------------------------
+TaskQueryResult:
+  type: object
+  description: Task result from task query endpoint
+  required:
+    - id
+    - file
+    - content
+    - status
+    - createdAt
+  properties:
+    id:
+      type: string
+      description: Append ID of the task
+    file:
+      $ref: '#/FileReference'
+    fileUrls:
+      $ref: '#/FileUrls'
+    content:
+      type: string
+      description: Task content
+    author:
+      type: string
+      description: Task author
+    status:
+      type: string
+      description: Task status
+      enum:
+        - pending
+        - claimed
+        - completed
+        - cancelled
+    priority:
+      type: string
+      description: Task priority
+      enum:
+        - low
+        - medium
+        - high
+        - critical
+    labels:
+      type: array
+      items:
+        type: string
+      description: Labels attached to this task
+    claimedBy:
+      type: string
+      description: User who claimed the task (if claimed)
+    expiresAt:
+      type: string
+      format: date-time
+      description: Claim expiration time (if claimed)
+    createdAt:
+      type: string
+      format: date-time
+      description: Task creation timestamp
+
+TaskSummary:
+  type: object
+  description: Summary counts of tasks by status
+  required:
+    - pending
+    - claimed
+    - completed
+  properties:
+    pending:
+      type: integer
+      description: Count of pending tasks
+    claimed:
+      type: integer
+      description: Count of claimed tasks
+    completed:
+      type: integer
+      description: Count of completed tasks
+
+TaskQueryResponse:
+  type: object
+  description: Response from task query endpoint
+  required:
+    - ok
+    - data
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required:
+        - tasks
+        - summary
+        - webUrl
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: '#/TaskQueryResult'
+        summary:
+          $ref: '#/TaskSummary'
+        webUrl:
+          type: string
+          format: uri
+          description: URL to view tasks in the web interface
+    pagination:
+      $ref: '../schemas.yaml#/PaginatedResponse'
+
+# -----------------------------------------------------------------------------
+# Workspace/Scoped Search Schemas
+# -----------------------------------------------------------------------------
+SearchHighlight:
+  type: object
+  description: Highlighted match position in content
+  required:
+    - start
+    - end
+  properties:
+    start:
+      type: integer
+      description: Start position of highlight (0-indexed)
+    end:
+      type: integer
+      description: End position of highlight (0-indexed, exclusive)
+
+SearchResult:
+  type: object
+  description: Single search result item
+  required:
+    - type
+    - id
+    - content
+    - highlights
+    - score
+  properties:
+    type:
+      $ref: '#/SearchResultType'
+    id:
+      type: string
+      description: Unique identifier for the result (file ID or append ID)
+    file:
+      $ref: '#/FileReference'
+    content:
+      type: string
+      description: Content snippet matching the search query
+    highlights:
+      type: array
+      description: Array of highlighted match positions
+      items:
+        $ref: '#/SearchHighlight'
+    score:
+      type: number
+      format: float
+      description: Relevance score for the result
+      minimum: 0
+      maximum: 1
+    status:
+      type: string
+      description: Status (for task/claim types)
+    author:
+      type: string
+      description: Author of the append
+    createdAt:
+      type: string
+      format: date-time
+      description: Creation timestamp
+    frontmatter:
+      type: object
+      additionalProperties: true
+      description: Frontmatter fields (when filtering by frontmatter)
+
+SearchResponse:
+  type: object
+  description: Response from workspace/scoped search endpoints
+  required:
+    - ok
+    - data
+  properties:
+    ok:
+      type: boolean
+      const: true
+    data:
+      type: object
+      required:
+        - results
+      properties:
+        results:
+          type: array
+          description: Array of search results
+          items:
+            $ref: '#/SearchResult'
+        total:
+          type: integer
+          description: Total number of matching results
+          minimum: 0
+    pagination:
+      $ref: '../schemas.yaml#/PaginatedResponse'

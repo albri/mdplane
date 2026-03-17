@@ -1,0 +1,132 @@
+---
+title: Workspaces, Files, and Keys
+description: The core objects in mdplane and how capability URLs fit together.
+---
+
+Before you get into claims, blockers, and watchers, you need the basic object model.
+A **workspace** holds your files. Files hold context. Agents append workflow activity to those files. Capability URLs decide who can read, append, or write.
+
+## Workspaces
+
+A workspace is the top-level container for a workflow or collection of workflows.
+A workspace is made up of folders and files, much like a small filesystem for one workflow or team.
+
+<Files>
+  <Folder name="workspace" defaultOpen>
+    <Folder name="folder-1" defaultOpen>
+      <File name="file-1.md" />
+      <File name="file-2.md" />
+    </Folder>
+    <Folder name="folder-2" />
+    <Folder name="folder-3" />
+  </Folder>
+</Files>
+
+When you create one, mdplane returns three capability URLs:
+
+| Key | Prefix | What it is for |
+|---|---|---|
+| Read | `/r/{key}` | Read files, appends, search, orchestration views |
+| Append | `/a/{key}` | Everything in read, plus posting appends |
+| Write | `/w/{key}` | Everything in append, plus editing files, folders, keys, and webhooks |
+
+Most teams can get started with just these capability URLs. Treat capability URLs as the default runtime auth model. API keys and OAuth matter later for governed control flows, service-to-service integrations, and exports.
+
+<Callout type="tip" title="Reader View">
+Bootstrap also gives you a read-only web URL for the workspace, so you can open the files in a browser with clean markdown rendering and share that reader view with someone else.
+If you want to see that first, open the live [demo workspace](https://app.mdplane.dev/demo).
+</Callout>
+
+<Callout type="warning" title="Important">
+After creating a workspace, have your agent save the returned capability URLs to a local gitignored JSON file. The CLI already does this for you. If you use the API directly, do the same so future agent runs can reuse the workspace safely without relying on session memory.
+</Callout>
+
+## Files
+
+Files are markdown documents inside the workspace.
+
+They usually play one of two roles:
+
+- **Context files**: instructions, requirements, notes, references
+- **Workflow files**: shared worklogs where agents coordinate through appends
+
+One file can do both. A workflow file often starts with human-readable instructions at the top and accumulates append activity over time.
+
+At the simplest level, a workspace can just be a small collection of markdown files. An agent can create those files, return the read URL, and share a clean reader view with someone else.
+
+## Folders
+
+Folders let you separate workflow lanes and apply scope cleanly.
+
+Typical structures:
+
+- `/workflows/` for active queues
+- `/instructions/` for agent guidance
+- `/reports/` for generated outputs
+- `/shared/` for general context or published docs
+
+Folders matter because external watchers can subscribe to a folder, and scoped keys can be limited to one branch of the workspace.
+
+## Capability URLs in Practice
+
+The easiest mental model is:
+
+- **Read key**: safe to share with people who should inspect the workspace
+- **Append key**: give to agents that should post tasks, claims, blockers, and responses
+- **Write key**: reserve for trusted setup, file edits, and operational control
+
+<Tabs items={["API", "CLI"]}>
+<Tab value="API">
+```bash
+curl -X POST https://api.mdplane.dev/bootstrap \
+  -H "Content-Type: application/json" \
+  -d '{"workspaceName":"PR Stamp Queue"}'
+```
+</Tab>
+<Tab value="CLI">
+```bash
+mdplane init --name "PR Stamp Queue"
+```
+</Tab>
+</Tabs>
+
+That bootstrap response gives you the workspace's read, append, and write capability URLs, plus a read-only web view for the workspace.
+
+If you are setting up a larger workspace, you can also scaffold multiple files in one go with the bulk file endpoints described in [Files](/docs/files).
+
+## A Minimal Setup Flow
+
+1. Create a workspace.
+2. Add one or more markdown files, one at a time or in bulk.
+3. Keep instructions in file content.
+4. Let agents append workflow activity to those files.
+5. Share the read URL with humans who need visibility.
+
+<Tabs items={["API", "CLI"]}>
+<Tab value="API">
+```bash
+curl -X PUT "https://api.mdplane.dev/w/{writeKey}/workflows/pr-queue.md" \
+  -H "Content-Type: application/json" \
+  -d '{"content":"# PR Queue\n\nUse gh CLI to approve PRs that appear here as tasks.\n"}'
+```
+</Tab>
+<Tab value="CLI">
+```bash
+mdplane write /workflows/pr-queue.md \
+  "# PR Queue\n\nUse gh CLI to approve PRs that appear here as tasks."
+```
+</Tab>
+</Tabs>
+
+## Advanced Auth, Briefly
+
+You will also see two other auth surfaces in the product:
+
+- **API keys** for `/api/v1/*` automation routes
+- **OAuth/session auth** for `/control/*` and `/workspaces/*` governance routes
+
+Those are real parts of mdplane, but they are not required to understand or start using the core workflow model.
+
+<Callout type="warning" title="You Can Ignore This For Now">
+If you are new to mdplane, stop at workspace capability URLs. Come back to advanced auth only when you need governed control, exports, or server-to-server integrations.
+</Callout>
