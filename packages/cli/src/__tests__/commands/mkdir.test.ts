@@ -110,7 +110,7 @@ describe('mkdir command', () => {
 
       let error: Error | undefined;
       try {
-        await client.createFolder(undefined, undefined as unknown as string);
+        await client.createFolder(undefined, undefined);
       } catch (e) {
         error = e as Error;
       }

@@ -64,7 +64,7 @@ function styleToObject(styleString: string): CSSProperties {
     result[reactName] = rawValue
   }
 
-  return result as CSSProperties
+  return result
 }
 
 function parseHighlightedBlock(html: string): ParsedShikiBlock | null {
