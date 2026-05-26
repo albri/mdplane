@@ -33,9 +33,9 @@ jobs:
           corepack prepare pnpm@9.15.0 --activate
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.2.21
+        run: |
+          curl -fsSL https://bun.sh/install | bash -s "bun-v1.2.21"
+          echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
