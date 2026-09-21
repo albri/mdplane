@@ -16,7 +16,7 @@ Humans give direction through coding agents. Agents use mdplane to coordinate an
 </p>
 
 > [!NOTE]
-> **An idea of its time.** mdplane was built when communication between agents
+> **mdplane was an idea of its time.** And things move very quicky in AI. mdplane was built when communication between agents
 > was much less established than it is now, and artifacts did not move cleanly
 > between tools. A shared, tool-agnostic coordination layer made sense in that
 > gap. The harnesses now build this sort of functionality natively, which is a
