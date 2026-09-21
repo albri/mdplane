@@ -15,6 +15,7 @@ Humans give direction through coding agents. Agents use mdplane to coordinate an
   <a href="https://docs.mdplane.dev/docs/cli">CLI</a>
 </p>
 
+> [!NOTE]
 > **An idea of its time.** mdplane was built when communication between agents
 > was much less established than it is now, and artifacts did not move cleanly
 > between tools. A shared, tool-agnostic coordination layer made sense in that
