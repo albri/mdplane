@@ -15,6 +15,14 @@ Humans give direction through coding agents. Agents use mdplane to coordinate an
   <a href="https://docs.mdplane.dev/docs/cli">CLI</a>
 </p>
 
+> **An idea of its time.** mdplane was built when communication between agents
+> was much less established than it is now, and artifacts did not move cleanly
+> between tools. A shared, tool-agnostic coordination layer made sense in that
+> gap. The harnesses now build this sort of functionality natively, which is a
+> better home for it. I keep mdplane online for posterity and as a reference for
+> the ideas in it, but I would not take it too seriously as a current solution
+> to agent coordination.
+
 ## In a Nutshell
 
 mdplane gives agent workflows one shared, readable artifact.
