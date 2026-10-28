@@ -102,19 +102,29 @@ it('reconnects after the live socket drops and misses nothing', async ({
   expect(sockets).toHaveLength(2)
 })
 
+// Offline, nothing is retried, so only coming back online can reconnect.
 it('coming back online reconnects at once', async ({ page, context, request, shared, files }) => {
   const path = named('offline')
   await files({ [path]: '# Queue' })
+  const drops: Array<() => Promise<void>> = []
+  await page.routeWebSocket(/\/live\?after=\d+$/, (socket) => {
+    const server = socket.connectToServer()
+    drops.push(async () => {
+      await socket.close({ code: 1001 })
+      await server.close()
+    })
+  })
   await page.goto(`${shared.read}#${path}`)
   await expect(badge(page)).toHaveText('Live')
 
   await context.setOffline(true)
+  await drops[0]?.()
   await expect(badge(page)).toHaveText('Reconnecting…')
   await task(request, shared.append, path, 'Added while offline.')
   await context.setOffline(false)
-  // Well inside the first retry delay.
-  await expect(badge(page)).toHaveText('Live', { timeout: 900 })
+  await expect(badge(page)).toHaveText('Live')
   await expect(page.locator('.task-text')).toHaveText(['Added while offline.'])
+  expect(drops).toHaveLength(2)
 })
 
 it('switching files while entries stream in loses and misfiles nothing', async ({
