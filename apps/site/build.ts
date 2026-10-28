@@ -91,7 +91,7 @@ for (const page of readdirSync(pages).filter((name) => name.endsWith('.html'))) 
 }
 
 // The fonts' licences travel with them.
-mkdirSync(new URL('licenses/', dist))
+mkdirSync(new URL('licenses/', dist), { recursive: true })
 for (const [font, pkg] of [
   ['schibsted-grotesk', '@fontsource-variable/schibsted-grotesk'],
   ['fragment-mono', '@fontsource/fragment-mono'],
