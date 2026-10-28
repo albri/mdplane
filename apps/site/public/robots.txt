@@ -1,0 +1,6 @@
+# Capability links are credentials, so crawlers stay out of them. Their pages also send
+# X-Robots-Tag: noindex.
+User-agent: *
+Disallow: /r/
+Disallow: /a/
+Disallow: /w/

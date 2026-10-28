@@ -1,0 +1,13 @@
+<body class="app">
+  <a class="skip-link" href="#main">Skip to the reader</a>
+  <header class="app-bar">
+    {{> brand}}
+    <h1 class="app-title" id="app-title">Loading…</h1>
+    <div class="app-tools" id="app-tools"></div>
+    {{> theme}}
+  </header>
+  <main class="app-main" id="main">
+    <p class="app-status" id="app-status" role="status" hidden></p>
+    <div class="reader is-full" id="reader"></div>
+  </main>
+</body>

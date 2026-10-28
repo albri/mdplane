@@ -1,9 +1,16 @@
-import { type Entry, verifyChain } from '@mdplane/contract/core'
-import { $, $$, $as, clock, esc, motionOK, revealIn } from './dom.ts'
+// The reader: one file's body, its tasks as threads and its history, at any point on a timeline.
+// Everything renders through lit-html, so text from the log is escaped by construction.
+import { type Entry, GENESIS, type LogItem, verifyChain } from '@mdplane/contract/core'
+import { html, nothing, render, type TemplateResult } from 'lit-html'
+import { classMap } from 'lit-html/directives/class-map.js'
+import { createRef, ref } from 'lit-html/directives/ref.js'
+import { repeat } from 'lit-html/directives/repeat.js'
+import { $$, clock, cssProps, heading, motionOK, ownsKeys, reveal, scrollBehavior } from './dom.ts'
 import { markdown } from './markdown.ts'
 import {
   agentView,
   countTasks,
+  describe,
   leaseEnd,
   minutesLeft,
   type Session,
@@ -13,159 +20,114 @@ import {
   type Thread,
 } from './model.ts'
 
-const ICON = {
-  back: '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3.5 3h1.6v10H3.5zM13 3.3v9.4L6.2 8z" fill="currentColor"/></svg>',
-  fwd: '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10.9 3h1.6v10h-1.6zM3 3.3v9.4L9.8 8z" fill="currentColor"/></svg>',
-  play: '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4.5 2.8v10.4L13 8z" fill="currentColor"/></svg>',
-  pause:
-    '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4 3h3v10H4zM9 3h3v10H9z" fill="currentColor"/></svg>',
+const icon = (path: string) =>
+  html`<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+    <path d=${path} fill="currentColor" />
+  </svg>`
+
+const ICONS = {
+  back: icon('M3.5 3h1.6v10H3.5zM13 3.3v9.4L6.2 8z'),
+  forward: icon('M10.9 3h1.6v10h-1.6zM3 3.3v9.4L9.8 8z'),
+  play: icon('M4.5 2.8v10.4L13 8z'),
+  pause: icon('M4 3h3v10H4zM9 3h3v10H9z'),
+  close: icon(
+    'M4.3 3.2 8 6.9l3.7-3.7 1.1 1.1L9.1 8l3.7 3.7-1.1 1.1L8 9.1l-3.7 3.7-1.1-1.1L6.9 8 3.2 4.3z',
+  ),
 }
 
-const TIER = {
+const TIERS = {
   r: ['Read', 'Read: view, search and watch'],
   a: ['Append', 'Append: read and add to the log'],
   w: ['Write', 'Write: everything, including bodies and links'],
 } as const
 
-const INFO = `
-  <aside class="rd-info" aria-label="Workspace">
-    <dl class="kv">
-      <div><dt>Workspace</dt><dd data-i="name"></dd></div>
-      <div><dt>File</dt><dd class="mono" data-i="file"></dd></div>
-      <div><dt>Your link</dt><dd data-i="tier"></dd></div>
-      <div><dt>Showing</dt><dd data-i="at"></dd></div>
-      <div data-i="expiry-row" hidden><dt>Deletes itself</dt><dd data-i="expiry"></dd></div>
-    </dl>
-    <div class="info-block"><h4>Tasks at this point</h4><ul class="counts" data-i="counts"></ul></div>
-    <div class="info-block"><h4>Who has written so far</h4><ul class="people" data-i="people"></ul></div>
-    <div class="info-block">
-      <h4>History</h4>
-      <p class="info-hash" data-i="head"></p>
-      <button type="button" class="btn btn-quiet btn-sm" data-act="verify">Check the chain</button>
-      <p class="verify-out" data-i="verify" aria-live="polite"></p>
-    </div>
-  </aside>`
+const STATUS = { open: 'Open', claimed: 'In progress', done: 'Done', cancelled: 'Cancelled' }
 
-type Verified = Awaited<ReturnType<typeof verifyChain>> & { count: number }
-type VerifyState = Verified | { pending: true } | { unsupported: true } | null
+// Playing waits on each entry long enough to read it: a beat, then time for its words.
+const dwell = (entry: Entry | undefined) =>
+  Math.min(5000, Math.max(2200, 1400 + (entry?.body?.length ?? 0) * 30))
+const FLIP = { duration: 320, easing: 'cubic-bezier(0.2, 0.7, 0.1, 1)' }
+// Past this, the timeline's ticks would merge into a bar.
+const MAX_TICKS = 240
+
+type Verification =
+  | { state: 'idle' | 'checking' | 'unsupported' }
+  | { state: 'ok'; count: number; head: string }
+  | { state: 'broken'; at: number }
+
+type Move = {
+  behavior: ScrollBehavior
+  // Say the new position in the live region. Controls that announce themselves don't need it.
+  announce?: boolean
+  // Slide cards to their new places and flash new entries. Off while scrubbing.
+  animate?: boolean
+}
+
+export type ReaderOptions = {
+  variant?: 'compact' | 'full'
+  // The level of the reader's own headings. A file body's top heading takes it too.
+  level?: number
+  // Where the toolbar renders, when the page puts it in its own header.
+  bar?: HTMLElement
+}
 
 let readers = 0
 
-type Elements = Record<
-  'url' | 'flag' | 'verify' | 'doc' | 'log' | 'count' | 'list' | 'fill' | 'ticks' | 'pos',
-  HTMLElement
->
-
 export class Reader {
   readonly root: HTMLElement
-  readonly compact: boolean
+  readonly variant: 'compact' | 'full'
+  // Set once someone uses the controls, so the page stops driving the reader itself.
   touched = false
   session: Session | null = null
   pos = 0
+  private readonly id = `rd${++readers}`
+  private readonly level: number
+  private readonly bar: HTMLElement | null
+  private time = clock()
   private view: 'rendered' | 'source' = 'rendered'
+  private pane: 'doc' | 'log' = 'doc'
   private timer: number | null = null
-  private ticks = 0
   private state: State | null = null
-  private readonly el: Elements
-  private readonly range: HTMLInputElement
-  private readonly info: HTMLElement | null
+  private arrived = new Set<number>()
+  private flips: Animation[] = []
+  private announcement = ''
+  private verification: Verification = { state: 'idle' }
+  // The run of the log already checked, so new entries can be checked on their own.
+  private checked: { log: LogItem[] | null; count: number; head: string } = {
+    log: null,
+    count: 0,
+    head: GENESIS,
+  }
+  private checks = 0
+  private readonly doc = createRef<HTMLElement>()
+  private readonly log = createRef<HTMLElement>()
 
-  constructor(root: HTMLElement, { compact = false } = {}) {
-    readers += 1
+  constructor(root: HTMLElement, { variant = 'compact', level = 3, bar }: ReaderOptions = {}) {
     this.root = root
-    this.compact = compact
-    root.classList.add('reader', compact ? 'is-compact' : 'is-full')
-    root.innerHTML = this.template(`r${readers}`)
-    const pick = (name: string) => $(`[data-el="${name}"]`, root)
-    this.el = {
-      url: pick('url'),
-      flag: pick('flag'),
-      verify: pick('verify'),
-      doc: pick('doc'),
-      log: pick('log'),
-      count: pick('count'),
-      list: pick('list'),
-      fill: pick('fill'),
-      ticks: pick('ticks'),
-      pos: pick('pos'),
-    }
-    this.range = $as(HTMLInputElement, '[data-el="range"]', root)
-    this.info = root.querySelector('.rd-info')
-
-    root.addEventListener('click', (event) => {
-      const button = event.target instanceof Element ? event.target.closest('button') : null
-      if (!button || !root.contains(button)) return
-      const { view, act, index } = button.dataset
-      if (view === 'rendered' || view === 'source') this.setView(view)
-      else if (act === 'play') this.toggle()
-      else if (act === 'back') this.step(-1)
-      else if (act === 'fwd') this.step(1)
-      else if (act === 'latest') {
-        this.interact()
-        this.setPos(this.head)
-      } else if (act === 'verify') void this.verify()
-      else if (index) {
-        this.interact()
-        this.setPos(Number(index))
-      }
-    })
-    this.range.addEventListener('input', () => {
-      this.interact()
-      this.setPos(Number(this.range.value), { animate: false })
-    })
-    if (compact) {
-      root.addEventListener('keydown', (event) => {
-        const target = event.target
-        if (!(target instanceof HTMLElement) || target === this.range || target.closest('.seg'))
-          return
-        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-          event.preventDefault()
-          this.step(event.key === 'ArrowLeft' ? -1 : 1)
-        }
+    this.variant = variant
+    this.level = level
+    this.bar = bar ?? null
+    root.classList.add('reader', `is-${variant}`)
+    root.addEventListener('keydown', this.onKey)
+    // Wide screens show the details as a column, which would leave an open popover floating.
+    if (variant === 'full') {
+      window.matchMedia('(min-width: 1200px)').addEventListener('change', (event) => {
+        const open = root.querySelector('.rd-info:popover-open')
+        if (event.matches && open instanceof HTMLElement) open.hidePopover()
       })
     }
-  }
-
-  private template(id: string): string {
-    return `
-      <div class="rd-bar">
-        <span class="rd-tier" data-el="tier"></span>
-        <span class="rd-url" data-el="url"></span>
-        <span class="rd-flag" data-el="flag" hidden></span>
-        <span class="rd-verify" data-el="verify" aria-live="polite"></span>
-        <div class="seg" role="group" aria-label="View">
-          <button type="button" data-view="rendered" aria-pressed="true">Rendered</button>
-          <button type="button" data-view="source" aria-pressed="false">Markdown</button>
-        </div>
-      </div>
-      <div class="rd-body">
-        ${this.compact ? '' : INFO}
-        <div class="rd-doc" data-el="doc"></div>
-        <aside class="rd-log" data-el="log" aria-label="History">
-          <div class="lg-head"><h3>History</h3><span class="lg-count" data-el="count"></span></div>
-          <ol class="lg-list" data-el="list"></ol>
-        </aside>
-      </div>
-      <div class="rd-time">
-        <button type="button" class="ic" data-act="back" aria-label="Previous entry">${ICON.back}</button>
-        <button type="button" class="ic ic-play" data-act="play" aria-label="Play the history">${ICON.play}</button>
-        <button type="button" class="ic" data-act="fwd" aria-label="Next entry">${ICON.fwd}</button>
-        <div class="rd-range">
-          <div class="rd-track"><span class="rd-fill" data-el="fill"></span></div>
-          <div class="rd-ticks" data-el="ticks"></div>
-          <input type="range" class="rd-input" id="${id}-range" min="1" max="1" step="1" value="1" aria-label="Position in the history" data-el="range">
-        </div>
-        <span class="rd-pos" data-el="pos"></span>
-        <button type="button" class="rd-latest" data-act="latest">Latest</button>
-      </div>`
   }
 
   get head(): number {
     return this.session?.entries.length ?? 0
   }
 
-  private get time() {
-    return clock(this.session?.timeZone)
+  get playing(): boolean {
+    return this.timer !== null
+  }
+
+  private get entry(): Entry | undefined {
+    return this.session?.entries[this.pos - 1]
   }
 
   private get live(): boolean {
@@ -175,370 +137,709 @@ export class Reader {
   load(session: Session, { pos }: { pos?: number } = {}): void {
     this.pause()
     this.session = session
+    this.time = clock(session.timeZone)
     this.pos = Math.max(1, Math.min(session.entries.length, pos ?? session.entries.length))
-    this.ticks = 0
-    const [tier] = TIER[session.tier]
-    $('[data-el="tier"]', this.root).textContent = tier
-    // The secret never goes on screen, where it could end up in a screenshot.
-    this.el.url.innerHTML = `${esc(session.host)}/${session.tier}/<b>${esc(session.workspaceId)}</b>.••••••••••••`
-    this.el.flag.hidden = false
-    this.el.flag.textContent = session.mode === 'live' ? 'Live' : 'Replay'
-    this.el.flag.classList.toggle('is-live', session.mode === 'live')
-    this.setVerify(null)
-    this.update()
-  }
-
-  interact(): void {
-    this.touched = true
-    this.pause()
+    this.arrived = new Set()
+    this.verification = { state: 'idle' }
+    this.draw()
+    this.reveal('instant')
+    void this.verify()
   }
 
   step(delta: number): void {
     this.interact()
-    this.setPos(this.pos + delta)
-  }
-
-  private setView(view: 'rendered' | 'source'): void {
-    this.view = view
-    for (const b of $$('.seg button', this.root)) {
-      b.setAttribute('aria-pressed', String(b.dataset.view === view))
-    }
-    this.renderDoc()
-  }
-
-  setPos(target: number, { animate = true } = {}): void {
-    const next = Math.max(1, Math.min(this.head, target))
-    if (next === this.pos) return
-    const prev = this.pos
-    const before = animate && motionOK() && this.view === 'rendered' ? this.measure() : null
-    this.pos = next
-    this.update(prev)
-    if (animate && next > prev && next - prev <= 2) this.revealNew()
-    if (before) this.slide(before)
-  }
-
-  // FLIP rather than a document view transition: a scrubber needs every click to land
-  // mid-animation, and cards inside the reader's scroll area have to stay clipped by it.
-  private measure(): Map<string, number> {
-    const tops = new Map<string, number>()
-    for (const el of $$('[data-key]', this.el.doc)) {
-      tops.set(el.dataset.key ?? '', el.getBoundingClientRect().top)
-    }
-    return tops
-  }
-
-  private slide(before: Map<string, number>): void {
-    for (const el of $$('[data-key]', this.el.doc)) {
-      const top = before.get(el.dataset.key ?? '')
-      if (top === undefined) continue
-      const dy = top - el.getBoundingClientRect().top
-      if (Math.abs(dy) < 1) continue
-      el.animate([{ transform: `translateY(${dy}px)` }, { transform: 'none' }], {
-        duration: 320,
-        easing: 'cubic-bezier(0.2, 0.7, 0.1, 1)',
-      })
-    }
-  }
-
-  private revealNew(): void {
-    const last = $$('.is-new', this.el.doc).at(-1)
-    if (!last) return
-    if (this.compact) revealIn(this.el.doc, last)
-    else last.scrollIntoView({ block: 'nearest', behavior: motionOK() ? 'smooth' : 'auto' })
-  }
-
-  update(prev?: number): void {
-    this.renderDoc(prev)
-    this.renderLog()
-    this.renderTime()
-    this.renderInfo()
+    this.move(this.pos + delta, { behavior: scrollBehavior(), announce: true, animate: true })
   }
 
   play(): void {
-    if (this.timer !== null || !this.session) return
-    if (this.pos >= this.head) this.setPos(1, { animate: false })
-    this.timer = window.setInterval(() => {
-      if (this.pos >= this.head) this.pause()
-      else this.setPos(this.pos + 1)
-    }, 1150)
-    this.syncPlay()
+    if (this.playing || !this.session) return
+    if (this.pos >= this.head) this.move(1, { behavior: 'instant' })
+    this.next()
+    this.draw()
+  }
+
+  private next(): void {
+    this.timer = window.setTimeout(() => {
+      if (this.pos >= this.head) {
+        this.pause()
+        return
+      }
+      this.move(this.pos + 1, { behavior: scrollBehavior(), animate: true })
+      this.next()
+    }, dwell(this.entry))
   }
 
   pause(): void {
-    if (this.timer !== null) window.clearInterval(this.timer)
+    if (!this.playing) return
+    window.clearTimeout(this.timer ?? undefined)
     this.timer = null
-    this.syncPlay()
+    this.draw()
   }
 
   toggle(): void {
     this.touched = true
-    if (this.timer === null) this.play()
-    else this.pause()
+    if (this.playing) this.pause()
+    else this.play()
   }
 
-  private syncPlay(): void {
-    const button = this.root.querySelector('[data-act="play"]')
-    if (!button) return
-    button.innerHTML = this.timer === null ? ICON.play : ICON.pause
-    button.setAttribute('aria-label', this.timer === null ? 'Play the history' : 'Pause')
-  }
-
-  // Called after an entry is added to the session. Follows along only if the reader was at the head.
+  // An entry was added to this file. Follow it only if the reader was at the head.
   appended(): void {
-    const wasAtHead = this.pos === this.head - 1
-    this.ticks = 0
-    if (this.verified) this.setVerify(null)
-    if (wasAtHead) this.setPos(this.head)
-    else {
-      this.renderLog()
-      this.renderTime()
-      this.renderInfo()
+    const entry = this.session?.entries.at(-1)
+    if (this.pos === this.head - 1 && entry) {
+      this.announcement = `New entry: ${describe(entry)}.`
+      this.move(this.head, { behavior: scrollBehavior(), animate: true })
+    } else {
+      this.draw()
     }
+    void this.verify()
   }
 
-  // Called after an entry for another file is added, which only changes the workspace's chain.
+  // An entry was added to another file, which only extends the workspace's chain.
   logChanged(): void {
-    this.setVerify(null)
-    this.renderInfo()
+    this.draw()
+    void this.verify()
   }
 
   // Leases run out with time, so a live view at the head redraws now and then.
   refresh(): void {
-    if (this.live) this.update()
+    if (this.live) this.draw()
   }
 
-  private renderDoc(prev?: number): void {
-    if (!this.session) return
-    const state = stateAt(this.session, this.pos, this.live)
-    this.state = state
-    this.el.doc.innerHTML =
-      this.view === 'source'
-        ? `<pre class="src">${highlight(agentView(this.session, state))}</pre>`
-        : this.docHTML(state, prev)
-  }
-
-  private docHTML(state: State, prev?: number): string {
-    const time = this.time
-    const fresh = (index: number) => prev !== undefined && index > prev && this.pos - prev <= 2
-    const indexOf = new Map(this.session?.entries.map((e, i) => [e.seq, i + 1]))
-    const isNew = (e: Entry) => fresh(indexOf.get(e.seq) ?? 0)
-    let h = ''
-    const write = state.write
-    if (write) {
-      const body =
-        state.body === null
-          ? '<p class="doc-empty">Loading this version…</p>'
-          : markdown(state.body)
-      h += `<section class="doc-body${isNew(write) ? ' is-new' : ''}" data-key="body">
-        <p class="doc-meta">Body · version ${write.version ?? 1} · ${esc(write.author)} at ${time(write.at)}</p>
-        <div class="prose">${body}</div></section>`
-    } else {
-      h += '<p class="doc-empty">This file was deleted at this point in its history.</p>'
+  // Checks only the entries that arrived since the last check, unless asked to start over.
+  async verify({ full = false, announce = false } = {}): Promise<void> {
+    const log = this.session?.log
+    if (!log) return
+    if (!globalThis.crypto?.subtle) {
+      this.setVerification({ state: 'unsupported' })
+      return
     }
-    h += `<div class="doc-loghead"><h3>Tasks</h3><p>${summary(state.threads)}</p></div>`
-    h +=
-      state.threads.length > 0
-        ? `<ol class="tasks">${state.threads.map((t) => this.taskHTML(t, state, isNew)).join('')}</ol>`
-        : '<p class="doc-empty">No tasks yet.</p>'
-    return h
+    if (full || this.checked.log !== log) this.checked = { log, count: 0, head: GENESIS }
+    const { count, head } = this.checked
+    const check = ++this.checks
+    if (count === 0) this.setVerification({ state: 'checking' })
+    const items = log.slice(count)
+    const result = await verifyChain(items, head)
+    // A later check started from the same point, so its answer covers this one.
+    if (check !== this.checks) return
+    if (result.ok) {
+      this.checked = { log, count: count + items.length, head: result.head }
+      this.setVerification({ state: 'ok', count: this.checked.count, head: result.head })
+    } else {
+      this.setVerification({ state: 'broken', at: result.brokenAt })
+    }
+    if (announce) this.say(this.verifyText)
   }
 
-  private taskHTML(thread: Thread, state: State, isNew: (e: Entry) => boolean): string {
+  // Arrow keys step through the history and Space plays it, unless a control has a use for them.
+  // Space only counts with nothing focused, so it still scrolls a focused panel and presses a
+  // focused button. Pages listen on the document for it; the landing page leaves Space alone.
+  readonly onKey = (event: KeyboardEvent): void => {
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return
+    if (ownsKeys(event.target)) return
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      event.preventDefault()
+      this.step(event.key === 'ArrowLeft' ? -1 : 1)
+    } else if (event.key === ' ' && event.target === document.body) {
+      event.preventDefault()
+      this.toggle()
+    }
+  }
+
+  private interact(): void {
+    this.touched = true
+    this.pause()
+  }
+
+  private move(target: number, how: Move): void {
+    const session = this.session
+    const next = Math.max(1, Math.min(this.head, target))
+    if (!session || next === this.pos) return
+    const from = this.pos
+    const flip = how.animate && motionOK() && this.view === 'rendered' ? this.measure() : null
+    this.pos = next
+    const entry = session.entries[next - 1]
+    if (how.announce && entry) this.announcement = this.positionText(entry)
+    this.arrived =
+      how.animate && next > from && next - from <= 2
+        ? new Set(session.entries.slice(from, next).map((e) => e.seq))
+        : new Set()
+    this.draw()
+    this.reveal(how.behavior)
+    if (flip) this.slide(flip)
+  }
+
+  private say(text: string): void {
+    this.announcement = text
+    this.draw()
+  }
+
+  private setVerification(verification: Verification): void {
+    this.verification = verification
+    this.draw()
+  }
+
+  private setView(view: Reader['view']): void {
+    this.view = view
+    this.draw()
+    this.reveal('instant')
+  }
+
+  private setPane(pane: Reader['pane']): void {
+    this.pane = pane
+    this.draw()
+    this.reveal('instant')
+  }
+
+  private draw(): void {
+    const session = this.session
+    if (!session) return
+    this.state = stateAt(session, this.pos, this.live)
+    render(this.template(session, this.state), this.root)
+    if (this.bar) render(this.toolbar(session), this.bar)
+  }
+
+  // Keeps the current entry in view in both the file and the history.
+  private reveal(behavior: ScrollBehavior): void {
+    const doc = this.doc.value
+    const log = this.log.value
+    const seq = this.entry?.seq
+    if (!doc || !log || seq === undefined) return
+    const target = doc.querySelector(`[data-seq="${seq}"]`)
+    if (target) reveal(doc, target, { behavior, from: target.closest('.task') ?? target })
+    const row = log.querySelector('[aria-current]')
+    const head = log.querySelector('.lg-head')
+    const inset = head instanceof HTMLElement ? head.offsetHeight : 0
+    if (row) reveal(log, row, { behavior, inset })
+  }
+
+  // FLIP rather than a view transition: a scrubber needs every click to land mid-animation, and
+  // the cards have to stay clipped by the panel that scrolls them.
+  private measure(): Map<string, number> | null {
+    const doc = this.doc.value
+    if (!doc) return null
+    for (const animation of this.flips) animation.cancel()
+    this.flips = []
+    return new Map($$('[data-flip]', doc).map((el) => [el.dataset.flip ?? '', topIn(doc, el)]))
+  }
+
+  private slide(before: Map<string, number>): void {
+    const doc = this.doc.value
+    if (!doc) return
+    for (const el of $$('[data-flip]', doc)) {
+      const top = before.get(el.dataset.flip ?? '')
+      const dy = top === undefined ? 0 : top - topIn(doc, el)
+      if (Math.abs(dy) < 1) continue
+      this.flips.push(
+        el.animate([{ transform: `translateY(${dy}px)` }, { transform: 'none' }], FLIP),
+      )
+    }
+  }
+
+  private positionText(entry: Entry): string {
+    return `Entry #${entry.seq}, ${this.pos} of ${this.head}, ${this.time(entry.at)}: ${describe(entry)}.`
+  }
+
+  private get verifyText(): string {
+    const v = this.verification
+    if (v.state === 'ok') return `History verified: all ${v.count} entries match their hashes.`
+    if (v.state === 'broken') return `History broken: entry #${v.at} doesn't match its hash.`
+    if (v.state === 'unsupported') return "This browser can't check the history."
+    return ''
+  }
+
+  private readonly latest = (): void => {
+    this.interact()
+    this.move(this.head, { behavior: scrollBehavior(), announce: true })
+  }
+
+  private readonly onRange = (event: Event): void => {
+    if (!(event.target instanceof HTMLInputElement)) return
+    this.interact()
+    this.move(Number(event.target.value), { behavior: 'instant' })
+  }
+
+  private readonly onVerify = (): void => {
+    if (this.verification.state !== 'checking') void this.verify({ full: true, announce: true })
+  }
+
+  private readonly onRowClick = (event: Event): void => {
+    const row = event.target instanceof Element ? event.target.closest('[data-index]') : null
+    if (!(row instanceof HTMLElement)) return
+    this.interact()
+    this.move(Number(row.dataset.index), { behavior: scrollBehavior(), animate: true })
+  }
+
+  // The history is one tab stop. Arrow keys, Home and End move through it, and the reader with it.
+  private readonly onRowKey = (event: KeyboardEvent): void => {
+    const target = rowTarget(event.key, this.pos, this.head)
+    if (target === null) return
+    event.preventDefault()
+    this.interact()
+    this.move(target, { behavior: scrollBehavior(), animate: true })
+    this.log.value?.querySelector<HTMLElement>('[aria-current]')?.focus({ preventScroll: true })
+  }
+
+  private template(session: Session, state: State): TemplateResult {
+    const full = this.variant === 'full'
+    return html`
+      ${this.bar ? nothing : html`<div class="rd-bar">${this.toolbar(session)}</div>`}
+      <div class="rd-panes">
+        <div class="seg" role="group" aria-label="Show">
+          ${(['doc', 'log'] as const).map(
+            (pane) =>
+              html`<button
+                type="button"
+                aria-pressed=${String(this.pane === pane)}
+                @click=${() => this.setPane(pane)}
+              >
+                ${pane === 'doc' ? 'File' : 'History'}
+              </button>`,
+          )}
+        </div>
+      </div>
+      <div class="rd-body" data-pane=${this.pane}>
+        ${full ? this.info(session, state) : nothing}
+        <section class="rd-doc" ${ref(this.doc)} tabindex="0" aria-label=${`File ${session.path}`}>
+          ${
+            this.view === 'source'
+              ? html`<pre class="src">${highlight(agentView(session, state))}</pre>`
+              : this.file(state)
+          }
+        </section>
+        <section class="rd-log" ${ref(this.log)} aria-labelledby=${`${this.id}-log`}>
+          <div class="lg-head">
+            ${heading(this.level, 'History', { id: `${this.id}-log` })}
+            <span class="lg-count">${this.pos} of ${this.head}</span>
+          </div>
+          <ol class="lg-list" @click=${this.onRowClick} @keydown=${this.onRowKey}>
+            ${repeat(
+              session.entries,
+              (e) => e.seq,
+              (e, i) => this.row(e, i + 1),
+            )}
+          </ol>
+        </section>
+      </div>
+      ${this.timeline(session)}
+      <p class="visually-hidden" role="status">${this.announcement}</p>
+    `
+  }
+
+  private toolbar(session: Session): TemplateResult {
+    const [tier, tierTitle] = TIERS[session.tier]
+    const v = this.verification
+    const label = {
+      idle: 'Check history',
+      checking: 'Checking…',
+      unsupported: '',
+      ok: '✓ Verified',
+      broken: v.state === 'broken' ? `Broken at #${v.at}` : '',
+    }[v.state]
+    return html`
+      <span class="rd-tier" title=${tierTitle}>${tier}</span>
+      <span class="rd-url">
+        ${session.host}/${session.tier}/<b>${session.workspaceId}</b
+        ><span aria-hidden="true">.••••••••••••</span>
+        <span class="visually-hidden">, key hidden</span>
+      </span>
+      <span class=${classMap({ 'rd-flag': true, 'is-live': session.mode === 'live' })}>
+        ${session.mode === 'live' ? 'Live' : 'Replay'}
+      </span>
+      ${
+        v.state === 'unsupported'
+          ? nothing
+          : html`<button
+              type="button"
+              class=${classMap({
+                'rd-verify': true,
+                'is-ok': v.state === 'ok',
+                'is-bad': v.state === 'broken',
+              })}
+              title=${v.state === 'ok' ? `${v.count} entries, head ${v.head.slice(0, 7)}` : nothing}
+              aria-disabled=${String(v.state === 'checking')}
+              @click=${this.onVerify}
+            >
+              ${label}
+            </button>`
+      }
+      <div class="seg" role="group" aria-label="View">
+        ${(['rendered', 'source'] as const).map(
+          (view) =>
+            html`<button
+              type="button"
+              aria-pressed=${String(this.view === view)}
+              @click=${() => this.setView(view)}
+            >
+              ${view === 'rendered' ? 'Rendered' : 'Markdown'}
+            </button>`,
+        )}
+      </div>
+      ${
+        this.variant === 'full'
+          ? html`<button type="button" class="rd-details" popovertarget=${`${this.id}-info`}>
+              Details
+            </button>`
+          : nothing
+      }
+    `
+  }
+
+  private file(state: State): TemplateResult {
     const time = this.time
-    const { task, entry, kids, lapsed } = thread
-    const chip = { open: 'Open', claimed: 'In progress', done: 'Done', cancelled: 'Cancelled' }[
-      task.status
-    ]
+    const { write, deletion } = state
+    const body = write
+      ? html`<section
+          class=${classMap({ 'doc-body': true, ...this.marks(write) })}
+          data-seq=${write.seq}
+          data-flip="body"
+        >
+          <p class="doc-meta">
+            Body · version ${write.version ?? 1} · ${write.author} at ${time(write.at)}
+          </p>
+          <div class="prose">
+            ${
+              state.body === null
+                ? html`<p class="doc-empty">Loading this version…</p>`
+                : markdown(state.body, this.level)
+            }
+          </div>
+        </section>`
+      : html`<p
+          class=${classMap({ 'doc-empty': true, ...(deletion ? this.marks(deletion) : {}) })}
+          data-seq=${deletion?.seq ?? nothing}
+        >
+          This file was deleted at this point in its history.
+        </p>`
+    return html`
+      ${body}
+      <div class="doc-loghead" data-flip="tasks">
+        ${heading(this.level, 'Tasks')}
+        <p>${summary(state.threads)}</p>
+      </div>
+      ${
+        state.threads.length > 0
+          ? html`<ol class="tasks">
+              ${repeat(
+                state.threads,
+                (t) => t.entry.seq,
+                (t) => this.task(t, state),
+              )}
+            </ol>`
+          : html`<p class="doc-empty">No tasks yet.</p>`
+      }
+      ${
+        state.notes.length > 0
+          ? html`<div class="doc-loghead" data-flip="notes">${heading(this.level, 'Comments')}</div>
+              <ol class="notes">
+                ${repeat(
+                  state.notes,
+                  (e) => e.seq,
+                  (e) =>
+                    html`<li
+                      class=${classMap({ ent: true, [`ent-${e.type}`]: true, ...this.marks(e) })}
+                      data-seq=${e.seq}
+                      data-flip=${`n${e.seq}`}
+                    >
+                      ${this.item(e, false)}
+                    </li>`,
+                )}
+              </ol>`
+          : nothing
+      }
+    `
+  }
+
+  private marks(entry: Entry): Record<string, boolean> {
+    return { 'is-current': entry.seq === this.entry?.seq, 'is-new': this.arrived.has(entry.seq) }
+  }
+
+  private task({ task, entry, kids, lapsed }: Thread, state: State): TemplateResult {
+    const time = this.time
     const closer = kids.findLast((k) => k.type === 'response' || k.type === 'cancel')
-    let meta = `${esc(entry.author)} · ${time(entry.at)}`
+    let meta = `${entry.author} · ${time(entry.at)}`
     if (task.status === 'claimed' && task.holder && task.leaseExpiresAt) {
       const until = Date.parse(task.leaseExpiresAt)
-      meta += ` · ${esc(task.holder)} holds it until ${time(until)}, ${minutesLeft(until, state.now)}`
+      meta += ` · ${task.holder} holds it until ${time(until)}, ${minutesLeft(until, state.now)}`
     } else if (lapsed) {
-      meta += ` · ${esc(lapsed.author)}'s lease ran out at ${time(leaseEnd(lapsed))}`
-    } else if (task.status === 'done' && closer) {
-      meta += ` · done by ${esc(closer.author)} at ${time(closer.at)}`
-    } else if (task.status === 'cancelled' && closer) {
-      meta += ` · cancelled by ${esc(closer.author)}`
+      meta += ` · ${lapsed.author}'s lease ran out at ${time(leaseEnd(lapsed))}`
+    } else if (closer) {
+      meta += ` · ${task.status === 'done' ? 'done' : 'cancelled'} by ${closer.author} at ${time(closer.at)}`
     }
-    const threadHTML = kids
-      .map((k, i) => {
-        const renewed =
-          k.type === 'claim' &&
-          kids.slice(0, i).some((p) => p.type === 'claim' && p.author === k.author)
-        const label = renewed ? 'claim · renewed' : k.type
-        const lease = k.type === 'claim' ? ` · lease until ${time(leaseEnd(k))}` : ''
-        const body = k.body ? `<p class="ent-body">${esc(k.body)}</p>` : ''
-        return `<li class="ent ent-${k.type}${isNew(k) ? ' is-new' : ''}">
-          <p class="ent-meta"><span class="ty ty-${k.type}">${label}</span> ${esc(k.author)} · ${time(k.at)}${lease}</p>
-          ${body}</li>`
-      })
-      .join('')
-    return `<li class="task is-${lapsed ? 'expired' : task.status}${isNew(entry) ? ' is-new' : ''}" data-key="t${entry.seq}">
+    return html`<li
+      class=${classMap({
+        task: true,
+        [`is-${lapsed ? 'expired' : task.status}`]: true,
+        ...this.marks(entry),
+      })}
+      data-seq=${entry.seq}
+      data-flip=${`t${entry.seq}`}
+    >
       <div class="task-head">
         <span class="task-num">#${entry.seq}</span>
-        <p class="task-text">${esc(task.body)}</p>
-        <span class="chip" data-k="${task.status}">${chip}</span>
+        <p class="task-text">${task.body}</p>
+        <span class="chip" data-k=${task.status}>${STATUS[task.status]}</span>
         <p class="task-meta">${meta}</p>
       </div>
-      ${threadHTML ? `<ol class="thread">${threadHTML}</ol>` : ''}
+      ${
+        kids.length > 0
+          ? html`<ol class="thread">
+              ${repeat(
+                kids,
+                (k) => k.seq,
+                (k, i) =>
+                  html`<li
+                    class=${classMap({ ent: true, [`ent-${k.type}`]: true, ...this.marks(k) })}
+                    data-seq=${k.seq}
+                  >
+                    ${this.item(k, renews(kids, i))}
+                  </li>`,
+              )}
+            </ol>`
+          : nothing
+      }
     </li>`
   }
 
-  private renderLog(): void {
-    if (!this.session) return
+  private item(e: Entry, renewed: boolean): TemplateResult {
     const time = this.time
-    const list = this.el.list
-    const active = document.activeElement
-    const focused =
-      active instanceof HTMLElement && list.contains(active) ? active.dataset.index : undefined
-    list.innerHTML = this.session.entries
-      .map((e, i) => {
-        const index = i + 1
-        const cls = index === this.pos ? ' is-current' : index > this.pos ? ' is-future' : ''
-        const body =
-          e.type === 'write'
-            ? `Body version ${e.version}`
-            : e.type === 'delete'
-              ? 'Deleted the file'
-              : (e.body ?? '')
-        const ref = e.ref === null ? '' : ` → #${e.ref}`
-        return `<li><button type="button" class="lg-row${cls}" data-index="${index}"${index === this.pos ? ' aria-current="step"' : ''}>
-          <span class="lg-seq">#${e.seq}</span>
-          <span class="lg-main"><span class="ty ty-${e.type}">${e.type}</span> ${esc(e.author)}${ref}</span>
-          <span class="lg-time">${time(e.at)}</span>
-          <span class="lg-body">${esc(body)}</span>
-          <span class="lg-hash">${e.hash.slice(0, 7)}</span>
-        </button></li>`
-      })
-      .join('')
-    this.el.count.textContent = `${this.pos} of ${this.head}`
-    if (focused)
-      list.querySelector<HTMLElement>(`[data-index="${focused}"]`)?.focus({ preventScroll: true })
-    const current = list.querySelector<HTMLElement>('.is-current')
-    const headHeight = this.el.log.querySelector<HTMLElement>('.lg-head')?.offsetHeight ?? 0
-    if (current) revealIn(this.el.log, current, headHeight)
+    const lease = e.type === 'claim' ? ` · lease until ${time(leaseEnd(e))}` : ''
+    return html`<p class="ent-meta">
+        <span class="ty ty-${e.type}">${renewed ? 'claim · renewed' : e.type}</span>
+        ${e.author} · ${time(e.at)}${lease}
+      </p>
+      ${e.body ? html`<p class="ent-body">${e.body}</p>` : nothing}`
   }
 
-  private renderTime(): void {
-    if (!this.session) return
+  private row(e: Entry, index: number): TemplateResult {
+    const current = index === this.pos
+    const about =
+      e.ref === null
+        ? nothing
+        : html` <span aria-hidden="true">→</span
+            ><span class="visually-hidden">on task</span> #${e.ref}`
+    const text =
+      e.type === 'write'
+        ? `Body version ${e.version ?? 1}`
+        : e.type === 'delete'
+          ? 'Deleted the file'
+          : (e.body ?? '')
+    return html`<li>
+      <button
+        type="button"
+        class=${classMap({ 'lg-row': true, 'is-current': current, 'is-future': index > this.pos })}
+        data-index=${index}
+        tabindex=${current ? 0 : -1}
+        aria-current=${current ? 'step' : nothing}
+      >
+        <span class="lg-seq">#${e.seq}</span>
+        <span class="lg-main"
+          ><span class="ty ty-${e.type}">${e.type}</span> ${e.author}${about}</span
+        >
+        <span class="lg-time">${this.time(e.at)}</span>
+        <span class="lg-body">${text}</span>
+        <span class="lg-hash" aria-hidden="true">${e.hash.slice(0, 7)}</span>
+      </button>
+    </li>`
+  }
+
+  private timeline(session: Session): TemplateResult {
     const n = this.head
-    const span = Math.max(1, n - 1)
-    this.range.max = String(n)
-    this.range.value = String(this.pos)
-    this.el.fill.style.width = `${((this.pos - 1) / span) * 100}%`
-    if (this.ticks !== n) {
-      this.el.ticks.replaceChildren(
-        ...this.session.entries.map((e, i) => {
-          const tick = document.createElement('i')
-          tick.className = `t-${e.type}`
-          tick.style.left = `${(i / span) * 100}%`
-          return tick
-        }),
-      )
-      this.ticks = n
-    }
-    for (const [i, tick] of Array.from(this.el.ticks.children).entries())
-      tick.classList.toggle('on', i < this.pos)
-    const entry = this.session.entries[this.pos - 1]
+    const entry = this.entry
     const at = entry ? this.time(entry.at) : ''
     // Entry numbers count the whole workspace, so they only match the position in a one-file log.
     const seq = entry?.seq ?? 0
     const of = seq === this.pos ? ` of ${n}` : ` · ${this.pos} of ${n}`
-    this.el.pos.innerHTML = `#${seq}<span class="of">${of}</span> · ${at}`
-    this.range.setAttribute(
-      'aria-valuetext',
-      `Entry ${entry?.seq ?? 0}, ${this.pos} of ${n}, ${at}`,
-    )
-    for (const act of ['back', 'fwd', 'latest']) {
-      const button = this.root.querySelector<HTMLButtonElement>(`[data-act="${act}"]`)
-      if (button) button.disabled = act === 'back' ? this.pos <= 1 : this.pos >= n
-    }
+    const progress = n > 1 ? (this.pos - 1) / (n - 1) : 1
+    return html`<div class="rd-time">
+      <button
+        type="button"
+        class="ic"
+        aria-label="Previous entry"
+        aria-keyshortcuts="ArrowLeft"
+        aria-disabled=${String(this.pos <= 1)}
+        @click=${() => this.step(-1)}
+      >
+        ${ICONS.back}
+      </button>
+      <button
+        type="button"
+        class="ic ic-play"
+        aria-label=${this.playing ? 'Pause' : 'Play the history'}
+        aria-keyshortcuts=${this.variant === 'full' ? 'Space' : nothing}
+        @click=${() => this.toggle()}
+      >
+        ${this.playing ? ICONS.pause : ICONS.play}
+      </button>
+      <button
+        type="button"
+        class="ic"
+        aria-label="Next entry"
+        aria-keyshortcuts="ArrowRight"
+        aria-disabled=${String(this.pos >= n)}
+        @click=${() => this.step(1)}
+      >
+        ${ICONS.forward}
+      </button>
+      <div class="rd-range" ${cssProps({ '--progress': String(progress) })}>
+        <div class="rd-track" aria-hidden="true"></div>
+        <div class="rd-ticks" aria-hidden="true">
+          ${
+            n <= MAX_TICKS
+              ? session.entries.map(
+                  (e, i) =>
+                    html`<i class=${classMap({ [`t-${e.type}`]: true, on: i < this.pos })}></i>`,
+                )
+              : nothing
+          }
+        </div>
+        <input
+          type="range"
+          class="rd-input"
+          min="1"
+          max=${n}
+          .value=${String(this.pos)}
+          aria-label="Position in the history"
+          aria-valuetext=${`Entry #${seq}, ${this.pos} of ${n}, ${at}`}
+          @input=${this.onRange}
+        />
+      </div>
+      <p class="rd-pos">#${seq}<span class="of">${of}</span> · ${at}</p>
+      <button
+        type="button"
+        class="rd-latest"
+        aria-disabled=${String(this.pos >= n)}
+        @click=${this.latest}
+      >
+        Latest
+      </button>
+      ${
+        this.variant === 'full'
+          ? html`<p class="rd-keys" aria-hidden="true">
+              <kbd>←</kbd><kbd>→</kbd> step <kbd>Space</kbd> play
+            </p>`
+          : nothing
+      }
+    </div>`
   }
 
-  private renderInfo(): void {
-    const session = this.session
-    const state = this.state
-    if (!this.info || !session || !state) return
-    const q = (key: string) => $(`[data-i="${key}"]`, this.info ?? undefined)
-    q('name').textContent = session.name ?? session.workspaceId
-    q('file').textContent = session.path
-    q('tier').textContent = TIER[session.tier][1]
-    q('at').textContent = `#${state.list.at(-1)?.seq ?? 0} · ${this.time(state.now)}`
-    q('expiry-row').hidden = session.expiresAt === null
-    if (session.expiresAt) q('expiry').textContent = when(session.expiresAt, session.timeZone)
-    const c = countTasks(state.threads)
-    q('counts').innerHTML = (
-      [
-        ['Done', c.done],
-        ['In progress', c.claimed],
-        ['Open', c.open],
-        ['Cancelled', c.cancelled],
-      ] as const
-    )
-      .map(([k, v]) => `<li><span>${k}</span><span class="n">${v}</span></li>`)
-      .join('')
+  private info(session: Session, state: State): TemplateResult {
+    const id = `${this.id}-info`
+    const time = this.time
+    const counts = countTasks(state.threads)
     const people = new Map<string, number>()
     for (const e of state.list) people.set(e.author, (people.get(e.author) ?? 0) + 1)
-    q('people').innerHTML = Array.from(people)
-      .map(([author, n]) => `<li><span>${esc(author)}</span><span class="n">${n}</span></li>`)
-      .join('')
     const last = session.log.at(-1)
-    q('head').textContent = last
-      ? `${session.log.length} ${session.log.length === 1 ? 'entry' : 'entries'} in the workspace · head ${last.hash.slice(0, 12)}`
-      : 'No entries yet'
+    const v = this.verification
+    return html`<aside class="rd-info" id=${id} popover tabindex="0" aria-labelledby=${`${id}-h`}>
+      <div class="info-head">
+        ${heading(this.level, 'Workspace', { id: `${id}-h` })}
+        <button
+          type="button"
+          class="ic info-close"
+          popovertarget=${id}
+          popovertargetaction="hide"
+          aria-label="Close details"
+        >
+          ${ICONS.close}
+        </button>
+      </div>
+      <dl class="kv">
+        <div>
+          <dt>Name</dt>
+          <dd>${session.name ?? session.workspaceId}</dd>
+        </div>
+        <div>
+          <dt>File</dt>
+          <dd class="mono">${session.path}</dd>
+        </div>
+        <div>
+          <dt>Your link</dt>
+          <dd>${TIERS[session.tier][1]}</dd>
+        </div>
+        <div>
+          <dt>Showing</dt>
+          <dd>#${state.list.at(-1)?.seq ?? 0} · ${time(state.now)}</dd>
+        </div>
+        ${
+          session.expiresAt
+            ? html`<div>
+                <dt>Deletes itself</dt>
+                <dd>${when(session.expiresAt, session.timeZone)}</dd>
+              </div>`
+            : nothing
+        }
+      </dl>
+      <section class="info-block">
+        ${heading(this.level + 1, 'Tasks at this point')}
+        <ul class="counts">
+          ${(
+            [
+              ['Done', counts.done],
+              ['In progress', counts.claimed],
+              ['Open', counts.open],
+              ['Cancelled', counts.cancelled],
+            ] as const
+          ).map(([k, n]) => html`<li><span>${k}</span><span class="n">${n}</span></li>`)}
+        </ul>
+      </section>
+      <section class="info-block">
+        ${heading(this.level + 1, 'Who has written so far')}
+        <ul class="people">
+          ${Array.from(
+            people,
+            ([author, n]) => html`<li><span>${author}</span><span class="n">${n}</span></li>`,
+          )}
+        </ul>
+      </section>
+      <section class="info-block">
+        ${heading(this.level + 1, 'Chain')}
+        <p class="info-hash">
+          ${
+            last
+              ? `${session.log.length} ${session.log.length === 1 ? 'entry' : 'entries'} in the workspace · head ${last.hash.slice(0, 12)}`
+              : 'No entries yet'
+          }
+        </p>
+        <p
+          class=${classMap({ 'verify-out': true, ok: v.state === 'ok', bad: v.state === 'broken' })}
+        >
+          ${
+            v.state === 'ok'
+              ? `All ${v.count} entries match their hashes. Checked in your browser with Web Crypto.`
+              : this.verifyText
+          }
+        </p>
+      </section>
+    </aside>`
   }
+}
 
-  private verified: Verified | null = null
+const topIn = (box: HTMLElement, el: HTMLElement) =>
+  el.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop
 
-  async verify(): Promise<void> {
-    const session = this.session
-    if (!session) return
-    if (!globalThis.crypto?.subtle) {
-      this.setVerify({ unsupported: true })
-      return
-    }
-    this.setVerify({ pending: true })
-    const log = [...session.log]
-    const result = { ...(await verifyChain(log)), count: log.length }
-    // Another entry may have arrived while hashing; this result is still about `log`.
-    this.verified = result
-    this.setVerify(result)
-  }
+// A claim by the same author as an earlier one renews the lease rather than taking the task.
+const renews = (kids: Entry[], i: number) => {
+  const kid = kids[i]
+  return (
+    kid?.type === 'claim' &&
+    kids.slice(0, i).some((k) => k.type === 'claim' && k.author === kid.author)
+  )
+}
 
-  private setVerify(result: VerifyState): void {
-    if (result === null) this.verified = null
-    const chip = this.el.verify
-    const out = this.info?.querySelector<HTMLElement>('[data-i="verify"]') ?? null
-    chip.className = 'rd-verify'
-    chip.removeAttribute('title')
-    if (out) out.className = 'verify-out'
-    if (!result || 'unsupported' in result) {
-      chip.textContent = ''
-      if (out) out.textContent = result ? "This browser can't run the check." : ''
-      return
-    }
-    if ('pending' in result) {
-      chip.textContent = 'Checking…'
-      if (out) out.textContent = 'Checking every entry…'
-      return
-    }
-    if (result.ok) {
-      chip.textContent = '✓ History verified'
-      chip.classList.add('is-ok')
-      chip.title = `${result.count} entries, head ${result.head.slice(0, 7)}`
-      if (out) {
-        out.classList.add('ok')
-        out.textContent = `All ${result.count} entries match their hashes. Checked in your browser with Web Crypto.`
-      }
-    } else {
-      chip.textContent = `Broken at #${result.brokenAt}`
-      chip.classList.add('is-bad')
-      if (out) {
-        out.classList.add('bad')
-        out.textContent = `Entry #${result.brokenAt} doesn't match its hash.`
-      }
-    }
+function rowTarget(key: string, pos: number, head: number): number | null {
+  switch (key) {
+    case 'ArrowUp':
+    case 'ArrowLeft':
+      return pos - 1
+    case 'ArrowDown':
+    case 'ArrowRight':
+      return pos + 1
+    case 'Home':
+      return 1
+    case 'End':
+      return head
+    default:
+      return null
   }
 }
 
@@ -552,12 +853,25 @@ const when = (time: string, timeZone?: string) =>
     ...(timeZone ? { timeZone } : {}),
   }).format(new Date(time))
 
-// Colours the entry types in the markdown an agent reads, after escaping it.
-export function highlight(text: string): string {
-  return esc(text)
-    .replace(
-      /^(- #\d+ \d\d:\d\d UTC )(\S+), (write|delete|task|claim|comment|response|cancel)/gm,
-      '$1<span class="m">$2</span>, <span class="ty ty-$3">$3</span>',
-    )
-    .replace(/^(---|## .*)$/gm, '<span class="band">$1</span>')
+const ENTRY_LINE =
+  /^(- #(\d+) \d\d:\d\d UTC )(\S+), (write|delete|task|claim|comment|response|cancel)(.*)$/
+const BAND = /^(---|## .*)$/
+
+// The markdown an agent reads, with entry types coloured. Entry lines carry their sequence number,
+// so the reader can keep the current one in view here too.
+export function highlight(text: string): TemplateResult {
+  const lines = text.split('\n').map((line, i) => {
+    const br = i > 0 ? '\n' : ''
+    const entry = ENTRY_LINE.exec(line)
+    if (entry) {
+      const [, lead, seq, author, type, rest] = entry
+      // Short pieces, so the formatter keeps this on one line: whitespace matters in a <pre>.
+      const who = html`<span class="m">${author}</span>`
+      const kind = html`<span class="ty ty-${type}">${type}</span>`
+      return html`${br}<span data-seq=${seq ?? nothing}>${lead}${who}, ${kind}${rest}</span>`
+    }
+    if (BAND.test(line)) return html`${br}<span class="band">${line}</span>`
+    return html`${br}${line}`
+  })
+  return html`${lines}`
 }

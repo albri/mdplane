@@ -27,3 +27,5 @@ data/
 /.opencode
 /.agents
 /.agent-browser
+test-results/
+playwright-report/

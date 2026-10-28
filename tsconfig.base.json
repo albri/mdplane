@@ -8,6 +8,7 @@
     "noEmit": true,
     "strict": true,
     "noUncheckedIndexedAccess": true,
+    "noImplicitReturns": true,
     "exactOptionalPropertyTypes": true,
     "verbatimModuleSyntax": true,
     "erasableSyntaxOnly": true,

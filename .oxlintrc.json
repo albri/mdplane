@@ -5,6 +5,9 @@
     "correctness": "error",
     "suspicious": "error"
   },
+  "rules": {
+    "typescript/consistent-return": "off"
+  },
   "ignorePatterns": ["**/generated/**", "**/worker-configuration.d.ts"],
   "overrides": [
     {

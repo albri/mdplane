@@ -1,0 +1,117 @@
+/* The "Try it" dialog on the landing page. */
+@layer pages {
+  dialog.try {
+    width: min(600px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--page);
+    color: var(--ink);
+    box-shadow: var(--shadow-lift);
+  }
+  dialog.try::backdrop {
+    background: color-mix(in srgb, var(--shade) 50%, transparent);
+  }
+  .dlg {
+    display: grid;
+    gap: 18px;
+    padding: 24px;
+  }
+  .dlg-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+  }
+  .dlg-head h2 {
+    font-size: 1.5rem;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+  }
+  .dlg-note {
+    color: var(--ink-2);
+    font-size: var(--text-small);
+    padding: 10px 12px;
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--radius-md);
+  }
+  .dlg-steps {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 18px;
+    counter-reset: dstep;
+  }
+  .dlg-steps > li {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 10px;
+    counter-increment: dstep;
+    transition: opacity var(--t-move) var(--ease);
+  }
+  .dlg-steps > li::before {
+    content: counter(dstep);
+    font: 400 0.8125rem/1.8 var(--font-mono);
+    color: var(--ink-3);
+  }
+  .dlg-steps > li.is-locked {
+    opacity: 0.45;
+  }
+  .dlg-step {
+    display: grid;
+    gap: 10px;
+    min-width: 0;
+  }
+  .dlg-step h3 {
+    font-size: 1.0625rem;
+    font-weight: 600;
+  }
+  .dlg-step p {
+    color: var(--ink-2);
+    font-size: var(--text-small);
+  }
+  .try-links {
+    display: grid;
+    gap: 6px;
+  }
+  .try-links div {
+    display: grid;
+    grid-template-columns: 62px minmax(0, 1fr);
+    gap: 8px;
+    font-size: 0.8125rem;
+  }
+  .try-links span {
+    color: var(--ink-3);
+  }
+  .try-links code {
+    overflow-wrap: anywhere;
+    color: var(--ink);
+  }
+  .prompt {
+    display: grid;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--sunk);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+  }
+  .prompt p {
+    font: 400 0.8125rem/1.6 var(--font-mono);
+    color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+  .prompt .btn {
+    justify-self: start;
+  }
+
+  .dlg-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .dlg-error {
+    color: var(--bad);
+    font-size: var(--text-small);
+  }
+}

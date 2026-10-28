@@ -1,3 +1,13 @@
+import { nothing, type TemplateResult } from 'lit-html'
+import {
+  Directive,
+  directive,
+  type ElementPart,
+  PartType,
+  type PartInfo,
+} from 'lit-html/directive.js'
+import { html as staticHtml, literal } from 'lit-html/static.js'
+
 // Element lookups check the element's type at runtime instead of asserting it.
 export function $as<T extends Element>(
   type: abstract new () => T,
@@ -14,16 +24,9 @@ export const $ = (selector: string, root: ParentNode = document) => $as(HTMLElem
 export const $$ = (selector: string, root: ParentNode = document) =>
   Array.from(root.querySelectorAll(selector)).filter((el) => el instanceof HTMLElement)
 
-const ESCAPES: Record<string, string> = {
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-  '"': '&quot;',
-  "'": '&#39;',
-}
-export const esc = (text: unknown) => String(text).replace(/[&<>"']/g, (c) => ESCAPES[c] ?? c)
-
 export const motionOK = () => !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+export const scrollBehavior = (): ScrollBehavior => (motionOK() ? 'smooth' : 'instant')
 
 export function clock(timeZone?: string) {
   const format = new Intl.DateTimeFormat('en-GB', {
@@ -34,17 +37,67 @@ export function clock(timeZone?: string) {
   return (time: number | string) => format.format(new Date(time))
 }
 
-// Scrolls a panel just enough to show an element, keeping its top edge visible.
-export function revealIn(box: HTMLElement, el: HTMLElement, topInset = 0): void {
-  if (box.scrollHeight <= box.clientHeight + 1) return
-  const b = box.getBoundingClientRect()
-  const r = el.getBoundingClientRect()
-  const top = b.top + topInset + 8
-  const bottom = b.bottom - 8
-  let dy = 0
-  if (r.top < top) dy = r.top - top
-  else if (r.bottom > bottom) dy = Math.min(r.bottom - bottom, r.top - top)
-  if (dy) box.scrollBy({ top: dy, behavior: motionOK() ? 'smooth' : 'auto' })
+const HEADINGS = [literal`h1`, literal`h2`, literal`h3`, literal`h4`, literal`h5`, literal`h6`]
+
+// A heading at a level chosen at runtime, so a component's outline can nest inside any page's.
+export function heading(
+  level: number,
+  content: unknown,
+  { id, className }: { id?: string; className?: string } = {},
+): TemplateResult {
+  const tag = HEADINGS[Math.min(Math.max(level, 1), 6) - 1] ?? literal`h6`
+  return staticHtml`<${tag} id=${id ?? nothing} class=${className ?? nothing}>${content}</${tag}>`
+}
+
+class CssProps extends Directive {
+  constructor(part: PartInfo) {
+    super(part)
+    if (part.type !== PartType.ELEMENT) throw new Error('cssProps() goes on an element')
+  }
+  render(_props: Record<`--${string}`, string>) {
+    return nothing
+  }
+  override update(part: ElementPart, [props]: [Record<`--${string}`, string>]) {
+    if (part.element instanceof HTMLElement) {
+      for (const [name, value] of Object.entries(props)) part.element.style.setProperty(name, value)
+    }
+    return nothing
+  }
+}
+
+// Sets custom properties through the CSSOM, which the content security policy allows. lit-html's
+// styleMap() writes a style attribute on first render, and the policy blocks inline styles.
+export const cssProps = directive(CssProps)
+
+const EDGE = 12
+
+// Scrolls a panel the least it can to show `target`, and `from` above it when both fit. Content
+// coordinates are used throughout, so a smooth scroll already under way doesn't skew the result.
+export function reveal(
+  box: HTMLElement,
+  target: Element,
+  {
+    from = target,
+    inset = 0,
+    behavior = 'instant',
+  }: { from?: Element; inset?: number; behavior?: ScrollBehavior } = {},
+): void {
+  if (box.scrollHeight <= box.clientHeight) return
+  const origin = box.getBoundingClientRect().top - box.scrollTop
+  const y = (el: Element, edge: 'top' | 'bottom') => el.getBoundingClientRect()[edge] - origin
+  const viewTop = box.scrollTop + inset + EDGE
+  const viewBottom = box.scrollTop + box.clientHeight - EDGE
+  // Scroll down only as far as keeps the start of the span in view.
+  const show = (start: number, end: number) => {
+    if (start < viewTop) return start - inset - EDGE
+    if (end > viewBottom) return box.scrollTop + Math.min(end - viewBottom, start - viewTop)
+    return box.scrollTop
+  }
+  const start = y(target, 'top')
+  const end = y(target, 'bottom')
+  const context = Math.min(y(from, 'top'), start)
+  const top = end - context <= viewBottom - viewTop ? show(context, end) : show(start, end)
+  if (Math.abs(top - box.scrollTop) >= 1) box.scrollTo({ top, behavior })
 }
 
 const THEMES = ['system', 'light', 'dark'] as const
@@ -78,27 +131,19 @@ export function initTheme(): void {
   })
 }
 
-export function copyText(button: HTMLButtonElement, text: string, source: HTMLElement): void {
-  const label = button.textContent
-  const done = (message: string) => {
-    button.textContent = message
-    window.setTimeout(() => {
-      button.textContent = label
-    }, 1600)
-  }
-  const select = () => {
+// Copies text, or selects it for a manual copy when the clipboard isn't available.
+export async function copyText(text: string, source: HTMLElement): Promise<'copied' | 'selected'> {
+  try {
+    await navigator.clipboard.writeText(text)
+    return 'copied'
+  } catch {
     const range = document.createRange()
     range.selectNodeContents(source)
     const selection = window.getSelection()
     selection?.removeAllRanges()
     selection?.addRange(range)
-    done('Selected. Copy it now')
+    return 'selected'
   }
-  if (!('clipboard' in navigator)) {
-    select()
-    return
-  }
-  navigator.clipboard.writeText(text).then(() => done('Copied'), select)
 }
 
 export function initTabs(): void {
@@ -130,4 +175,14 @@ export function initTabs(): void {
       select(tab, true)
     })
   }
+}
+
+// Whether a key press belongs to the focused control rather than to a page shortcut.
+export function ownsKeys(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  return (
+    target.isContentEditable ||
+    target.matches('input, select, textarea') ||
+    target.closest('[role="tablist"], [role="group"], [role="dialog"], dialog') !== null
+  )
 }

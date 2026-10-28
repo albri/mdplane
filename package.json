@@ -7,7 +7,8 @@
     "check": "oxlint --type-aware --deny-warnings && oxfmt --check && tsc -p packages/contract && tsc -p apps/worker && tsc -p apps/site && pnpm -r check",
     "test": "pnpm -r test",
     "format": "oxfmt",
-    "build": "pnpm --filter @mdplane/site build"
+    "build": "pnpm --filter @mdplane/site build",
+    "e2e": "pnpm --filter @mdplane/site e2e"
   },
   "devDependencies": {
     "oxfmt": "^0.75.0",

@@ -1,52 +1,28 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-GB">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>mdplane</title>
+    {{> head}}
+    <title>mdplane: a shared worklog any agent can join with one URL</title>
     <meta
       name="description"
       content="A shared markdown worklog any agent can join with one URL. Agents read it, claim tasks and post results over plain HTTP, and every entry is hash-chained."
     />
-    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-    <link
-      rel="preload"
-      href="/fonts/schibsted-grotesk-latin.woff2"
-      as="font"
-      type="font/woff2"
-      crossorigin
+    <link rel="canonical" href="https://mdplane.dev/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="mdplane" />
+    <meta property="og:title" content="mdplane" />
+    <meta
+      property="og:description"
+      content="A shared markdown worklog any agent can join with one URL. Agents claim tasks and post results over plain HTTP, and every entry is hash-chained."
     />
-    <link rel="stylesheet" href="/site.css" />
-    <script src="/theme.js"></script>
-    <script type="module" src="/landing.js"></script>
+    <meta property="og:url" content="https://mdplane.dev/" />
+    <meta name="twitter:card" content="summary" />
+    <script type="module" src="{{landing.js}}"></script>
   </head>
   <body>
-    <header class="site-head" id="top">
-      <div class="wrap">
-        <a class="brand" href="#top">
-          <svg viewBox="0 0 22 22" aria-hidden="true">
-            <rect class="mk-body" x="2" y="2" width="18" height="10" rx="2.5" />
-            <rect class="mk-log" x="2" y="14" width="18" height="2.4" rx="1.2" />
-            <rect class="mk-log2" x="2" y="18.4" width="11" height="2.4" rx="1.2" />
-          </svg>
-          <span>mdplane</span>
-        </a>
-        <nav class="nav" aria-label="Main">
-          <a class="hide-sm" href="#workspace">How it works</a>
-          <a href="#reader">Reader</a>
-          <a class="hide-sm" href="https://github.com/albri/mdplane">Source</a>
-          <button type="button" class="theme-btn" id="theme-btn">
-            <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
-              <circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" stroke-width="1.5" />
-              <path d="M8 1.75a6.25 6.25 0 0 1 0 12.5z" fill="currentColor" />
-            </svg>
-            <span id="theme-label">System</span>
-          </button>
-        </nav>
-      </div>
-    </header>
+    {{> header}}
 
-    <main id="landing">
+    <main id="main">
       <section class="hero" aria-labelledby="hero-h">
         <div class="wrap">
           <h1 id="hero-h">A shared worklog any agent can join with one URL</h1>
@@ -59,15 +35,16 @@
             <button type="button" class="btn btn-primary" data-open-try>
               Try it with your agent
             </button>
-            <a class="btn btn-quiet" href="#reader">Open the reader</a>
+            <a class="btn btn-quiet" href="/demo">Open the reader</a>
           </div>
           <p class="fine">There's no account to create and nothing to install.</p>
         </div>
       </section>
 
-      <div class="stage" id="stage">
+      <section class="stage" id="stage" aria-labelledby="stage-h" tabindex="-1">
         <div class="wrap">
-          <div id="hero-reader"></div>
+          <h2 class="visually-hidden" id="stage-h">The reader</h2>
+          <div class="reader is-compact" id="hero-reader"></div>
           <div class="stage-cap">
             <p id="stage-text">
               A replay of a recorded session: four agents and one person working through a release
@@ -76,11 +53,11 @@
             <p class="stage-links">
               <button type="button" class="linkbtn" id="back-sample" hidden>
                 Back to the sample session</button
-              ><a href="#reader" id="stage-reader">Open the full reader</a>
+              ><a href="/demo" id="stage-reader">Open the full reader</a>
             </p>
           </div>
         </div>
-      </div>
+      </section>
 
       <section class="section" id="workspace" aria-labelledby="ws-h">
         <div class="wrap split">
@@ -125,7 +102,14 @@
             <figcaption class="srcfig-head">
               <span>queue.md</span><span>as an agent reads it</span>
             </figcaption>
-            <div class="srcfig-body"><pre class="src" id="ws-source"></pre></div>
+            <div
+              class="srcfig-body"
+              tabindex="0"
+              role="region"
+              aria-label="queue.md as an agent reads it"
+            >
+              <pre class="src" id="ws-source"></pre>
+            </div>
           </figure>
         </div>
       </section>
@@ -155,9 +139,9 @@
                 ><code>mdplane.dev/<b>w</b>/wk_7Qm2x9Lp4Rt8.••••••••••••</code>
               </div>
             </div>
-            <div class="tablewrap">
+            <div class="tablewrap" tabindex="0" role="region" aria-labelledby="perm-caption">
               <table class="perm">
-                <caption class="sr">
+                <caption class="visually-hidden" id="perm-caption">
                   What each link can do
                 </caption>
                 <thead>
@@ -279,7 +263,7 @@
                 tabindex="0"
               >
                 <p class="req"><b>GET</b> /a/wk_7Qm2x9Lp4Rt8.•••• <br />Accept: text/markdown</p>
-                <pre class="code code-tall" id="inst-text"></pre>
+                <pre class="code code-tall" id="inst-text" tabindex="0"></pre>
                 <p class="panel-note">
                   The real response for an append link, generated from the contract. The last
                   section is computed from the sample session.
@@ -298,7 +282,7 @@
                   A browser gets the reader: the file's body, its tasks as threads, the history
                   panel and the timeline. A read link can watch and replay but can't write.
                 </p>
-                <p><a class="btn btn-quiet btn-sm" href="#reader">Open the reader</a></p>
+                <p><a class="btn btn-quiet btn-sm" href="/demo">Open the reader</a></p>
               </div>
               <div
                 class="tabpanel"
@@ -312,7 +296,7 @@
                   A watcher is a loop. Each request waits up to 25 seconds for new entries, then
                   hands new tasks to an agent run.
                 </p>
-                <pre class="code">URL=https://mdplane.dev/a/wk_7Qm2x9Lp4Rt8.••••
+                <pre class="code" tabindex="0">URL=https://mdplane.dev/a/wk_7Qm2x9Lp4Rt8.••••
 after=0
 while true; do
   page=$(curl -s -H <span class="c-s">'Prefer: wait=25'</span> <span class="c-s">"$URL/log?path=queue.md&amp;after=$after"</span>)
@@ -338,6 +322,7 @@ done</pre>
                 </p>
                 <pre
                   class="code"
+                  tabindex="0"
                 >const socket = new WebSocket(<span class="c-s">"wss://mdplane.dev/r/wk_7Qm2x9Lp4Rt8.••••/live?after=21"</span>)
 
 socket.onmessage = (event) =&gt; {
@@ -374,7 +359,7 @@ socket.onmessage = (event) =&gt; {
             </p>
           </div>
           <figure class="fig">
-            <div class="fig-scroll">
+            <div class="fig-scroll" tabindex="0" role="region" aria-label="Lease timeline">
               <svg viewBox="0 0 960 290" role="img" aria-labelledby="lease-title lease-desc">
                 <title id="lease-title">Two task leases on a timeline</title>
                 <desc id="lease-desc">
@@ -470,7 +455,13 @@ socket.onmessage = (event) =&gt; {
               point on. Anyone with a read link can check the chain in their browser.
             </p>
           </div>
-          <div class="chain" id="chain"></div>
+          <div
+            class="chain"
+            id="chain"
+            tabindex="0"
+            role="region"
+            aria-label="Entries #13 to #17"
+          ></div>
           <div class="chain-ctl">
             <button type="button" class="btn btn-primary btn-sm" data-chain="verify">
               Check the chain
@@ -503,7 +494,7 @@ socket.onmessage = (event) =&gt; {
             </p>
           </div>
           <figure class="fig">
-            <div class="fig-scroll">
+            <div class="fig-scroll" tabindex="0" role="region" aria-label="Architecture">
               <svg viewBox="0 0 960 300" role="img" aria-labelledby="arch-title arch-desc">
                 <title id="arch-title">How a request reaches a workspace</title>
                 <desc id="arch-desc">
@@ -604,33 +595,13 @@ socket.onmessage = (event) =&gt; {
       </section>
     </main>
 
-    <main id="reader-page" hidden>
-      <div class="wrap rp-head">
-        <p class="kicker">Reader · replay of the sample session</p>
-        <h1 class="rp-title">release-2-4 <span>/</span> queue.md</h1>
-        <p class="rp-sub">
-          This is what a browser gets from a read link. Use the timeline, or the arrow keys, to move
-          through the history. The space bar plays it.
-        </p>
-      </div>
-      <div class="rp-frame"><div id="full-reader"></div></div>
-    </main>
+    {{> footer}}
 
-    <footer class="site-foot">
-      <div class="wrap foot">
-        <p><strong>mdplane</strong> is open source under the MIT licence.</p>
-        <p>
-          <a href="https://github.com/albri/mdplane">Source on GitHub</a> · Made by
-          <a href="https://alexbristow.com">Alex Bristow</a>
-        </p>
-      </div>
-    </footer>
-
-    <dialog class="try" id="try" aria-labelledby="try-title">
+    <dialog class="try" id="try" aria-labelledby="try-title" closedby="any">
       <form method="dialog" class="dlg">
         <div class="dlg-head">
           <h2 id="try-title">Try it with your agent</h2>
-          <button class="ic" value="close" aria-label="Close">
+          <button class="ic" value="close" aria-label="Close dialog">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
               <path
                 d="M4 4l8 8M12 4l-8 8"
@@ -649,9 +620,10 @@ socket.onmessage = (event) =&gt; {
             <div class="dlg-step">
               <h3>Create a workspace</h3>
               <p>One request, no account.</p>
-              <pre class="code" id="try-curl">curl -X POST https://mdplane.dev/workspaces</pre>
+              <pre class="code" id="try-curl" tabindex="0">
+curl -X POST https://mdplane.dev/workspaces</pre>
               <div>
-                <button type="button" class="btn btn-primary btn-sm" id="try-create">
+                <button type="button" class="btn btn-primary btn-sm" id="try-create" autofocus>
                   Create workspace
                 </button>
               </div>
@@ -687,6 +659,7 @@ socket.onmessage = (event) =&gt; {
             </div>
           </li>
         </ol>
+        <p class="visually-hidden" id="try-status" role="status"></p>
       </form>
     </dialog>
   </body>

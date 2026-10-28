@@ -42,7 +42,11 @@ export type State = {
   now: number
   write: Entry | null
   body: string | null
+  // The delete that emptied the file, while nothing has been written since.
+  deletion: Entry | null
   threads: Thread[]
+  // Comments that aren't about a task.
+  notes: Entry[]
 }
 
 export function stateAt(session: Session, pos: number, live = false): State {
@@ -53,6 +57,7 @@ export function stateAt(session: Session, pos: number, live = false): State {
   const deleted = list.findLastIndex((e) => e.type === 'delete')
   const life = list.slice(deleted + 1)
   const write = life.findLast((e) => e.type === 'write') ?? null
+  const deletion = write ? null : (list[deleted] ?? null)
   const byTask = new Map<number, Thread>()
   const tasks = deriveTasks(life, now, LEASE_MS)
   const entries = new Map(life.map((e) => [e.seq, e]))
@@ -74,7 +79,9 @@ export function stateAt(session: Session, pos: number, live = false): State {
     now,
     write,
     body: write?.contentHash ? (session.bodies.get(write.contentHash) ?? null) : null,
+    deletion,
     threads: [...byTask.values()],
+    notes: life.filter((e) => e.type === 'comment' && e.ref === null),
   }
 }
 
@@ -124,3 +131,24 @@ export function agentView(session: Session, state: State): string {
 }
 
 export const leaseEnd = (claim: Entry) => Date.parse(claim.at) + LEASE_MS
+
+// One entry as a sentence, for screen readers and titles.
+export function describe(entry: Entry): string {
+  const { author, ref } = entry
+  switch (entry.type) {
+    case 'write':
+      return `${author} wrote version ${entry.version ?? 1} of the body`
+    case 'delete':
+      return `${author} deleted the file`
+    case 'task':
+      return `${author} added task #${entry.seq}`
+    case 'claim':
+      return `${author} claimed task #${ref}`
+    case 'comment':
+      return ref === null ? `${author} commented` : `${author} commented on task #${ref}`
+    case 'response':
+      return `${author} responded to task #${ref}`
+    case 'cancel':
+      return `${author} cancelled task #${ref}`
+  }
+}

@@ -13,7 +13,8 @@ history.
 ## Try it
 
 Open [mdplane.dev](https://mdplane.dev) and choose **Try it with your agent**,
-or create a workspace yourself:
+replay [a recorded session](https://mdplane.dev/demo), or create a workspace
+yourself:
 
 ```bash
 curl -X POST https://mdplane.dev/workspaces
@@ -81,7 +82,7 @@ HTTP requests can already use mdplane from its instructions.
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `packages/contract` | `openapi.yaml`, the source of truth, with the types, Zod schemas and agent instructions generated from it. Also the hash chain, the task rules and the markdown views, which the server and reader share. |
 | `apps/worker`       | The Worker and the workspace Durable Object, with tests for ordering, leases, idempotency, link scope and the uniform 404.                                                                                |
-| `apps/site`         | The landing page and the reader.                                                                                                                                                                          |
+| `apps/site`         | The landing page, the demo and the reader: TypeScript and lit-html, built with esbuild, tested with Playwright and axe on a desktop and a phone.                                                          |
 
 ## Development
 
@@ -94,7 +95,8 @@ pnpm --filter @mdplane/worker dev
 
 That serves the API, the site and the reader at http://localhost:8787.
 `pnpm check` runs the linter, the format check, the typecheck, the spec lint
-and a check that generated files are current. `pnpm test` runs the tests.
+and a check that generated files are current. `pnpm test` runs the unit and
+Worker tests, and `pnpm e2e` runs the browser tests.
 
 To change the API, edit `openapi.yaml` first and run `pnpm generate`.
 [AGENTS.md](AGENTS.md) has the conventions.

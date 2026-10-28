@@ -1,5 +1,0 @@
-# No page loads anything from another origin, and none may be framed.
-/*
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'
-  Referrer-Policy: no-referrer
-  X-Content-Type-Options: nosniff

@@ -18,10 +18,13 @@ what keeps appends ordered and claims safe without locks.
   and `src/workspace.ts` is the Durable Object that owns a workspace's state.
   `worker-configuration.d.ts` is generated from `wrangler.jsonc` by
   `pnpm --filter @mdplane/worker types`.
-- `apps/site`: the landing page and the reader, as HTML, CSS and TypeScript.
-  `pnpm build` bundles it into `dist/`, which the Worker serves as static
-  assets. A browser opening a link gets `reader.html`, which reads the key from
-  its own URL.
+- `apps/site`: the landing page, `/demo` and the reader. Pages are templates
+  in `src/pages/`; `{{> name}}` includes a partial and `{{file}}` becomes the
+  hashed URL of a built file. Styles are in `src/styles/`, one cascade layer
+  per concern. `src/reader.ts` is the reader component, rendered with
+  lit-html. `pnpm build` bundles everything into `dist/`, which the Worker
+  serves as static assets, with `public/` copied as it is. A browser opening a
+  link gets `reader.html`, which reads the key from its own URL.
 
 ## Commands
 
@@ -31,7 +34,10 @@ Run from the repository root, with Node 22.18 or later and pnpm.
 - `pnpm check` runs oxlint (type-aware), the oxfmt format check, the
   TypeScript typecheck, the spec lint, and a check that generated files are
   current.
-- `pnpm test` runs the tests.
+- `pnpm test` runs the unit and Worker tests.
+- `pnpm e2e` runs the Playwright tests, with axe, against `wrangler dev` on a
+  desktop and a phone. Install Chromium once with
+  `pnpm --filter @mdplane/site exec playwright install chromium`.
 - `pnpm format` formats the code.
 - `pnpm build` builds the site. The Worker's `dev` and `deploy` build it first.
 - `pnpm --filter @mdplane/worker dev` runs the Worker and the site locally.
@@ -57,6 +63,12 @@ write them by hand.
   the sealed entry. An `await` in between lets another request interleave.
 - Write tests that fail when behaviour breaks: ordering, leases, idempotency,
   link scope, the hash chain. Skip tests that restate the implementation.
+- In the site, render with lit-html and never assign HTML strings: the
+  content security policy enforces Trusted Types, and only lit-html may create
+  HTML. Set dynamic styles through the CSSOM (`cssProps()`), never a `style`
+  attribute.
+- Keep the site accessible: `pnpm e2e` fails on any axe finding and on any
+  console error.
 - Comments say why, not what.
 - Commit subjects are short imperative sentences, without prefixes.
 
@@ -65,9 +77,13 @@ write them by hand.
 - A capability URL is a credential. Never put a real one in code, tests, docs,
   logs or screenshots; examples use made-up keys.
 - Every authorisation failure returns the same 404, so keys can't be probed.
-- Text in a workspace comes from whoever holds a link, so the reader escapes
-  it before rendering. Pages load nothing from other origins and never show a
-  link's secret on screen.
+- Text in a workspace comes from whoever holds a link. The reader parses
+  markdown into nodes and lit-html escapes every string; links keep only
+  http(s), root-relative and fragment targets. Pages load nothing from other
+  origins and never show a link's secret on screen.
+- The security headers live in two places: `apps/site/public/_headers` for
+  static pages and `PAGE_HEADERS` in the Worker for the pages it serves. Change
+  both; an e2e test checks they match.
 - Never commit credentials, account identifiers or connection details. Before
   infrastructure work, check the live state with the provider instead of
   inferring it from config or Git history.

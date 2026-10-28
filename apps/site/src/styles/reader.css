@@ -1,0 +1,757 @@
+/* The reader. A column of toolbar, panels and timeline. The panels scroll on their own, so the
+   timeline never leaves the screen. Compact on the landing page; full on /demo and real links. */
+@layer components {
+  .reader {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--page);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+  }
+  /* Sized before the script renders it, so nothing below it moves. */
+  .reader.is-compact {
+    height: 640px;
+  }
+  .reader.is-full {
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+  }
+
+  /* ---------- toolbar ---------- */
+  .rd-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    padding: 8px 12px 8px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .rd-tier {
+    flex: none;
+    padding: 3px 8px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: var(--sunk-2);
+    color: var(--ink-2);
+    font: 600 0.75rem/1.2 var(--font-sans);
+  }
+  .rd-url {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font: 400 0.8125rem/1.3 var(--font-mono);
+    color: var(--ink-3);
+  }
+  .rd-url b {
+    font-weight: 400;
+    color: var(--ink);
+  }
+  .rd-flag {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px dashed var(--line-strong);
+    color: var(--ink-2);
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+  .rd-flag.is-live {
+    border-style: solid;
+    border-color: color-mix(in srgb, var(--ok) 50%, var(--line));
+    color: var(--ok);
+  }
+  .rd-flag.is-live::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .rd-verify,
+  .rd-details {
+    flex: none;
+    min-height: 28px;
+    padding: 3px 9px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+  :is(.rd-verify, .rd-details):not([aria-disabled='true']):hover {
+    background: var(--sunk);
+    color: var(--ink);
+  }
+  .rd-verify.is-ok {
+    border-color: color-mix(in srgb, var(--ok) 45%, var(--line));
+    color: var(--ok);
+  }
+  .rd-verify.is-bad {
+    border-color: var(--bad);
+    color: var(--bad);
+  }
+
+  /* On a phone the panels take turns. */
+  .rd-panes {
+    display: none;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .rd-panes .seg {
+    display: flex;
+  }
+  .rd-panes .seg button {
+    flex: 1;
+    min-height: 32px;
+  }
+
+  /* ---------- panels ---------- */
+  .rd-body {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+  .reader.is-full .rd-body {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+  .rd-doc,
+  .rd-log,
+  .rd-info {
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+  .rd-doc {
+    padding: 20px 26px 32px;
+  }
+  .reader.is-full .rd-doc {
+    padding-inline: clamp(20px, 3vw, 44px);
+  }
+  .rd-doc:focus-visible,
+  .rd-info:focus-visible {
+    outline-offset: -2px;
+  }
+  .rd-log {
+    border-left: 1px solid var(--line);
+  }
+
+  /* ---------- the file ---------- */
+  .doc-meta {
+    font: 400 0.75rem/1.4 var(--font-mono);
+    color: var(--ink-3);
+    margin-bottom: 10px;
+  }
+  .prose {
+    color: var(--ink-2);
+  }
+  .prose .md-h {
+    color: var(--ink);
+    font-weight: 650;
+    letter-spacing: -0.015em;
+    line-height: 1.25;
+    margin: 14px 0 8px;
+  }
+  .prose .md-h:first-child {
+    margin-top: 0;
+  }
+  .prose .md-h1 {
+    font-size: 1.375rem;
+    letter-spacing: -0.02em;
+  }
+  .prose .md-h2 {
+    font-size: 1.125rem;
+  }
+  .prose :is(.md-h3, .md-h4, .md-h5, .md-h6) {
+    font-size: 1rem;
+  }
+  .prose :is(p, ul, ol, blockquote, .md-code) {
+    margin-bottom: 10px;
+    max-width: 64ch;
+  }
+  .prose :is(ul, ol) {
+    padding-left: 1.2em;
+  }
+  .prose strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .prose code {
+    background: var(--sunk);
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+  .prose a {
+    color: var(--ink);
+  }
+  .prose blockquote {
+    border-left: 2px solid var(--line-strong);
+    padding-left: 12px;
+  }
+  .prose .md-code {
+    background: var(--sunk);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    overflow-x: auto;
+    font: 400 0.8125rem/1.6 var(--font-mono);
+  }
+  .prose .md-code code {
+    background: none;
+    padding: 0;
+  }
+  .prose hr {
+    border: 0;
+    border-top: 1px solid var(--line);
+    margin: 14px 0;
+  }
+  .doc-body {
+    padding-bottom: 12px;
+  }
+  .doc-loghead {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 4px 16px;
+    padding: 14px 0 6px;
+    border-top: 1px solid var(--line-strong);
+  }
+  .doc-loghead :is(h2, h3, h4) {
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+  .doc-loghead p {
+    font-size: 0.8125rem;
+    color: var(--ink-3);
+  }
+  .doc-empty {
+    color: var(--ink-3);
+    font-size: 0.875rem;
+    padding: 12px 0;
+  }
+  .tasks,
+  .notes {
+    list-style: none;
+    padding: 0;
+  }
+  .notes {
+    display: grid;
+    gap: 12px;
+    padding-block: 8px 4px;
+  }
+  .task {
+    padding: 14px 0 16px;
+    border-top: 1px solid var(--line);
+  }
+  .task:first-child {
+    border-top: 0;
+  }
+  .task-head {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    gap: 2px 10px;
+    align-items: start;
+  }
+  .task-num {
+    font: 400 0.8125rem/1.65 var(--font-mono);
+    color: var(--ink-3);
+  }
+  .task-text {
+    font-weight: 600;
+    line-height: 1.45;
+    color: var(--ink);
+  }
+  .task-meta {
+    grid-column: 2 / 4;
+    font-size: 0.8125rem;
+    color: var(--ink-3);
+  }
+  .task.is-done .task-text {
+    color: var(--ink-2);
+  }
+  .task.is-cancelled .task-text {
+    color: var(--ink-3);
+    font-weight: 500;
+    text-decoration: line-through;
+  }
+  .thread {
+    list-style: none;
+    margin: 10px 0 0 42px;
+    padding: 0 0 0 14px;
+    border-left: 1px solid var(--line-strong);
+    display: grid;
+    gap: 10px;
+  }
+  .ent {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  .ent-meta {
+    font: 400 0.75rem/1.5 var(--font-mono);
+    color: var(--ink-3);
+  }
+  .ent-body {
+    color: var(--ink-2);
+  }
+  .ent-response .ent-body {
+    color: var(--ink);
+  }
+
+  /* The entry the timeline is on, marked in the file as well as in the history. */
+  :is(.doc-body, .doc-empty, .task, .ent).is-current {
+    position: relative;
+  }
+  :is(.doc-body, .doc-empty, .task, .ent).is-current::before {
+    content: '';
+    position: absolute;
+    inset-block: 2px;
+    left: -12px;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--action);
+  }
+  .thread .ent.is-current::before {
+    left: -16px;
+  }
+  /* New entries fade in while the cards below slide down to make room, then glow briefly. */
+  .is-new {
+    animation: arrive 1.8s var(--ease);
+  }
+  @keyframes arrive {
+    0% {
+      opacity: 0;
+      background-color: var(--action-tint);
+      box-shadow: 0 0 0 6px var(--action-tint);
+    }
+    20% {
+      opacity: 1;
+    }
+    100% {
+      background-color: transparent;
+      box-shadow: 0 0 0 6px transparent;
+    }
+  }
+  .rd-doc .src {
+    min-height: 100%;
+  }
+
+  /* ---------- history ---------- */
+  .lg-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--page);
+    border-bottom: 1px solid var(--line);
+  }
+  .lg-head :is(h2, h3, h4) {
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+  .lg-count {
+    font: 400 0.75rem/1.4 var(--font-mono);
+    color: var(--ink-3);
+  }
+  .lg-list {
+    list-style: none;
+    padding: 0;
+  }
+  /* A long log only lays out the rows on screen. */
+  .lg-list li {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 66px;
+  }
+  .lg-row {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    column-gap: 8px;
+    row-gap: 1px;
+    width: 100%;
+    padding: 9px 14px;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    background: transparent;
+    text-align: left;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    transition:
+      color var(--t-quick) var(--ease),
+      background-color var(--t-quick) var(--ease);
+  }
+  .lg-row:hover {
+    background: var(--sunk);
+  }
+  .lg-row:focus-visible {
+    outline-offset: -2px;
+  }
+  .lg-row.is-current {
+    background: var(--action-tint);
+  }
+  .lg-row.is-current .lg-seq {
+    color: var(--action-ink);
+  }
+  .lg-seq {
+    grid-row: span 3;
+    font: 400 0.75rem/1.6 var(--font-mono);
+    color: var(--ink-3);
+  }
+  .lg-main {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ink);
+  }
+  .lg-main .ty {
+    font-size: 0.75rem;
+  }
+  .lg-time {
+    font: 400 0.75rem/1.6 var(--font-mono);
+    color: var(--ink-3);
+  }
+  .lg-body {
+    grid-column: 2 / 4;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ink-2);
+    font-size: 0.78rem;
+  }
+  .lg-hash {
+    grid-column: 2 / 4;
+    font: 400 0.7rem/1.5 var(--font-mono);
+    color: var(--ink-3);
+  }
+  /* Entries after the current one are dimmed with colour, not opacity, so they keep their
+     contrast. */
+  .lg-row.is-future :is(.lg-main, .lg-body, .ty) {
+    color: var(--ink-3);
+  }
+
+  /* ---------- details ---------- */
+  .rd-info {
+    display: grid;
+    gap: 24px;
+    align-content: start;
+    /* In the page flow, so the popover's own box styles are undone. */
+    position: static;
+    inset: auto;
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 20px 20px 24px var(--gutter);
+    border: 0;
+    border-right: 1px solid var(--line);
+    background: var(--page);
+    color: var(--ink);
+    font-size: 0.875rem;
+  }
+  .info-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  .info-head :is(h2, h3, h4) {
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  .info-close {
+    display: none;
+    width: 28px;
+    height: 28px;
+    margin: -4px -6px -4px 0;
+  }
+  .info-block :is(h3, h4, h5) {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--ink-3);
+    margin-bottom: 8px;
+  }
+  .counts,
+  .people {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 6px;
+  }
+  .counts li,
+  .people li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  :is(.counts, .people) .n {
+    font: 400 0.75rem/1.6 var(--font-mono);
+    color: var(--ink-3);
+  }
+  .info-hash {
+    font: 400 0.75rem/1.5 var(--font-mono);
+    color: var(--ink-2);
+    overflow-wrap: anywhere;
+  }
+  .verify-out {
+    margin-top: 8px;
+    font-size: 0.8125rem;
+    color: var(--ink-2);
+  }
+  .verify-out.ok {
+    color: var(--ok);
+  }
+  .verify-out.bad {
+    color: var(--bad);
+  }
+
+  /* ---------- timeline ---------- */
+  .rd-time {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--line);
+    background: var(--page);
+  }
+  .ic-play {
+    background: var(--ink);
+    color: var(--page);
+  }
+  .ic-play:hover {
+    background: var(--ink-2);
+  }
+  .rd-range {
+    position: relative;
+    flex: 1;
+    min-width: 72px;
+    height: 34px;
+    margin-inline: 8px;
+  }
+  .rd-track {
+    position: absolute;
+    inset-inline: 8px;
+    top: 50%;
+    height: 2px;
+    margin-top: -1px;
+    border-radius: 1px;
+    background: var(--line);
+    overflow: hidden;
+  }
+  .rd-track::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--action);
+    transform-origin: left;
+    scale: var(--progress, 0) 1;
+  }
+  .rd-ticks {
+    position: absolute;
+    inset: 0 7px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    pointer-events: none;
+  }
+  .rd-ticks i {
+    width: 2px;
+    height: 10px;
+    border-radius: 1px;
+    background: var(--line-strong);
+  }
+  .rd-ticks i.on {
+    background: var(--ink-3);
+  }
+  .rd-ticks i.on.t-task {
+    background: var(--ink);
+  }
+  .rd-ticks i.on.t-claim {
+    background: var(--warn);
+  }
+  .rd-ticks i.on.t-response {
+    background: var(--ok);
+  }
+  .rd-ticks i.on.t-write {
+    background: var(--action);
+  }
+  .rd-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    background: transparent;
+    appearance: none;
+  }
+  .rd-input:focus-visible {
+    outline: none;
+  }
+  .rd-input::-webkit-slider-runnable-track {
+    height: 34px;
+    background: transparent;
+  }
+  .rd-input::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    margin-top: 9px;
+    border-radius: 50%;
+    background: var(--page);
+    border: 2px solid var(--action);
+    box-shadow: var(--shadow-lift);
+  }
+  .rd-input:focus-visible::-webkit-slider-thumb {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .rd-input::-moz-range-track {
+    height: 34px;
+    background: transparent;
+  }
+  .rd-input::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--page);
+    border: 2px solid var(--action);
+  }
+  .rd-input:focus-visible::-moz-range-thumb {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .rd-pos {
+    flex: none;
+    min-width: 17ch;
+    text-align: right;
+    white-space: nowrap;
+    font: 400 0.75rem/1.4 var(--font-mono);
+    color: var(--ink-2);
+  }
+  .rd-latest {
+    flex: none;
+    min-height: 30px;
+    margin-left: 8px;
+    padding: 4px 11px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+  .rd-latest:hover {
+    background: var(--sunk);
+  }
+  .rd-latest[aria-disabled='true'] {
+    color: var(--ink-3);
+    background: transparent;
+  }
+  .rd-keys {
+    flex: none;
+    display: none;
+    align-items: center;
+    gap: 4px;
+    margin-left: 12px;
+    font-size: 0.75rem;
+    color: var(--ink-3);
+  }
+  .rd-keys kbd + kbd {
+    margin-right: 2px;
+  }
+
+  /* ---------- widths ---------- */
+  @media (min-width: 1000px) {
+    .rd-keys {
+      display: flex;
+    }
+  }
+  @media (min-width: 1200px) {
+    .reader.is-full .rd-body {
+      grid-template-columns: 260px minmax(0, 1fr) 360px;
+    }
+    .rd-details {
+      display: none;
+    }
+  }
+  /* Below 1200px the details open over the reader instead of taking a column. */
+  @media (max-width: 1199.98px) {
+    .rd-info:not(:popover-open) {
+      display: none;
+    }
+    .rd-info:popover-open {
+      position: fixed;
+      inset: 56px var(--gutter) auto auto;
+      width: min(340px, calc(100vw - 2 * var(--gutter)));
+      max-height: calc(100dvh - 72px);
+      padding: 16px 18px 20px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lift);
+    }
+    .rd-info::backdrop {
+      background: transparent;
+    }
+    .info-close {
+      display: grid;
+    }
+  }
+  @media (max-width: 759.98px) {
+    .rd-panes {
+      display: block;
+    }
+    .rd-body,
+    .reader.is-full .rd-body {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .rd-body[data-pane='doc'] .rd-log,
+    .rd-body[data-pane='log'] .rd-doc {
+      display: none;
+    }
+    .rd-log {
+      border-left: 0;
+    }
+    .reader.is-compact {
+      height: 600px;
+    }
+    .rd-doc,
+    .reader.is-full .rd-doc {
+      padding: 16px 16px 24px;
+    }
+    .thread {
+      margin-left: 0;
+    }
+    .task-meta {
+      grid-column: 1 / 4;
+    }
+    .rd-url,
+    .rd-latest,
+    .rd-pos .of {
+      display: none;
+    }
+    .rd-bar {
+      justify-content: flex-end;
+    }
+    .rd-tier {
+      margin-right: auto;
+    }
+    .rd-pos {
+      min-width: 0;
+    }
+  }
+}

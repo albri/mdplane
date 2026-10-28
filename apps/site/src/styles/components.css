@@ -1,0 +1,251 @@
+/* Small pieces shared by every page. */
+@layer components {
+  /* Buttons. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 46px;
+    padding: 0 20px;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    font: 600 var(--text-small)/1 var(--font-sans);
+    text-decoration: none;
+    transition:
+      background-color var(--t-quick) var(--ease),
+      border-color var(--t-quick) var(--ease),
+      color var(--t-quick) var(--ease);
+  }
+  .btn-primary {
+    background: var(--action);
+    color: var(--on-action);
+  }
+  .btn-primary:hover {
+    background: var(--action-hover);
+    color: var(--on-action);
+  }
+  .btn-quiet {
+    background: transparent;
+    color: var(--ink);
+    border-color: var(--line-strong);
+  }
+  .btn-quiet:hover {
+    background: var(--sunk);
+    color: var(--ink);
+  }
+  .btn-sm {
+    height: 36px;
+    padding: 0 14px;
+    font-size: 0.875rem;
+  }
+  .btn:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+  .linkbtn {
+    border: 0;
+    padding: 0;
+    background: none;
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: var(--link-line);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.2em;
+  }
+  .linkbtn:hover {
+    color: var(--action-ink);
+  }
+  /* Entry types, coloured the same everywhere. */
+  .ty {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+  }
+  .ty-task {
+    color: var(--ink);
+  }
+  .ty-claim {
+    color: var(--warn);
+  }
+  .ty-response {
+    color: var(--ok);
+  }
+  .ty-comment {
+    color: var(--ink-2);
+  }
+  .ty-cancel {
+    color: var(--ink-3);
+  }
+  .ty-write {
+    color: var(--action-ink);
+  }
+  /* Code blocks on the landing page and in the dialog. */
+  .code {
+    margin: 0;
+    padding: 16px 18px;
+    overflow-x: auto;
+    background: var(--sunk);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    font: 400 0.8125rem/1.65 var(--font-mono);
+    color: var(--ink);
+    white-space: pre;
+    tab-size: 2;
+  }
+  .c-s {
+    color: var(--code-s);
+  }
+  .c-c {
+    color: var(--code-c);
+  }
+
+  /* A square icon button. */
+  .ic {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--ink);
+  }
+  .ic:hover {
+    background: var(--sunk);
+  }
+  .ic:is(:disabled, [aria-disabled='true']) {
+    color: var(--ink-3);
+    opacity: 0.45;
+    background: transparent;
+  }
+
+  /* A row of toggle buttons that share one border. */
+  .seg {
+    flex: none;
+    display: inline-flex;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+  .seg button {
+    min-height: 28px;
+    padding: 3px 10px;
+    border: 0;
+    background: transparent;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--ink-2);
+  }
+  .seg button + button {
+    border-left: 1px solid var(--line-strong);
+  }
+  .seg button:hover {
+    color: var(--ink);
+  }
+  .seg button[aria-pressed='true'] {
+    background: var(--ink);
+    color: var(--page);
+  }
+  .seg button:focus-visible {
+    outline-offset: -2px;
+  }
+
+  /* A task's status. */
+  .chip {
+    --c: var(--ink-2);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 9px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    white-space: nowrap;
+    font: 500 0.75rem/1.4 var(--font-sans);
+    color: var(--c);
+    background: color-mix(in srgb, var(--c) 10%, var(--page));
+  }
+  .chip::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .chip[data-k='claimed'] {
+    --c: var(--warn);
+  }
+  .chip[data-k='done'] {
+    --c: var(--ok);
+  }
+  .chip[data-k='cancelled'] {
+    --c: var(--ink-3);
+  }
+
+  /* Keys in hints. */
+  kbd {
+    display: inline-block;
+    min-width: 1.6em;
+    padding: 0 4px;
+    border: 1px solid var(--line-strong);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    font-size: 0.6875rem;
+    line-height: 1.5;
+    text-align: center;
+    color: var(--ink-2);
+  }
+
+  /* A markdown file as an agent reads it. */
+  .src {
+    font: 400 0.78rem/1.7 var(--font-mono);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    color: var(--ink);
+  }
+  .src .band,
+  .src .m {
+    color: var(--ink-3);
+  }
+  .src /* Entry types, coloured the same everywhere. */
+.ty {
+    font-size: inherit;
+  }
+
+  /* Name and value pairs. */
+  .kv {
+    display: grid;
+    gap: 12px;
+  }
+  .kv div {
+    display: grid;
+    gap: 1px;
+  }
+  .kv dt {
+    font-size: 0.75rem;
+    color: var(--ink-3);
+  }
+  .kv dd {
+    color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+
+  /* Hidden until focused, then the first thing on the page. */
+  .skip-link {
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    z-index: 100;
+    padding: 8px 14px;
+    border-radius: var(--radius-md);
+    background: var(--ink);
+    color: var(--page);
+    font-weight: 600;
+    text-decoration: none;
+    translate: 0 calc(-100% - 16px);
+  }
+  .skip-link:focus-visible {
+    translate: none;
+  }
+}

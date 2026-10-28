@@ -5,8 +5,20 @@ import {
   renderInstructions,
   verifyChain,
 } from '@mdplane/contract/core'
+import { html, nothing, render } from 'lit-html'
+import { classMap } from 'lit-html/directives/class-map.js'
 import { ApiError, append, createFile, createWorkspace, parseLink } from './api.ts'
-import { $, $as, $$, copyText, esc, initTabs, initTheme, motionOK } from './dom.ts'
+import {
+  $,
+  $as,
+  $$,
+  copyText,
+  cssProps,
+  initTabs,
+  initTheme,
+  motionOK,
+  scrollBehavior,
+} from './dom.ts'
 import { watch, type Watch } from './live.ts'
 import { agentView, type Session, stateAt } from './model.ts'
 import { highlight, Reader } from './reader.ts'
@@ -18,17 +30,12 @@ initTabs()
 const SAMPLE_TEXT =
   'A replay of a recorded session: four agents and one person working through a release checklist. Drag the timeline to see the file at any point.'
 
-const hero = new Reader($('#hero-reader'), { compact: true })
-const full = new Reader($('#full-reader'))
+const hero = new Reader($('#hero-reader'), { variant: 'compact', level: 3 })
 const sample = await sampleSession()
 hero.load(sample, { pos: motionOK() ? 9 : sample.entries.length })
-full.load(sample)
-void hero.verify()
-void full.verify()
 
-const sampleAtHead = stateAt(sample, sample.entries.length)
-$('#ws-source').innerHTML = highlight(agentView(sample, sampleAtHead))
-$('#inst-text').innerHTML = highlight(agentInstructions(sample))
+render(highlight(agentView(sample, stateAt(sample, sample.entries.length))), $('#ws-source'))
+render(highlight(agentInstructions(sample)), $('#inst-text'))
 
 // The real instructions an append link gets, with "Right now" computed from the sample.
 function agentInstructions(session: Session): string {
@@ -77,84 +84,100 @@ new IntersectionObserver(
     }
   },
   { threshold: 0.35 },
-).observe($('#hero-reader'))
+).observe(hero.root)
 
 /* The chain demo: entries #13 to #17 of the sample, and what happens when one is edited. */
+type Mark = 'ok' | 'bad' | 'after'
+const MARKS: Record<Mark, string> = {
+  ok: 'Matches',
+  bad: "Doesn't match",
+  after: 'After the break',
+}
+const SHOWN = [13, 14, 15, 16, 17]
+const EDITED = 15
+
 function initChain(): void {
   const box = $('#chain')
   const out = $('#chain-out')
   const verifyButton = $as(HTMLButtonElement, '[data-chain="verify"]')
   const tamperButton = $as(HTMLButtonElement, '[data-chain="tamper"]')
   const undoButton = $as(HTMLButtonElement, '[data-chain="undo"]')
-  const shown = [13, 14, 15, 16, 17]
   const work: Entry[] = sample.entries.map((e) => ({ ...e }))
-  const original = work[14]?.body ?? ''
+  const original = work[EDITED - 1]?.body ?? ''
   let tampered = false
 
-  const draw = (marks: Record<number, 'ok' | 'bad' | 'after'> = {}) => {
-    box.innerHTML = shown
-      .map((seq, i) => {
-        const e = work[seq - 1]
-        if (!e) return ''
-        let body = esc(e.body ?? '')
-        if (seq === 15 && tampered) {
-          const [before = '', after = ''] = original.split('Node 22')
-          body = `${esc(before)}Node <del>22</del><ins>20</ins>${esc(after)}`
-        }
-        const mark = marks[seq]
-        const label = mark
-          ? { ok: 'Matches', bad: "Doesn't match", after: 'After the break' }[mark]
-          : ''
-        return `${i ? '<span class="link" aria-hidden="true"></span>' : ''}<article class="blk${mark ? ` is-${mark}` : ''}">
-          <p class="blk-top"><span class="mono">#${seq}</span><span class="ty ty-${e.type}">${e.type}</span><span>${esc(e.author)}</span></p>
-          <p class="blk-body">${body}</p>
+  const body = (e: Entry) => {
+    if (e.seq !== EDITED || !tampered) return e.body
+    const [before, after] = original.split('Node 22')
+    return html`${before}Node <del>22</del><ins>20</ins>${after}`
+  }
+  const draw = (marks: Partial<Record<number, Mark>> = {}) => {
+    const blocks = SHOWN.map((seq, i) => {
+      const e = work[seq - 1]
+      const mark = marks[seq]
+      if (!e) return nothing
+      return html`${i > 0 ? html`<span class="link" aria-hidden="true"></span>` : nothing}
+        <article
+          class=${classMap({ blk: true, [`is-${mark}`]: mark !== undefined })}
+          ${cssProps({ '--i': String(i) })}
+        >
+          <p class="blk-top">
+            <span class="mono">#${seq}</span><span class="ty ty-${e.type}">${e.type}</span
+            ><span>${e.author}</span>
+          </p>
+          <p class="blk-body">${body(e)}</p>
           <p class="blk-h">prev <b>${e.prev.slice(0, 7)}</b></p>
           <p class="blk-h">hash <b>${e.hash.slice(0, 7)}</b></p>
-          <p class="blk-status">${label}</p>
+          <p class="blk-status">${mark ? MARKS[mark] : ''}</p>
         </article>`
-      })
-      .join('')
-    // Set through the CSSOM, which the content security policy allows; style attributes it doesn't.
-    for (const [i, block] of $$('.blk', box).entries()) block.style.setProperty('--i', String(i))
+    })
+    render(html`${blocks}`, box)
+  }
+  const say = (text: string, tone: 'is-ok' | 'is-bad' | null = null) => {
+    out.textContent = text
+    out.classList.remove('is-ok', 'is-bad')
+    if (tone) out.classList.add(tone)
   }
 
   verifyButton.addEventListener('click', async () => {
-    out.className = 'chain-out'
-    out.textContent = 'Checking…'
+    say('Checking…')
     const result = await verifyChain(work)
-    const marks: Record<number, 'ok' | 'bad' | 'after'> = {}
-    for (const seq of shown) {
+    const marks: Record<number, Mark> = {}
+    for (const seq of SHOWN) {
       marks[seq] =
         result.ok || seq < result.brokenAt ? 'ok' : seq === result.brokenAt ? 'bad' : 'after'
     }
     draw(marks)
     if (result.ok) {
-      out.className = 'chain-out is-ok'
-      out.textContent = `All ${work.length} entries match their hashes. The head hash is ${result.head.slice(0, 7)}.`
+      say(
+        `All ${work.length} entries match their hashes. The head hash is ${result.head.slice(0, 7)}.`,
+        'is-ok',
+      )
     } else {
-      out.className = 'chain-out is-bad'
-      out.textContent = `Entry #${result.brokenAt} no longer matches its hash, so the chain is broken from #${result.brokenAt} onward.`
+      say(
+        `Entry #${result.brokenAt} no longer matches its hash, so the chain is broken from #${result.brokenAt} onward.`,
+        'is-bad',
+      )
     }
   })
   tamperButton.addEventListener('click', () => {
     tampered = true
-    const entry = work[14]
-    if (entry) work[14] = { ...entry, body: original.replace('Node 22', 'Node 20') }
+    const entry = work[EDITED - 1]
+    if (entry) work[EDITED - 1] = { ...entry, body: original.replace('Node 22', 'Node 20') }
     draw()
-    out.className = 'chain-out'
-    out.textContent =
-      'Entry #15 now says Node 20, but its stored hash still describes the original. Check the chain again.'
+    say(
+      `Entry #${EDITED} now says Node 20, but its stored hash still describes the original. Check the chain again.`,
+    )
     tamperButton.hidden = true
     undoButton.hidden = false
     verifyButton.focus()
   })
   undoButton.addEventListener('click', () => {
     tampered = false
-    const entry = sample.entries[14]
-    if (entry) work[14] = { ...entry }
+    const entry = sample.entries[EDITED - 1]
+    if (entry) work[EDITED - 1] = { ...entry }
     draw()
-    out.className = 'chain-out'
-    out.textContent = 'Entry #15 is back to its original text.'
+    say(`Entry #${EDITED} is back to its original text.`)
     undoButton.hidden = true
     tamperButton.hidden = false
     tamperButton.focus()
@@ -172,30 +195,34 @@ const WELCOME_TASK =
   'Introduce yourself: say which tool, model and machine you are running on. Then post a response to finish this task.'
 
 const dialog = $as(HTMLDialogElement, '#try')
-$('#try-curl').textContent = `curl -X POST ${location.origin}/workspaces`
+const createButton = $as(HTMLButtonElement, '#try-create')
+const copyButton = $as(HTMLButtonElement, '#try-copy')
+const followButtons = [$as(HTMLButtonElement, '#try-watch'), $as(HTMLButtonElement, '#try-script')]
+const tryError = $('#try-error')
+const tryStatus = $('#try-status')
+const tryLinks = $('#try-links')
+const prompt = $('#try-prompt')
 const stageText = $('#stage-text')
 const stageReader = $as(HTMLAnchorElement, '#stage-reader')
 const backButton = $as(HTMLButtonElement, '#back-sample')
-const createButton = $as(HTMLButtonElement, '#try-create')
-const tryError = $('#try-error')
 let created: CreateWorkspaceResponse | null = null
 let following: Watch | null = null
 
-function resetTry(): void {
-  created = null
-  $('#try-links').hidden = true
-  tryError.hidden = true
-  createButton.disabled = false
-  createButton.textContent = 'Create workspace'
-  for (const id of ['#try-step2', '#try-step3']) $(id).classList.add('is-locked')
-  for (const id of ['#try-copy', '#try-watch', '#try-script'])
-    $as(HTMLButtonElement, id).disabled = true
-  $('#try-prompt').textContent = 'Create a workspace first.'
+$('#try-curl').textContent = `curl -X POST ${location.origin}/workspaces`
+
+function unlock(on: boolean): void {
+  for (const id of ['#try-step2', '#try-step3']) $(id).classList.toggle('is-locked', !on)
+  for (const button of [copyButton, ...followButtons]) button.disabled = !on
 }
 
 for (const button of $$('[data-open-try]')) {
   button.addEventListener('click', () => {
-    if (!created) resetTry()
+    if (!created) {
+      tryLinks.hidden = true
+      tryError.hidden = true
+      prompt.textContent = 'Create a workspace first.'
+      unlock(false)
+    }
     dialog.showModal()
   })
 }
@@ -225,29 +252,33 @@ createButton.addEventListener('click', async () => {
     return
   }
   const { links } = created
-  const rows = [
-    ['Read', links.read],
-    ['Append', links.append],
-    ['Write', links.write],
-  ]
-  const list = $('#try-links')
-  list.innerHTML = rows
-    .map(([label, url]) => `<div><span>${label}</span><code>${esc(url)}</code></div>`)
-    .join('')
-  list.hidden = false
+  render(
+    html`${(
+      [
+        ['Read', links.read],
+        ['Append', links.append],
+        ['Write', links.write],
+      ] as const
+    ).map(([label, url]) => html`<div><span>${label}</span><code>${url}</code></div>`)}`,
+    tryLinks,
+  )
+  tryLinks.hidden = false
   createButton.textContent = 'Created'
-  $('#try-prompt').textContent =
-    `Read ${links.append} and follow the instructions. Pick up the open task in welcome.md and post your result.`
-  for (const id of ['#try-step2', '#try-step3']) $(id).classList.remove('is-locked')
-  for (const id of ['#try-copy', '#try-watch', '#try-script'])
-    $as(HTMLButtonElement, id).disabled = false
+  prompt.textContent = `Read ${links.append} and follow the instructions. Pick up the open task in welcome.md and post your result.`
+  unlock(true)
+  tryStatus.textContent = 'Workspace created. Next, copy the prompt for your agent.'
+  copyButton.focus()
 })
 
-$as(HTMLButtonElement, '#try-copy').addEventListener('click', (event) => {
-  const prompt = $('#try-prompt')
-  if (event.currentTarget instanceof HTMLButtonElement) {
-    copyText(event.currentTarget, prompt.textContent ?? '', prompt)
-  }
+copyButton.addEventListener('click', async () => {
+  const result = await copyText(prompt.textContent ?? '', prompt)
+  const label = 'Copy prompt'
+  copyButton.textContent = result === 'copied' ? 'Copied' : 'Selected'
+  tryStatus.textContent =
+    result === 'copied' ? 'Prompt copied.' : 'Prompt selected. Copy it with your keyboard.'
+  window.setTimeout(() => {
+    copyButton.textContent = label
+  }, 1600)
 })
 
 async function showLive(scripted: boolean): Promise<void> {
@@ -257,14 +288,14 @@ async function showLive(scripted: boolean): Promise<void> {
   dialog.close()
   following?.stop()
   hero.touched = true
-  if (location.hash === '#reader') location.hash = '#stage'
-  $('#stage').scrollIntoView({ behavior: motionOK() ? 'smooth' : 'auto', block: 'start' })
+  $('#stage').scrollIntoView({ behavior: scrollBehavior(), block: 'start' })
   following = await watch(read, hero, { path: 'welcome.md' })
   stageText.textContent = scripted
     ? 'Your workspace, live. A scripted agent is working through the welcome task.'
     : "Your workspace, live. Your agent's entries appear here as it works."
   stageReader.href = created.links.read
   backButton.hidden = false
+  $('#stage').focus({ preventScroll: true })
   if (scripted) void runScriptedAgent(created.links.append)
 }
 
@@ -289,55 +320,15 @@ async function runScriptedAgent(link: string): Promise<void> {
   }
 }
 
-$('#try-watch').addEventListener('click', () => void showLive(false))
-$('#try-script').addEventListener('click', () => void showLive(true))
+followButtons[0]?.addEventListener('click', () => void showLive(false))
+followButtons[1]?.addEventListener('click', () => void showLive(true))
 
 backButton.addEventListener('click', () => {
   following?.stop()
   following = null
   hero.load(sample)
-  void hero.verify()
   stageText.textContent = SAMPLE_TEXT
-  stageReader.href = '#reader'
+  stageReader.href = '/demo'
   backButton.hidden = true
-})
-
-/* Routing: #reader shows the full reader on the sample, anything else the landing page. */
-const landing = $('#landing')
-const readerPage = $('#reader-page')
-function showRoute(): void {
-  const onReader = location.hash === '#reader'
-  landing.hidden = onReader
-  readerPage.hidden = !onReader
-  if (onReader) {
-    hero.pause()
-    window.scrollTo({ top: 0, behavior: 'instant' })
-    full.update()
-    return
-  }
-  const target = location.hash.length > 1 ? document.getElementById(location.hash.slice(1)) : null
-  if (target && target.id !== 'top') target.scrollIntoView({ behavior: 'instant' })
-  else if (location.hash === '#top') window.scrollTo({ top: 0, behavior: 'instant' })
-}
-window.addEventListener('hashchange', () => {
-  const switching = (location.hash === '#reader') === readerPage.hidden
-  if (switching && 'startViewTransition' in document && motionOK())
-    document.startViewTransition(showRoute)
-  else showRoute()
-})
-showRoute()
-
-document.addEventListener('keydown', (event) => {
-  if (readerPage.hidden || dialog.open || event.metaKey || event.ctrlKey || event.altKey) return
-  const target = event.target instanceof HTMLElement ? event.target : null
-  const tag = target?.tagName.toLowerCase() ?? ''
-  if (tag === 'input' || tag === 'textarea' || target?.isContentEditable) return
-  if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-    if (target?.closest('[role="tablist"], .seg')) return
-    event.preventDefault()
-    full.step(event.key === 'ArrowLeft' ? -1 : 1)
-  } else if (event.key === ' ' && tag !== 'button' && tag !== 'a') {
-    event.preventDefault()
-    full.toggle()
-  }
+  stageReader.focus()
 })

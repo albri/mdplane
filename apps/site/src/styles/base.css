@@ -1,0 +1,91 @@
+/* Element defaults. */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+  /* Important in the lowest layer, so `hidden` beats any display set in a later one. */
+  [hidden]:not([hidden='until-found']) {
+    display: none !important;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    background: var(--page);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font: 400 var(--text-body)/1.65 var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin: 0;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+  p,
+  ul,
+  ol,
+  dl,
+  dd,
+  figure,
+  blockquote,
+  pre {
+    margin: 0;
+  }
+  p,
+  li,
+  dd {
+    text-wrap: pretty;
+  }
+  code,
+  kbd {
+    font-family: var(--font-mono);
+    font-size: 0.88em;
+  }
+  a {
+    color: inherit;
+    text-decoration-line: underline;
+    text-decoration-color: var(--link-line);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.2em;
+    transition: color var(--t-quick) var(--ease);
+  }
+  a:hover {
+    color: var(--action-ink);
+  }
+  button,
+  input,
+  select {
+    font: inherit;
+    color: inherit;
+  }
+  button:not(:disabled, [aria-disabled='true']),
+  select:not(:disabled) {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  /* Focus moved here by a script, as a landmark for the keyboard, not a control. */
+  [tabindex='-1']:focus {
+    outline: none;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--action) 24%, transparent);
+  }
+}
