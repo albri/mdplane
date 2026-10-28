@@ -210,9 +210,6 @@
     .split {
       grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
     }
-    .split-even {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    }
   }
   .body-copy {
     color: var(--ink-2);
@@ -220,8 +217,6 @@
   /* The protocol detail, kept out of the story but one line away. */
   .dev {
     margin-top: 28px;
-    padding-top: 14px;
-    border-top: 1px solid var(--line);
     max-width: 72ch;
     color: var(--ink-2);
     font-size: var(--text-small);
@@ -240,7 +235,6 @@
 
   /* append type list */
   .types {
-    margin-top: 12px;
     border-top: 1px solid var(--line);
   }
   .types div {
@@ -274,13 +268,17 @@
   }
   .srcfig-head {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
-    gap: 12px;
+    gap: 2px 12px;
     padding: 11px 16px;
     border-bottom: 1px solid var(--line);
     background: var(--sunk);
     font: 400 0.75rem/1.4 var(--font-mono);
     color: var(--ink-3);
+  }
+  .srcfig-head span {
+    white-space: nowrap;
   }
   .srcfig-head span:first-child {
     color: var(--ink);
@@ -288,9 +286,27 @@
   .srcfig-body {
     max-height: 600px;
     overflow: auto;
-    padding: 18px 20px;
+    padding: 18px 16px;
+    /* Set in the code's own font, so a container query can count its columns. */
+    container-type: inline-size;
+    font: 400 0.75rem/1.7 var(--font-mono);
+  }
+  .srcfig .src {
+    font: inherit;
   }
 
+  /* The instructions are an 80-column file. Where 80 columns fit, only the odd longer line wraps;
+     where they don't, lines scroll rather than rewrap into a ragged column. */
+  #inst-text {
+    white-space: pre;
+    overflow-wrap: normal;
+  }
+  @container (min-width: 80ch) {
+    #inst-text {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+  }
   .srcfig-foot {
     padding: 12px 20px 14px;
     border-top: 1px solid var(--line);
@@ -305,14 +321,13 @@
 
   /* links and what they allow */
   .tablewrap {
-    overflow-x: auto;
+    overflow: hidden;
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
     background: var(--page);
   }
   .perm {
     width: 100%;
-    min-width: 460px;
     border-collapse: collapse;
     font-size: var(--text-small);
   }
@@ -342,6 +357,12 @@
     color: var(--ink-3);
   }
   /* Each link's path sits under its name, so the headers stay two tidy lines. */
+  @media (max-width: 759.98px) {
+    .perm th,
+    .perm td {
+      padding: 11px 12px;
+    }
+  }
   .perm thead code {
     display: block;
     font-size: 0.75rem;
@@ -529,8 +550,9 @@
     overflow-x: auto;
     padding: 4px 2px 12px;
   }
+  /* The blocks share the width, and scroll only once they reach their smallest. */
   .blk {
-    flex: 0 0 214px;
+    flex: 1 0 184px;
     display: grid;
     gap: 8px;
     align-content: start;
@@ -568,6 +590,10 @@
   }
   .blk-top .mono {
     color: var(--ink);
+  }
+  /* The author always gets its own line, so every block's text starts at the same height. */
+  .blk-top > :last-child {
+    flex-basis: 100%;
   }
   .blk-body {
     font-size: 0.875rem;

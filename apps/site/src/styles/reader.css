@@ -303,6 +303,11 @@
     font: 400 0.75rem/1.5 var(--font-mono);
     color: var(--ink-3);
   }
+  /* Narrow panels wrap the line between its parts, never inside one. */
+  .ent-meta .ty,
+  .ent-lease {
+    white-space: nowrap;
+  }
   .ent-body {
     color: var(--ink-2);
   }
@@ -744,10 +749,16 @@
     .rd-pos .of {
       display: none;
     }
-    .rd-bar {
-      justify-content: flex-end;
-    }
+    /* As in the full reader's bar: the link's tier goes, and the controls wrap rather than
+       overflow, since flex overflow at the start edge can't be scrolled back into view. */
     .rd-tier {
+      display: none;
+    }
+    .rd-bar {
+      flex-wrap: wrap;
+      gap: 6px 8px;
+    }
+    .rd-flag {
       margin-right: auto;
     }
     .rd-pos {

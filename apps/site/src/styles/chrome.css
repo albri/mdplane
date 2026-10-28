@@ -80,6 +80,17 @@
       gap: 16px;
     }
   }
+  /* On a short page the footer still sits at the bottom of the screen. */
+  body:has(> .site-foot) {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+  }
+  /* Full width, since a flex item with auto margins otherwise shrinks to its content. */
+  body:has(> .site-foot) > main {
+    flex: 1;
+    width: 100%;
+  }
   .site-foot {
     border-top: 1px solid var(--line);
     background: var(--page);

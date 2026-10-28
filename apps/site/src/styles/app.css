@@ -109,6 +109,7 @@
   .missing {
     display: grid;
     gap: 14px;
+    align-content: start;
     justify-items: start;
     padding-block: clamp(48px, 9vw, 120px);
   }

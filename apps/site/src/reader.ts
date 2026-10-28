@@ -612,7 +612,10 @@ export class Reader {
 
   private item(e: Entry, renewed: boolean): TemplateResult {
     const time = this.time
-    const lease = e.type === 'claim' ? ` · lease until ${time(leaseEnd(e))}` : ''
+    const lease =
+      e.type === 'claim'
+        ? html` · <span class="ent-lease">lease until ${time(leaseEnd(e))}</span>`
+        : nothing
     return html`<p class="ent-meta">
         <span class="ty ty-${e.type}">${renewed ? 'claim · renewed' : e.type}</span>
         ${e.author} · ${time(e.at)}${lease}
@@ -736,8 +739,13 @@ export class Reader {
     const id = `${this.id}-info`
     const time = this.time
     const counts = countTasks(state.threads)
-    const people = new Map<string, number>()
-    for (const e of state.list) people.set(e.author, (people.get(e.author) ?? 0) + 1)
+    // Body writes and deletes are signed by the write link that made them, not by a name.
+    const people = new Map<string, { n: number; link: boolean }>()
+    for (const e of state.list) {
+      const known = people.get(e.author)
+      const link = e.type === 'write' || e.type === 'delete'
+      people.set(e.author, { n: (known?.n ?? 0) + 1, link: known?.link ?? link })
+    }
     const last = session.log.at(-1)
     const v = this.verification
     return html`<aside class="rd-info" id=${id} popover tabindex="0" aria-labelledby=${`${id}-h`}>
@@ -797,7 +805,11 @@ export class Reader {
         <ul class="people">
           ${Array.from(
             people,
-            ([author, n]) => html`<li><span>${author}</span><span class="n">${n}</span></li>`,
+            ([author, { n, link }]) =>
+              html`<li>
+                <span>${link ? html`Write link <span class="mono">${author}</span>` : author}</span
+                ><span class="n">${n}</span>
+              </li>`,
           )}
         </ul>
       </section>

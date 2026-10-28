@@ -19,7 +19,7 @@ const WELCOME_TASK =
   'Introduce yourself: say which tool, model and machine you are running on. Then post a response to finish this task.'
 const SAMPLE_TITLE = 'One session, start to finish'
 const SAMPLE_TEXT =
-  'alex and four agents work through the 2.4 release checklist. Drag the timeline to see the file at any point.'
+  'alex and four agents work through the 2.4 release checklist. Drag the timeline to see any moment.'
 
 // What each link can do, in the words of the permissions table on the page.
 const LINKS = [
