@@ -16,6 +16,7 @@ import {
   reveal,
   scrollBehavior,
 } from './dom.ts'
+import { departure, recall, remember } from './heads.ts'
 import { markdown } from './markdown.ts'
 import {
   agentView,
@@ -80,6 +81,8 @@ type Verification =
   | { state: 'idle' | 'checking' | 'unsupported' }
   | { state: 'ok'; count: number; head: string }
   | { state: 'broken'; at: number }
+  // The chain matches itself but no longer leads to a head this browser checked before.
+  | { state: 'changed'; at: number }
 
 type Move = {
   behavior: ScrollBehavior
@@ -137,6 +140,8 @@ export class Reader {
     head: GENESIS,
   }
   private checks = 0
+  // Where a live workspace's history parted from the head this browser remembered, once found.
+  private changedAt: number | null = null
   private readonly doc = createRef<HTMLElement>()
   private readonly log = createRef<HTMLElement>()
 
@@ -179,6 +184,7 @@ export class Reader {
     this.pos = Math.max(1, Math.min(session.entries.length, pos ?? session.entries.length))
     this.arrived = new Set()
     this.verification = { state: 'idle' }
+    this.changedAt = null
     this.docDepth = DOC_DEPTH
     // Cards measured in the last file have nothing to slide from in this one.
     this.pending = { reveal: 'instant', flip: null, focusRow: false }
@@ -282,11 +288,26 @@ export class Reader {
     if (check !== this.checks) return
     if (result.ok) {
       this.checked = { log, count: count + items.length, head: result.head }
-      this.setVerification({ state: 'ok', count: this.checked.count, head: result.head })
+      this.compareWithMemory(log)
+      if (this.changedAt === null) {
+        this.setVerification({ state: 'ok', count: this.checked.count, head: result.head })
+      } else {
+        this.setVerification({ state: 'changed', at: this.changedAt })
+      }
     } else {
       this.setVerification({ state: 'broken', at: result.brokenAt })
     }
     if (announce) this.say(this.verifyText)
+  }
+
+  // A live workspace's chain is also compared with the head this browser verified last time, and
+  // that head moves on only while the two agree. Once they part, the warning stays.
+  private compareWithMemory(log: LogItem[]): void {
+    const session = this.session
+    const last = log.at(-1)
+    if (session?.mode !== 'live' || !last) return
+    this.changedAt ??= departure(log, recall(session.workspaceId))
+    if (this.changedAt === null) remember(session.workspaceId, { seq: last.seq, hash: last.hash })
   }
 
   // Arrow keys step through the history and Space plays it, unless a control has a use for them.
@@ -471,6 +492,9 @@ export class Reader {
     const v = this.verification
     if (v.state === 'ok') return `History verified: all ${v.count} entries match their hashes.`
     if (v.state === 'broken') return `History broken: entry #${v.at} doesn't match its hash.`
+    if (v.state === 'changed') {
+      return `History changed: entry #${v.at} isn't the one this browser checked on an earlier visit.`
+    }
     if (v.state === 'unsupported') return "This browser can't check the history."
     return ''
   }
@@ -574,6 +598,7 @@ export class Reader {
       unsupported: '',
       ok: '✓ Verified',
       broken: v.state === 'broken' ? `Broken at #${v.at}` : '',
+      changed: v.state === 'changed' ? `Changed at #${v.at}` : '',
     }[v.state]
     return html`
       <span class="rd-tier" title=${tierTitle}>${tier}</span>
@@ -599,7 +624,7 @@ export class Reader {
               class=${classMap({
                 'rd-verify': true,
                 'is-ok': v.state === 'ok',
-                'is-bad': v.state === 'broken',
+                'is-bad': v.state === 'broken' || v.state === 'changed',
               })}
               title=${v.state === 'ok' ? `${v.count} entries, head ${v.head.slice(0, 7)}` : nothing}
               aria-disabled=${String(v.state === 'checking')}
@@ -1012,7 +1037,11 @@ export class Reader {
           }
         </p>
         <p
-          class=${classMap({ 'verify-out': true, ok: v.state === 'ok', bad: v.state === 'broken' })}
+          class=${classMap({
+            'verify-out': true,
+            ok: v.state === 'ok',
+            bad: v.state === 'broken' || v.state === 'changed',
+          })}
         >
           ${
             v.state === 'ok'

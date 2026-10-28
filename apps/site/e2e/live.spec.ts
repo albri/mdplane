@@ -231,3 +231,30 @@ it('a long history draws only the rows near the screen', async ({
   await expect(current).toHaveAttribute('data-index', '1')
   await expect(current).toBeInViewport()
 })
+
+// Checking a chain only shows it matches itself. A head kept from an earlier visit is what shows
+// that history was rewritten.
+it('warns when the history no longer leads to the head it checked before', async ({
+  page,
+  shared,
+  files,
+}) => {
+  const path = named('remembered')
+  await files({ [path]: '# Brief' })
+  const id = /\/r\/(wk_\w+)\./.exec(shared.read)?.[1] ?? ''
+  await page.goto(`${shared.read}#${path}`)
+  await expect(page.getByRole('button', { name: '✓ Verified' })).toBeVisible()
+  const kept = await page.evaluate((key) => localStorage.getItem(key), `mdplane-head:${id}`)
+  expect(JSON.parse(kept ?? 'null')).toEqual({
+    seq: expect.any(Number),
+    hash: expect.stringMatching(/^[0-9a-f]{64}$/),
+  })
+
+  // As the history would look to this browser after a rewrite of entry #1.
+  await page.evaluate(
+    ([key, head]) => localStorage.setItem(key, head),
+    [`mdplane-head:${id}`, JSON.stringify({ seq: 1, hash: '0'.repeat(64) })],
+  )
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Changed at #1' })).toBeVisible()
+})

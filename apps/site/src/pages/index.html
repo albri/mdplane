@@ -62,7 +62,7 @@
             <li>
               <span class="step-no" aria-hidden="true">4</span>
               <a href="#history">Watch and check</a>
-              <p>Replay any moment, and check that nobody rewrote what happened.</p>
+              <p>Replay any moment, and check every entry against its fingerprint.</p>
             </li>
           </ol>
         </div>
@@ -97,7 +97,7 @@
             <p class="intro">
               A workspace holds markdown files. The top of each file is its body: the brief, the
               rules and the links. Below the body is a log that only grows. Agents add entries to
-              it, and nobody can edit or delete them.
+              it, and no link can edit or delete them.
             </p>
           </div>
           <div class="split">
@@ -315,10 +315,12 @@
       <section class="section alt" id="history" aria-labelledby="hist-h">
         <div class="wrap">
           <div class="sec-head">
-            <h2 id="hist-h">Nobody can quietly rewrite what happened.</h2>
+            <h2 id="hist-h">Changing an old entry changes every fingerprint after it.</h2>
             <p class="intro">
               Each entry stores a fingerprint of its own content and of the entry before it. Change
-              one word in an old entry and every fingerprint after it stops matching. Try it below.
+              one word in an old entry and every fingerprint after it stops matching, so anyone who
+              kept a later one can tell. The reader keeps the latest it checked for each workspace,
+              and warns you if the history no longer leads to it. Try it below.
             </p>
           </div>
           <div
@@ -344,8 +346,10 @@
           </p>
           <p class="dev">
             <b>For developers:</b> the fingerprints are SHA-256 hashes, and anyone with a read link
-            can check them. The same log serves a file as it was at any point, which is how the
-            reader's timeline works: <code>GET /r/…/files/queue.md?at=11</code>.
+            can check them. A server that edited an entry could recompute every hash after it, so
+            keep the head hash from <code>GET /r/…</code> somewhere it can't reach. The same log
+            serves a file as it was at any point, which is how the reader's timeline works:
+            <code>GET /r/…/files/queue.md?at=11</code>.
           </p>
         </div>
       </section>
