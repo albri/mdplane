@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "generate": "pnpm -r generate",
-    "check": "oxlint --type-aware --deny-warnings && oxfmt --check && tsc -p packages/contract && tsc -p apps/worker && tsc -p apps/site && pnpm -r check",
+    "check": "oxlint --type-aware --deny-warnings && oxfmt --check && tsc -p packages/contract && tsc -p apps/worker && tsc -p apps/site && tsc -p video && pnpm -r check",
     "test": "pnpm -r test",
     "format": "oxfmt",
     "build": "pnpm --filter @mdplane/site build",

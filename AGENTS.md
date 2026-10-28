@@ -25,6 +25,9 @@ what keeps appends ordered and claims safe without locks.
   lit-html. `pnpm build` bundles everything into `dist/`, which the Worker
   serves as static assets, with `public/` copied as it is. A browser opening a
   link gets `reader.html`, which reads the key from its own URL.
+- `video`: the film at the top of the README, made with Remotion from the
+  site's tokens and sample session. `pnpm --filter @mdplane/video render`
+  re-renders it; `video/README.md` explains the rest.
 
 ## Commands
 
