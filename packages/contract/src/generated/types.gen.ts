@@ -187,7 +187,8 @@ export type EntryType = 'write' | 'delete' | 'task' | 'claim' | 'comment' | 'res
 
 /**
  * One change to the workspace. `write` entries carry the new body's
- * `version` and `contentHash` instead of a body.
+ * `version` and `contentHash` instead of a body. `write` and `delete`
+ * entries are authored by the ID of the link that made them.
  *
  * `hash` is SHA-256 over `prev`, a newline, and the entry serialised as
  * JSON with no whitespace and its fields in this order: `seq`, `at`,
@@ -277,7 +278,7 @@ export type Problem = {
     title: string;
     status: number;
     detail?: string;
-    code: 'invalid_request' | 'not_found' | 'task_claimed' | 'task_closed' | 'invalid_ref' | 'idempotency_key_reused' | 'precondition_failed' | 'precondition_required' | 'payload_too_large' | 'workspace_full' | 'rate_limited' | 'upgrade_required';
+    code: 'invalid_request' | 'not_found' | 'task_claimed' | 'task_closed' | 'invalid_ref' | 'idempotency_key_reused' | 'precondition_failed' | 'precondition_required' | 'payload_too_large' | 'workspace_full' | 'rate_limited' | 'upgrade_required' | 'internal_error';
     holder?: Author;
     retryAfterMs?: number;
 };
@@ -441,11 +442,22 @@ export type DeleteFileData = {
 
 export type DeleteFileErrors = {
     /**
+     * The request doesn't match the contract.
+     */
+    400: Problem;
+    /**
      * No such workspace, link or file, or the key is wrong. Every case gets
      * the same response.
      *
      */
     404: Problem;
+    /**
+     * `task_claimed` (someone else holds the lease; see `retryAfterMs` and
+     * `holder`), `task_closed` (the task is done or cancelled) or
+     * `workspace_full`.
+     *
+     */
+    409: Problem;
     /**
      * `If-Match` or `If-None-Match` doesn't match the file.
      */
@@ -497,6 +509,10 @@ export type ReadFileData = {
 };
 
 export type ReadFileErrors = {
+    /**
+     * The request doesn't match the contract.
+     */
+    400: Problem;
     /**
      * No such workspace, link or file, or the key is wrong. Every case gets
      * the same response.
@@ -802,6 +818,10 @@ export type LiveData = {
 };
 
 export type LiveErrors = {
+    /**
+     * The request doesn't match the contract.
+     */
+    400: Problem;
     /**
      * No such workspace, link or file, or the key is wrong. Every case gets
      * the same response.

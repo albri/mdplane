@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mdplane",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-28",
+  // node:crypto gives a synchronous SHA-256, so sealing an entry never awaits.
+  "compatibility_flags": ["nodejs_compat"],
+  "upload_source_maps": true,
+  "observability": { "enabled": true },
+  "durable_objects": {
+    "bindings": [{ "name": "WORKSPACES", "class_name": "Workspace" }],
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Workspace"] }],
+  "ratelimits": [
+    { "name": "CREATE_LIMITER", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } },
+    { "name": "LINK_LIMITER", "namespace_id": "1002", "simple": { "limit": 300, "period": 60 } },
+  ],
+  "vars": {
+    "WORKSPACE_TTL_HOURS": "24",
+    "LEASE_SECONDS": "600",
+  },
+}

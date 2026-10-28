@@ -151,7 +151,8 @@ export const zEntryType = z.enum([
 
 /**
  * One change to the workspace. `write` entries carry the new body's
- * `version` and `contentHash` instead of a body.
+ * `version` and `contentHash` instead of a body. `write` and `delete`
+ * entries are authored by the ID of the link that made them.
  *
  * `hash` is SHA-256 over `prev`, a newline, and the entry serialised as
  * JSON with no whitespace and its fields in this order: `seq`, `at`,
@@ -273,7 +274,8 @@ export const zProblem = z.object({
         'payload_too_large',
         'workspace_full',
         'rate_limited',
-        'upgrade_required'
+        'upgrade_required',
+        'internal_error'
     ]),
     holder: zAuthor.optional(),
     retryAfterMs: z.int().gte(0).optional()

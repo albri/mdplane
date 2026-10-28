@@ -5,7 +5,7 @@
     "correctness": "error",
     "suspicious": "error"
   },
-  "ignorePatterns": ["**/generated/**"],
+  "ignorePatterns": ["**/generated/**", "**/worker-configuration.d.ts"],
   "overrides": [
     {
       "files": ["**/test/**"],

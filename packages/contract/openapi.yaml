@@ -189,6 +189,8 @@ paths:
                     contentHash: null
                     prev: e7b1d5f9a3c8e2b6d0f4a9c3e7b2d6f0a5c9e3b8d2f6a0c4e9b3d7f1a6c0e4b8
                     hash: 5d9f3a7c1e6b0d4f8a2c7e1b5d9f4a8c2e6b1d5f9a3c8e2b6d0f5a9c3e7b1d6f
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
         '404':
           $ref: '#/components/responses/NotFound'
         '429':
@@ -261,8 +263,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WriteResult'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
         '412':
           $ref: '#/components/responses/PreconditionFailed'
         '428':
@@ -438,6 +444,8 @@ paths:
       responses:
         '101':
           description: Switching to the WebSocket protocol.
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
         '404':
           $ref: '#/components/responses/NotFound'
         '426':
@@ -1027,7 +1035,8 @@ components:
       required: [seq, at, path, type, author, ref, body, version, contentHash, prev, hash]
       description: |
         One change to the workspace. `write` entries carry the new body's
-        `version` and `contentHash` instead of a body.
+        `version` and `contentHash` instead of a body. `write` and `delete`
+        entries are authored by the ID of the link that made them.
 
         `hash` is SHA-256 over `prev`, a newline, and the entry serialised as
         JSON with no whitespace and its fields in this order: `seq`, `at`,
@@ -1195,6 +1204,7 @@ components:
             - workspace_full
             - rate_limited
             - upgrade_required
+            - internal_error
         holder:
           $ref: '#/components/schemas/Author'
         retryAfterMs:

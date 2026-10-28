@@ -11,6 +11,10 @@ what keeps appends ordered and claims safe without locks.
 - `packages/contract`: the API contract. `openapi.yaml` is the source of truth.
   The types, Zod schemas and agent instructions in `src/generated/` are
   generated from it, and `src/chain.ts` implements the hash chain it defines.
+- `apps/worker`: the Worker. `src/index.ts` routes and validates requests,
+  and `src/workspace.ts` is the Durable Object that owns a workspace's state.
+  `worker-configuration.d.ts` is generated from `wrangler.jsonc` by
+  `pnpm --filter @mdplane/worker types`.
 
 ## Commands
 
@@ -22,6 +26,7 @@ Run from the repository root, with Node 22.18 or later and pnpm.
   current.
 - `pnpm test` runs the tests.
 - `pnpm format` formats the code.
+- `pnpm --filter @mdplane/worker dev` runs the Worker locally.
 
 ## Changing the API
 
@@ -40,6 +45,8 @@ write them by hand.
   JavaScript API. Everything is typechecked with TypeScript 7.
 - Validate input at the boundary with the generated Zod schemas. Don't
   hand-write request or response types.
+- In the Durable Object, keep each change synchronous from authorisation to
+  the sealed entry. An `await` in between lets another request interleave.
 - Write tests that fail when behaviour breaks: ordering, leases, idempotency,
   link scope, the hash chain. Skip tests that restate the implementation.
 - Comments say why, not what.

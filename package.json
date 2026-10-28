@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "generate": "pnpm -r generate",
-    "check": "oxlint --type-aware --deny-warnings && oxfmt --check && tsc -p packages/contract && pnpm -r check",
+    "check": "oxlint --type-aware --deny-warnings && oxfmt --check && tsc -p packages/contract && tsc -p apps/worker && pnpm -r check",
     "test": "pnpm -r test",
     "format": "oxfmt"
   },
