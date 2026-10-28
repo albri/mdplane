@@ -25,13 +25,14 @@ export function hashEntry(prev: string, entry: EntryContent): Promise<string> {
 export type ChainCheck = { ok: true; head: string } | { ok: false; brokenAt: number }
 
 // Checks a contiguous run of the log. Pass the hash before the first item to check a run that
-// doesn't start at the beginning. A redacted item can't be recomputed, so only its link is checked.
+// doesn't start at the beginning. Every stored hash is recomputed independently, then the links
+// are walked in order. A redacted item can't be recomputed, so only its link is checked.
 export async function verifyChain(items: LogItem[], prev = GENESIS): Promise<ChainCheck> {
-  for (const item of items) {
-    if (item.prev !== prev) return { ok: false, brokenAt: item.seq }
-    if (!('redacted' in item) && (await hashEntry(item.prev, item)) !== item.hash) {
-      return { ok: false, brokenAt: item.seq }
-    }
+  const recomputed = await Promise.all(
+    items.map(async (item) => ('redacted' in item ? item.hash : hashEntry(item.prev, item))),
+  )
+  for (const [i, item] of items.entries()) {
+    if (item.prev !== prev || recomputed[i] !== item.hash) return { ok: false, brokenAt: item.seq }
     prev = item.hash
   }
   return { ok: true, head: prev }
