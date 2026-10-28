@@ -235,9 +235,11 @@ describe('browsers', () => {
     expect(response.status).toBe(200)
     expect(response.headers.get('Content-Type')).toContain('text/html')
     expect(response.headers.get('Content-Security-Policy')).toContain("script-src 'self'")
+    expect(response.headers.get('Content-Security-Policy')).toContain('trusted-types lit-html')
     expect(response.headers.get('Cache-Control')).toBe('no-store')
+    expect(response.headers.get('X-Robots-Tag')).toBe('noindex')
     const html = await response.text()
-    expect(html).toContain('id="full-reader"')
+    expect(html).toContain('id="reader"')
     expect(html).not.toContain(ws.read.split('.')[1])
   })
 

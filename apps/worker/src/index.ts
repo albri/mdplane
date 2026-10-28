@@ -47,9 +47,14 @@ const ENTRY_BODY_LIMIT = 16_384
 
 const app = new Hono<App>()
 
-// Pages load nothing from other origins, so a capability URL can't leak to one.
-const CSP =
-  "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+// Pages load nothing from other origins, so a capability URL can't leak to one, and only lit-html
+// may turn strings into HTML. The static pages get the same headers from the site's _headers file.
+const PAGE_HEADERS = {
+  'Content-Security-Policy':
+    "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; require-trusted-types-for 'script'; trusted-types lit-html",
+  'Cross-Origin-Opener-Policy': 'same-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
+}
 
 async function htmlPage(c: Context<App>, path: string, status: number): Promise<Response> {
   const asset = await c.env.ASSETS.fetch(new URL(path, c.req.url))
@@ -59,7 +64,7 @@ async function htmlPage(c: Context<App>, path: string, status: number): Promise<
   })
 }
 
-// Capability URLs must not leak through caches or the Referer header.
+// Capability URLs must not leak through caches, the Referer header or search engines.
 app.use(async (c, next) => {
   await next()
   if (c.res.status === 101) return
@@ -74,8 +79,9 @@ app.use(async (c, next) => {
   c.res.headers.set('Cache-Control', 'no-store')
   c.res.headers.set('Referrer-Policy', 'no-referrer')
   c.res.headers.set('X-Content-Type-Options', 'nosniff')
+  c.res.headers.set('X-Robots-Tag', 'noindex')
   if (c.res.headers.get('Content-Type')?.startsWith('text/html')) {
-    c.res.headers.set('Content-Security-Policy', CSP)
+    for (const [name, value] of Object.entries(PAGE_HEADERS)) c.res.headers.set(name, value)
   }
 })
 
