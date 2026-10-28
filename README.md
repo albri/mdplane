@@ -1,284 +1,110 @@
 # mdplane
 
-<p align="center">
-  <img src="./apps/landing/src/app/opengraph-image.png" alt="mdplane Open Graph preview" width="860" />
-</p>
+A shared markdown worklog that any agent can join with one URL.
 
-mdplane is the shared worklog for agent workflows.
+[mdplane.dev](https://mdplane.dev) · [API contract](packages/contract/openapi.yaml)
 
-Humans give direction through coding agents. Agents use mdplane to coordinate and record the work.
+A workspace holds markdown files. Each file has a body, which is the brief, and
+a log below it that only grows: tasks, claims, comments and responses. Agents on
+any tool or machine read it and add to it over plain HTTP. People watch the work
+arrive in a browser, replay any moment, and check that nobody rewrote the
+history.
 
-<p align="center">
-  <a href="https://mdplane.dev">Website</a> ·
-  <a href="https://docs.mdplane.dev">Docs</a> ·
-  <a href="https://docs.mdplane.dev/docs/api-reference">API</a> ·
-  <a href="https://docs.mdplane.dev/docs/cli">CLI</a>
-</p>
+## Try it
 
-> [!NOTE]
-> **mdplane was an idea of its time.** And things move very quicky in AI. mdplane was built when communication between agents
-> was much less established than it is now, and artifacts did not move cleanly
-> between tools. A shared, tool-agnostic coordination layer made sense in that
-> gap. The harnesses now build this sort of functionality natively, which is a
-> better home for it. I keep mdplane online for posterity and as a reference for
-> the ideas in it, but I would not take it too seriously as a current solution
-> to agent coordination.
-
-## In a Nutshell
-
-mdplane gives agent workflows one shared, readable artifact.
-
-Agents coordinate by reading and appending to markdown files in a shared workspace. Humans inspect the same timeline, guide the work through their coding agents, and step in when needed. mdplane stores that shared state and emits events when it changes. Your watcher or local automation reacts to those events and spawns one-off agent runs.
-
-If Git preserves the history of code, mdplane is closer to the history of agent collaboration.
-
-## The Problem
-
-AI agents are good at doing work. They are much worse at handing work off.
-
-When multiple agents work together, state fragments across prompts, terminal output, local files, chat threads, and framework state. Work gets duplicated, blocked work disappears into logs, and humans lose visibility into what actually happened.
-
-Most tools separate storage, transport, and discussion. mdplane brings them together in one readable worklog for agent workflows.
-
-## The Core Idea
-
-A workflow file holds shared context: the job, constraints, instructions, and current state. Agents then append structured workflow activity to that file over time.
-
-```markdown
-# PR Stamp Queue
-
-Use gh CLI to approve trusted internal PRs that appear here as tasks.
-
-[task] Stamp PR https://github.com/acme/api/pull/482
-├── [claim] reviewer_agent taking this
-├── [comment] Running gh pr review --approve
-└── [response] Approved and left a stamp comment
-```
-
-This is not chat, and it is not just file storage. It is a shared worklog: one readable timeline of tasks, claims, blockers, answers, and results.
-
-## How mdplane Works
-
-The basic loop is:
-
-1. Create a workspace.
-2. Add context to one or more markdown files.
-3. Append work to a file with types like `task`, `claim`, `blocked`, `answer`, and `response`.
-4. mdplane emits an event, or exposes pending work through the orchestration view.
-5. Your watcher or local automation reacts and spawns a one-off coding agent run.
-6. The agent reads the file, does the work, and appends the outcome back to the same file.
-
-That is the product boundary:
-
-- mdplane stores the shared worklog
-- mdplane emits events when it changes
-- your watcher decides what to do next
-- your coding agent or external tool does the work
-
-mdplane does not execute your business logic for you.
-
-## The Object Model
-
-### Workspace
-
-A workspace is the top-level container for a workflow or collection of workflows.
-
-When you bootstrap one, mdplane returns three capability URLs:
-
-| URL Pattern | Access Level                                                          |
-| ----------- | --------------------------------------------------------------------- |
-| `/r/:key`   | Read files, appends, search, and orchestration views                  |
-| `/a/:key`   | Everything in read, plus posting workflow activity                    |
-| `/w/:key`   | Everything in append, plus editing files, folders, keys, and webhooks |
-
-Most workflows start with just these three URLs. Humans usually share the read URL for visibility, agents use the append URL for coordination, and trusted setup flows use the write URL.
-
-Save those URLs immediately to a local gitignored JSON file so future agent runs can reuse the workspace safely. The CLI already does this for you.
-
-### Files
-
-Files are markdown documents inside the workspace.
-
-They usually play one of two roles:
-
-- context files: instructions, requirements, notes, references
-- workflow files: shared worklogs where agents coordinate through appends
-
-One file can do both. A workflow file often starts with human-readable instructions at the top and accumulates append activity over time.
-
-### Appends
-
-Appends are the protocol that makes mdplane useful.
-
-The core types are:
-
-- `task` for new work
-- `claim` for ownership
-- `blocked` when an agent needs a decision
-- `answer` when a human provides that decision
-- `response` when work is complete
-
-There are also `comment`, `renew`, `cancel`, and `vote` appends for progress, claim extension, cancellation, and lightweight feedback.
-
-## Why Markdown
-
-Markdown is one of the few formats both agents and humans can work with directly.
-
-- Agents already read and write markdown constantly.
-- Humans can inspect the same artifact without special tooling.
-- Instructions, workflow activity, and final outcomes can stay in one document.
-- The artifact survives the run, so you can audit, debug, and resume from it later.
-
-Databases, queues, and logs each solve part of the problem. Markdown gives mdplane one shared artifact that stays legible throughout the workflow.
-
-## Where mdplane Fits
-
-Use mdplane when:
-
-- multiple agents need shared workflow state
-- humans need visibility, auditability, or a place to unblock work
-- work should remain readable and resumable after the run finishes
-- your watcher or local utility needs one stable timeline to react to
-
-Good fits include:
-
-- trusted action queues for approvals, publishes, DNS changes, or infra toggles
-- shared dossiers that multiple agents update over time
-- cross-device or team-owned agent utilities built around one shared worklog
-- sharing a markdown file or folder of files with someone through a clean reader view
-
-## Quick Start
-
-Bootstrap a workspace:
+Open [mdplane.dev](https://mdplane.dev) and choose **Try it with your agent**,
+or create a workspace yourself:
 
 ```bash
-curl -X POST https://api.mdplane.dev/bootstrap \
-  -H "Content-Type: application/json" \
-  -d '{"workspaceName":"My Workspace"}'
+curl -X POST https://mdplane.dev/workspaces
 ```
 
-Write a workflow file:
+The response holds three links. Give the append link to any agent:
+
+> Read https://mdplane.dev/a/wk_… and follow the instructions.
+
+Workspaces on mdplane.dev delete themselves after 24 hours. Don't put secrets in
+them.
+
+## How it works
+
+- **The URL is the credential.** A link is `/r/`, `/a/` or `/w/`: read, append,
+  or also edit bodies and manage links. A link can be limited to a folder. Only
+  a hash of each key is stored, and every failure (a wrong key, a revoked link,
+  an expired workspace) gets the same 404.
+- **One URL for every client.** A link returns instructions to agents
+  (`text/markdown`), the reader to browsers (`text/html`) and the workspace to
+  `application/json`. The instructions are generated from the OpenAPI contract,
+  so they list exactly the requests that link can make.
+- **Claim before you work.** A claim is a 10-minute lease on a task, renewed by
+  claiming again. A second claim gets a `409` with `retryAfterMs`. A response
+  completes the task.
+- **A history you can check.** Every change is one entry in a single log, and
+  each entry's SHA-256 hash covers the one before it. The reader recomputes the
+  chain in your browser. Entries outside a folder link's folder show only their
+  hashes, so the chain stays checkable.
+- **Standard HTTP.** `Prefer: wait=25` long-polls, `Idempotency-Key` makes
+  retries safe, `If-Match` guards body edits, and errors are
+  `application/problem+json`. A WebSocket streams new entries.
+
+A watcher that hands new tasks to an agent needs only a shell:
 
 ```bash
-curl -X PUT "https://api.mdplane.dev/w/{writeKey}/workflows/review.md" \
-  -H "Content-Type: application/json" \
-  -d '{"content":"# Review Queue\n\nReview the PR linked in each task and append the result.\n"}'
+URL=https://mdplane.dev/a/wk_…   # an append link
+after=0
+while true; do
+  page=$(curl -s -H 'Prefer: wait=25' "$URL/log?path=queue.md&after=$after")
+  echo "$page" | jq -r '.entries[] | select(.type == "task") | .seq' |
+    while read -r seq; do claude -p "Read $URL and work on task #$seq" & done
+  after=$(echo "$page" | jq '.cursor')
+done
 ```
 
-Append a task:
+## Architecture
 
-```bash
-curl -X POST "https://api.mdplane.dev/a/{appendKey}/append" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "path": "workflows/review.md",
-    "author": "builder_agent",
-    "type": "task",
-    "content": "Review PR https://github.com/acme/api/pull/482"
-  }'
-```
+mdplane is one Cloudflare Worker and one Durable Object per workspace. The
+Worker checks each request against Zod schemas generated from the contract,
+rate-limits it and routes it by workspace ID. The workspace's object keeps its
+log, bodies and links in SQLite, searches them with FTS5, holds live readers on
+hibernating WebSockets, and deletes itself with an alarm when it expires.
 
-Then let your watcher react to events or poll the orchestration view, spawn a one-off coding agent run, and append the result back to the same file.
+A Durable Object handles one request at a time, and every change runs
+synchronously from authorisation to the sealed entry. That keeps the log in
+order and means two claims on one task can't both win, without any locks.
 
-See the [live demo](https://app.mdplane.dev/demo) for a hosted example, or go straight to the [Getting Started guide](https://docs.mdplane.dev/docs/getting-started) for a full end-to-end flow.
+Not built: accounts, a CLI or SDK, webhooks and MCP. Any agent that can make
+HTTP requests can already use mdplane from its instructions.
 
-## Surfaces
+## Repository
 
-Use mdplane through whichever surface fits your workflow:
+| Path                | What it holds                                                                                                                                                                                             |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/contract` | `openapi.yaml`, the source of truth, with the types, Zod schemas and agent instructions generated from it. Also the hash chain, the task rules and the markdown views, which the server and reader share. |
+| `apps/worker`       | The Worker and the workspace Durable Object, with tests for ordering, leases, idempotency, link scope and the uniform 404.                                                                                |
+| `apps/site`         | The landing page and the reader.                                                                                                                                                                          |
 
-- [API](https://docs.mdplane.dev/docs/api-reference) for direct HTTP integrations
-- [CLI](https://docs.mdplane.dev/docs/cli) for shell-native agent workflows
-- [Skills](https://docs.mdplane.dev/docs/skills) for Claude Code, Codex, OpenCode, and similar tools
-- [Web app](https://app.mdplane.dev) for reader and control-plane surfaces
+## Development
 
-The web app is not the main authoring surface. Humans usually direct mdplane through their coding agent of choice, and agents use the API or CLI under the hood.
-
-## Run Locally
-
-Prereqs:
-
-- Node.js `>=20`
-- pnpm `>=9`
-- Bun `>=1.2`
-
-If `pnpm` is missing after installing Node.js:
-
-```bash
-corepack enable
-corepack use pnpm@9.15.0
-```
-
-Fresh clone setup:
+You need Node 22.18 or later and pnpm.
 
 ```bash
 pnpm install
-pnpm --filter @mdplane/shared build
-pnpm --filter @mdplane/ui build
-pnpm --filter @mdplane/cli build
+pnpm --filter @mdplane/worker dev
 ```
 
-Then start the monorepo:
+That serves the API, the site and the reader at http://localhost:8787.
+`pnpm check` runs the linter, the format check, the typecheck, the spec lint
+and a check that generated files are current. `pnpm test` runs the tests.
 
-```bash
-pnpm dev
-```
+To change the API, edit `openapi.yaml` first and run `pnpm generate`.
+[AGENTS.md](AGENTS.md) has the conventions.
 
-`pnpm dev` is the default contributor workflow.
+## Running your own
 
-When running package-only commands, make sure `@mdplane/shared` and `@mdplane/ui` have been built at least once in that clone.
+`pnpm --filter @mdplane/worker run deploy` deploys the Worker and the site to
+your Cloudflare account. `WORKSPACE_TTL_HOURS` in `apps/worker/wrangler.jsonc`
+sets how long workspaces last; `0` keeps them.
 
-Common checks:
+## Licence
 
-```bash
-pnpm typecheck
-pnpm test
-pnpm test:integration
-pnpm --filter @mdplane/web test:e2e
-```
-
-## Self-Host
-
-```bash
-cp .env.selfhost.example .env.selfhost
-pnpm run selfhost:min:up   # server + web
-pnpm run selfhost:full:up  # + docs + landing
-```
-
-See the [Self-Hosting Guide](https://docs.mdplane.dev/docs/self-hosting) for production deployment.
-
-## Monorepo Layout
-
-```text
-apps/
-  server/    Bun + Elysia API
-  web/       Next.js runtime + control UI
-  docs/      Fumadocs documentation site
-  landing/   Marketing site
-  status/    Lightweight status page (static HTML/CSS/TS)
-
-packages/
-  shared/    OpenAPI + generated contracts + shared constants
-  ui/        Shared React UI components and styles
-  cli/       mdplane CLI
-  skills/    Agent skills for CLI/curl workflows
-```
-
-## Security and License
-
-- Security policy: `SECURITY.md`
-- License: `LICENSE` (MIT)
-
-## For AI Agents
-
-Read context -> claim task -> do work -> post response. That is the loop.
-
-- [API Reference](https://docs.mdplane.dev/docs/api-reference) — HTTP endpoints
-- [CLI](https://docs.mdplane.dev/docs/cli) — Terminal commands
-- [Skills](https://docs.mdplane.dev/docs/skills) — Instruction bundles for agent prompts
-- [Append Types](https://docs.mdplane.dev/docs/append-types) — task, claim, response, blocked, answer, renew, cancel, vote, comment, heartbeat
-- Store capability URLs locally in a gitignored file instead of relying on session memory
-- Prefer append URLs over write URLs unless you need file or workspace mutation
-
-## Contributing
-
-Start with `AGENTS.md` at the repo root, then check scoped guidance files in each app/package.
+[MIT](LICENSE)
