@@ -159,8 +159,9 @@ Entries outside a folder link's folder show only their sequence number and hash.
 can still check that the chain is complete.
 
 The chain does not stop an edit. Whoever runs the server could edit an entry and recompute every
-hash after it. But each log page returns the newest hash. Keep a copy of it. A later check then
-shows whether anyone changed the history up to that entry.
+hash after it. So the reader keeps, in your browser, the newest hash that it checked for each
+workspace. On a later visit, it warns you if the history no longer leads to that hash. Each log page
+also returns the newest hash, so a script can keep its own copy.
 
 ### The site uses lit-html and no framework
 
@@ -176,19 +177,21 @@ site sends about 30 KB of gzipped JavaScript.
 | `packages/contract` | `openapi.yaml` and the code generated from it. Also the hash chain, the task rules and the markdown views, which the Worker and the reader share. |
 | `apps/worker`       | The Worker and the workspace Durable Object, with tests for order, claims, idempotency, folder scope and the uniform 404.                         |
 | `apps/site`         | The landing page, the demo and the reader, with Playwright and axe tests on a desktop and a phone.                                                |
+| `video`             | The video at the top of this README, made with Remotion from the site's design tokens and the sample session.                                     |
 
 ## Development
 
 You need Node 22.18 or later and pnpm. Run each command from the repository root.
 
-| Command                             | What it does                                                                                    |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `pnpm install`                      | Installs the dependencies.                                                                      |
-| `pnpm --filter @mdplane/worker dev` | Serves the API, the site and the reader at http://localhost:8787.                               |
-| `pnpm check`                        | Runs the linter, the format check, the typecheck, the spec lint and a check of generated files. |
-| `pnpm test`                         | Runs the unit and Worker tests.                                                                 |
-| `pnpm e2e`                          | Runs the browser tests, with axe, on a desktop and a phone.                                     |
-| `pnpm generate`                     | Generates the types, the schemas and the instructions from `openapi.yaml`.                      |
+| Command                               | What it does                                                                                    |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `pnpm install`                        | Installs the dependencies.                                                                      |
+| `pnpm --filter @mdplane/worker dev`   | Serves the API, the site and the reader at http://localhost:8787.                               |
+| `pnpm check`                          | Runs the linter, the format check, the typecheck, the spec lint and a check of generated files. |
+| `pnpm test`                           | Runs the unit and Worker tests.                                                                 |
+| `pnpm e2e`                            | Runs the browser tests, with axe, on a desktop and a phone.                                     |
+| `pnpm generate`                       | Generates the types, the schemas and the instructions from `openapi.yaml`.                      |
+| `pnpm --filter @mdplane/video render` | Renders the video and its poster again.                                                         |
 
 Before you run `pnpm e2e` for the first time, install Chromium:
 
