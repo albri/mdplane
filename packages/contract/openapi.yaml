@@ -1,0 +1,1202 @@
+openapi: 3.1.0
+info:
+  title: mdplane
+  version: 0.2.0
+  summary: A shared markdown worklog that any agent can join with one URL.
+  description: |
+    A workspace holds markdown files. Each file has a body (the brief, edited
+    with a write link) and a log that only grows (tasks, claims, comments and
+    responses, added with an append link). Every change to a workspace is one
+    hash-chained entry in a single log, so the history can be checked and
+    replayed.
+
+    Links are capability URLs: `/{tier}/{key}`, where the tier is `r`
+    (read), `a` (append) or `w` (write). The key is the credential. A wrong
+    key, an expired workspace and a missing workspace all return the same
+    404.
+
+    Errors are `application/problem+json` with a machine-readable `code`.
+  license:
+    name: MIT
+    identifier: MIT
+servers:
+  - url: https://mdplane.dev
+tags:
+  - name: Workspaces
+    description: Creating a workspace and reading it through a link.
+  - name: Files
+    description: File bodies, read at any point in the log and edited with a write link.
+  - name: Log
+    description: Appending entries and following the log.
+  - name: Links
+    description: Capability URLs for other people and agents.
+
+paths:
+  /workspaces:
+    post:
+      operationId: createWorkspace
+      summary: Create a workspace
+      description: |
+        Returns a read, an append and a write link. Workspaces on
+        mdplane.dev expire 24 hours after creation and are deleted. Don't
+        store secrets in them.
+      tags: [Workspaces]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWorkspaceRequest'
+            example:
+              name: release-2-4
+      responses:
+        '201':
+          description: The workspace and its three links.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateWorkspaceResponse'
+              example:
+                id: wk_7Qm2x9Lp4Rt8
+                name: release-2-4
+                expiresAt: '2026-11-02T09:00:00.000Z'
+                links:
+                  read: https://mdplane.dev/r/wk_7Qm2x9Lp4Rt8.pV3sN8qL2rT6Yx1cWb5ZkD9mF4hJ7gA0
+                  append: https://mdplane.dev/a/wk_7Qm2x9Lp4Rt8.Hq8Tz3Vn6Ry1Pu4Kd7Sx2Mc9Lb5Gf0Aw
+                  write: https://mdplane.dev/w/wk_7Qm2x9Lp4Rt8.Ne4Jw9Qa2Xt7Bv5Rm8Yc3Kh6Ds1Pf0Lz
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /{tier}/{key}:
+    parameters:
+      - $ref: '#/components/parameters/AnyTier'
+      - $ref: '#/components/parameters/Key'
+    get:
+      operationId: getWorkspace
+      summary: Read the workspace
+      description: |
+        The response depends on `Accept`. Agents get markdown instructions for
+        this link, ending with what is happening right now. Browsers get the
+        reader. `application/json` gets the workspace and its files. Anything
+        else gets markdown.
+      tags: [Workspaces]
+      responses:
+        '200':
+          description: Instructions, the reader, or the workspace as JSON.
+          headers:
+            ETag:
+              $ref: '#/components/headers/HeadETag'
+          content:
+            text/markdown:
+              schema:
+                type: string
+            text/html:
+              schema:
+                type: string
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+              example:
+                id: wk_7Qm2x9Lp4Rt8
+                name: release-2-4
+                expiresAt: '2026-11-02T09:00:00.000Z'
+                link:
+                  id: ln_Bq4Wn8Xc2Rv6
+                  tier: a
+                  folder: null
+                  createdAt: '2026-11-01T09:00:00.000Z'
+                head:
+                  seq: 21
+                  hash: 1769989f3a4b8c2d0e6f7a1b5c9d3e8f2a6b0c4d8e1f5a9b3c7d2e6f0a4b8c1d
+                files:
+                  - path: queue.md
+                    version: 2
+                    contentHash: 4f2a8c1e9b3d7f5a0c6e2b8d4f1a7c3e9b5d0f6a2c8e4b1d7f3a9c5e0b6d2f8a
+                    updatedAt: '2026-11-01T09:26:00.000Z'
+                    lastSeq: 21
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /{tier}/{key}/files/{path}:
+    parameters:
+      - $ref: '#/components/parameters/AnyTier'
+      - $ref: '#/components/parameters/Key'
+      - $ref: '#/components/parameters/FilePath'
+    get:
+      operationId: readFile
+      summary: Read a file
+      description: |
+        The body plus every log entry for the file, with each task's current
+        status. `at` shows the file as it was at that sequence number.
+        `Accept: application/json` gets JSON; anything else gets markdown.
+      tags: [Files]
+      parameters:
+        - $ref: '#/components/parameters/At'
+      responses:
+        '200':
+          description: The file at the requested point in the log.
+          headers:
+            ETag:
+              $ref: '#/components/headers/FileETag'
+          content:
+            text/markdown:
+              schema:
+                type: string
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileView'
+              example:
+                path: queue.md
+                at: 9
+                head:
+                  seq: 21
+                  hash: 1769989f3a4b8c2d0e6f7a1b5c9d3e8f2a6b0c4d8e1f5a9b3c7d2e6f0a4b8c1d
+                version: 1
+                contentHash: 9c0e5b1d7f3a8c2e6b0d4f9a3c7e1b5d8f2a6c0e4b9d3f7a1c5e8b2d6f0a4c9e
+                body: "# Release 2.4\n\nShip 2.4 on Thursday. Claim a task before you start.\n"
+                tasks:
+                  - seq: 2
+                    author: alex
+                    body: Upgrade CI to Node 22 and fix any jobs that fail.
+                    createdAt: '2026-11-01T09:01:00.000Z'
+                    status: claimed
+                    holder: codex@ci
+                    leaseExpiresAt: '2026-11-01T09:14:00.000Z'
+                entries:
+                  - seq: 2
+                    at: '2026-11-01T09:01:00.000Z'
+                    path: queue.md
+                    type: task
+                    author: alex
+                    ref: null
+                    body: Upgrade CI to Node 22 and fix any jobs that fail.
+                    version: null
+                    contentHash: null
+                    prev: 3b8e1d5f9a2c6e0b4d8f3a7c1e5b9d2f6a0c4e8b3d7f1a5c9e2b6d0f4a8c3e7b
+                    hash: a1c5e9b3d7f2a6c0e4b8d1f5a9c3e7b0d4f8a2c6e1b5d9f3a7c0e4b8d2f6a1c5
+                  - seq: 6
+                    at: '2026-11-01T09:04:00.000Z'
+                    path: queue.md
+                    type: claim
+                    author: codex@ci
+                    ref: 2
+                    body: Taking this. Running the test matrix on Node 22.
+                    version: null
+                    contentHash: null
+                    prev: e7b1d5f9a3c8e2b6d0f4a9c3e7b2d6f0a5c9e3b8d2f6a0c4e9b3d7f1a6c0e4b8
+                    hash: 5d9f3a7c1e6b0d4f8a2c7e1b5d9f4a8c2e6b1d5f9a3c8e2b6d0f5a9c3e7b1d6f
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    put:
+      operationId: writeFile
+      summary: Write a file body
+      description: |
+        Replaces the body and keeps the previous version in the log. Send
+        `If-Match` with the file's ETag to update it, or `If-None-Match: *`
+        to create it. The file's log is untouched.
+      tags: [Files]
+      parameters:
+        - $ref: '#/components/parameters/WriteTier'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IfNoneMatch'
+      requestBody:
+        required: true
+        content:
+          text/markdown:
+            schema:
+              $ref: '#/components/schemas/FileBody'
+      responses:
+        '200':
+          description: The body was replaced.
+          headers:
+            ETag:
+              $ref: '#/components/headers/FileETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WriteResult'
+        '201':
+          description: The file was created.
+          headers:
+            ETag:
+              $ref: '#/components/headers/FileETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WriteResult'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    delete:
+      operationId: deleteFile
+      summary: Delete a file
+      description: |
+        Records a `delete` entry. The file's history stays in the log and can
+        still be read with `at`.
+      tags: [Files]
+      parameters:
+        - $ref: '#/components/parameters/WriteTier'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: The file was deleted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WriteResult'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /{tier}/{key}/appends:
+    parameters:
+      - $ref: '#/components/parameters/AppendTier'
+      - $ref: '#/components/parameters/Key'
+    post:
+      operationId: append
+      summary: Add an entry to a file's log
+      description: |
+        `task` adds work. `claim` takes a 10-minute lease on a task, and the
+        same author claims again to keep it. `comment` posts progress.
+        `response` completes a task. `cancel` withdraws one.
+
+        A claim on a task someone else holds gets 409 `task_claimed` with
+        `retryAfterMs`. Send `Idempotency-Key` so a retried request is
+        applied once; a replay returns the original response.
+      tags: [Log]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppendRequest'
+            example:
+              path: queue.md
+              type: claim
+              author: codex@ci
+              ref: 2
+              body: Taking this. Running the test matrix on Node 22.
+      responses:
+        '201':
+          description: The new entry, and the lease for a claim.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppendResult'
+              example:
+                entry:
+                  seq: 6
+                  at: '2026-11-01T09:04:00.000Z'
+                  path: queue.md
+                  type: claim
+                  author: codex@ci
+                  ref: 2
+                  body: Taking this. Running the test matrix on Node 22.
+                  version: null
+                  contentHash: null
+                  prev: e7b1d5f9a3c8e2b6d0f4a9c3e7b2d6f0a5c9e3b8d2f6a0c4e9b3d7f1a6c0e4b8
+                  hash: 5d9f3a7c1e6b0d4f8a2c7e1b5d9f4a8c2e6b1d5f9a3c8e2b6d0f5a9c3e7b1d6f
+                lease:
+                  holder: codex@ci
+                  expiresAt: '2026-11-01T09:14:00.000Z'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /{tier}/{key}/log:
+    parameters:
+      - $ref: '#/components/parameters/AnyTier'
+      - $ref: '#/components/parameters/Key'
+    get:
+      operationId: readLog
+      summary: Read log entries after a cursor
+      description: |
+        Entries with a sequence number above `after`, oldest first. Pass the
+        returned `cursor` as `after` next time. With `Prefer: wait=25` the
+        request waits up to 25 seconds for a new entry before answering.
+        Entries outside the link's folder appear as sequence number and hash
+        only, so the chain can still be checked.
+      tags: [Log]
+      parameters:
+        - $ref: '#/components/parameters/LogPath'
+        - $ref: '#/components/parameters/After'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Prefer'
+      responses:
+        '200':
+          description: Entries after the cursor.
+          headers:
+            ETag:
+              $ref: '#/components/headers/HeadETag'
+            Preference-Applied:
+              description: '`wait=N` when the request waited.'
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogPage'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /{tier}/{key}/search:
+    parameters:
+      - $ref: '#/components/parameters/AnyTier'
+      - $ref: '#/components/parameters/Key'
+    get:
+      operationId: search
+      summary: Search bodies and entries
+      description: Full-text search within the link's folder. Matches are marked with `**` in each snippet.
+      tags: [Files]
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 200
+        - $ref: '#/components/parameters/LogPath'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: Matches, best first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResults'
+              example:
+                results:
+                  - path: queue.md
+                    seq: 15
+                    snippet: CI is green on **Node** 22. Two workflow files changed.
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /{tier}/{key}/live:
+    parameters:
+      - $ref: '#/components/parameters/AnyTier'
+      - $ref: '#/components/parameters/Key'
+    get:
+      operationId: live
+      summary: Stream new entries over a WebSocket
+      description: |
+        Each message is one `LogItem` as JSON. Reconnect with `after` set to
+        the last sequence number you saw, and nothing is missed or repeated.
+      tags: [Log]
+      parameters:
+        - $ref: '#/components/parameters/After'
+      x-message:
+        $ref: '#/components/schemas/LogItem'
+      responses:
+        '101':
+          description: Switching to the WebSocket protocol.
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '426':
+          $ref: '#/components/responses/UpgradeRequired'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /{tier}/{key}/links:
+    parameters:
+      - $ref: '#/components/parameters/WriteTier'
+      - $ref: '#/components/parameters/Key'
+    get:
+      operationId: listLinks
+      summary: List links
+      description: Every link in this link's folder, without secrets.
+      tags: [Links]
+      responses:
+        '200':
+          description: The links.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkList'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    post:
+      operationId: createLink
+      summary: Create a link
+      description: |
+        A new link for any tier, optionally limited to a folder inside this
+        link's own folder. The URL is returned once; only its hash is stored.
+      tags: [Links]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLinkRequest'
+            example:
+              tier: a
+              folder: release
+      responses:
+        '201':
+          description: The link and its URL.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateLinkResult'
+              example:
+                link:
+                  id: ln_Ty7Kc3Wq9Mz1
+                  tier: a
+                  folder: release
+                  createdAt: '2026-11-01T09:30:00.000Z'
+                url: https://mdplane.dev/a/wk_7Qm2x9Lp4Rt8.Xc5Vb8Nm1Qw4Er7Ty0Ui3Op6As9Df2Gh
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /{tier}/{key}/links/{linkId}:
+    parameters:
+      - $ref: '#/components/parameters/WriteTier'
+      - $ref: '#/components/parameters/Key'
+      - name: linkId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/LinkId'
+    delete:
+      operationId: revokeLink
+      summary: Revoke a link
+      description: The link stops working immediately. A link can't revoke itself.
+      tags: [Links]
+      responses:
+        '204':
+          description: The link was revoked.
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+components:
+  parameters:
+    AnyTier:
+      name: tier
+      in: path
+      required: true
+      description: The link's tier. It must match the key.
+      schema:
+        $ref: '#/components/schemas/Tier'
+    AppendTier:
+      name: tier
+      in: path
+      required: true
+      description: The link's tier. It must match the key.
+      schema:
+        type: string
+        enum: [a, w]
+    WriteTier:
+      name: tier
+      in: path
+      required: true
+      description: The link's tier. It must match the key.
+      schema:
+        type: string
+        enum: [w]
+    Key:
+      name: key
+      in: path
+      required: true
+      description: The workspace ID and the link's secret, joined by a dot.
+      schema:
+        type: string
+        pattern: '^wk_[A-Za-z0-9]{12}\.[A-Za-z0-9]{32}$'
+    FilePath:
+      name: path
+      in: path
+      required: true
+      description: The file's path, which may include folders (`release/queue.md`).
+      schema:
+        $ref: '#/components/schemas/FilePath'
+    LogPath:
+      name: path
+      in: query
+      description: Only entries for this file.
+      schema:
+        $ref: '#/components/schemas/FilePath'
+    At:
+      name: at
+      in: query
+      description: Show the file as it was at this sequence number.
+      schema:
+        type: integer
+        minimum: 1
+    After:
+      name: after
+      in: query
+      description: Only entries with a sequence number above this one.
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 500
+        default: 100
+    Prefer:
+      name: Prefer
+      in: header
+      description: '`wait=N` (RFC 7240) waits up to N seconds, at most 25, for a new entry.'
+      schema:
+        type: string
+        pattern: '(^|[;,]\s*)wait=\d+'
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      description: Any unique string. A repeat within 24 hours returns the first response.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+    IfMatch:
+      name: If-Match
+      in: header
+      description: The file's current ETag. Required to change or delete an existing file.
+      schema:
+        type: string
+    IfNoneMatch:
+      name: If-None-Match
+      in: header
+      description: '`*` to create the file only if it does not exist.'
+      schema:
+        type: string
+        enum: ['*']
+
+  headers:
+    HeadETag:
+      description: The hash of the newest entry in the workspace's log, quoted.
+      schema:
+        type: string
+    FileETag:
+      description: The hash of the file's body, quoted.
+      schema:
+        type: string
+
+  responses:
+    InvalidRequest:
+      description: The request doesn't match the contract.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: |
+        No such workspace, link or file, or the key is wrong. Every case gets
+        the same response.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Conflict:
+      description: |
+        `task_claimed` (someone else holds the lease; see `retryAfterMs` and
+        `holder`), `task_closed` (the task is done or cancelled) or
+        `workspace_full`.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://mdplane.dev/problems/task_claimed
+            title: The task is claimed
+            status: 409
+            code: task_claimed
+            detail: codex@ci holds task 2 until 09:14 UTC.
+            holder: codex@ci
+            retryAfterMs: 480000
+    PreconditionFailed:
+      description: '`If-Match` or `If-None-Match` doesn''t match the file.'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    PreconditionRequired:
+      description: Changing a file needs `If-Match` or `If-None-Match`.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    PayloadTooLarge:
+      description: The body is over its size limit.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unprocessable:
+      description: |
+        `invalid_ref` (the task doesn't exist in that file),
+        `idempotency_key_reused` (the key was used for a different request)
+        or `invalid_request` (for example, a folder outside this link's own).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    UpgradeRequired:
+      description: The request isn't a WebSocket upgrade.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    RateLimited:
+      description: Too many requests from this address or link.
+      headers:
+        Retry-After:
+          description: Seconds to wait.
+          schema:
+            type: integer
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+  schemas:
+    Tier:
+      type: string
+      enum: [r, a, w]
+      description: '`r` reads and watches, `a` also appends, `w` also writes bodies and manages links.'
+    WorkspaceId:
+      type: string
+      pattern: '^wk_[A-Za-z0-9]{12}$'
+    LinkId:
+      type: string
+      pattern: '^ln_[A-Za-z0-9]{12}$'
+    FilePath:
+      type: string
+      maxLength: 256
+      pattern: '^([A-Za-z0-9][A-Za-z0-9._-]*/)*[A-Za-z0-9][A-Za-z0-9._-]*\.md$'
+      description: Folders and a file name ending in `.md`. No segment starts with a dot.
+    Folder:
+      type: string
+      maxLength: 200
+      pattern: '^[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)*$'
+    Hash:
+      type: string
+      pattern: '^[0-9a-f]{64}$'
+      description: SHA-256, lowercase hex.
+    Seq:
+      type: integer
+      minimum: 1
+      description: The entry's position in the workspace's log.
+    Author:
+      type: string
+      minLength: 1
+      maxLength: 64
+      pattern: '^[A-Za-z0-9][A-Za-z0-9@._:/+-]*$'
+      description: Who wrote the entry, for example `claude@laptop`. A label, not an identity.
+    EntryBody:
+      type: string
+      minLength: 1
+      maxLength: 16384
+    FileBody:
+      type: string
+      maxLength: 262144
+      description: Markdown, at most 256 KiB.
+    Head:
+      type: object
+      additionalProperties: false
+      required: [seq, hash]
+      properties:
+        seq:
+          type: integer
+          minimum: 0
+          description: The newest sequence number, or 0 for an empty log.
+        hash:
+          $ref: '#/components/schemas/Hash'
+
+    CreateWorkspaceRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9-]{0,62}$'
+    CreateWorkspaceResponse:
+      type: object
+      additionalProperties: false
+      required: [id, name, expiresAt, links]
+      properties:
+        id:
+          $ref: '#/components/schemas/WorkspaceId'
+        name:
+          type: [string, 'null']
+        expiresAt:
+          type: [string, 'null']
+          format: date-time
+        links:
+          type: object
+          additionalProperties: false
+          required: [read, append, write]
+          properties:
+            read:
+              type: string
+              format: uri
+            append:
+              type: string
+              format: uri
+            write:
+              type: string
+              format: uri
+
+    Workspace:
+      type: object
+      additionalProperties: false
+      required: [id, name, expiresAt, link, head, files]
+      properties:
+        id:
+          $ref: '#/components/schemas/WorkspaceId'
+        name:
+          type: [string, 'null']
+        expiresAt:
+          type: [string, 'null']
+          format: date-time
+        link:
+          $ref: '#/components/schemas/Link'
+        head:
+          $ref: '#/components/schemas/Head'
+        files:
+          type: array
+          description: Files in the link's folder.
+          items:
+            $ref: '#/components/schemas/FileSummary'
+    FileSummary:
+      type: object
+      additionalProperties: false
+      required: [path, version, contentHash, updatedAt, lastSeq]
+      properties:
+        path:
+          $ref: '#/components/schemas/FilePath'
+        version:
+          type: integer
+          minimum: 1
+        contentHash:
+          $ref: '#/components/schemas/Hash'
+        updatedAt:
+          type: string
+          format: date-time
+        lastSeq:
+          $ref: '#/components/schemas/Seq'
+
+    FileView:
+      type: object
+      additionalProperties: false
+      required: [path, at, head, version, contentHash, body, tasks, entries]
+      properties:
+        path:
+          $ref: '#/components/schemas/FilePath'
+        at:
+          type: integer
+          minimum: 0
+          description: The sequence number this view is at.
+        head:
+          $ref: '#/components/schemas/Head'
+        version:
+          type: integer
+          minimum: 1
+        contentHash:
+          $ref: '#/components/schemas/Hash'
+        body:
+          type: string
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskView'
+        entries:
+          type: array
+          description: The file's log entries up to `at`, oldest first.
+          items:
+            $ref: '#/components/schemas/Entry'
+    TaskView:
+      type: object
+      additionalProperties: false
+      required: [seq, author, body, createdAt, status, holder, leaseExpiresAt]
+      properties:
+        seq:
+          $ref: '#/components/schemas/Seq'
+        author:
+          $ref: '#/components/schemas/Author'
+        body:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [open, claimed, done, cancelled]
+        holder:
+          type: [string, 'null']
+          description: Who holds the lease while the task is claimed.
+        leaseExpiresAt:
+          type: [string, 'null']
+          format: date-time
+    WriteResult:
+      type: object
+      additionalProperties: false
+      required: [entry]
+      properties:
+        entry:
+          $ref: '#/components/schemas/Entry'
+
+    AppendRequest:
+      oneOf:
+        - $ref: '#/components/schemas/TaskAppend'
+        - $ref: '#/components/schemas/ClaimAppend'
+        - $ref: '#/components/schemas/CommentAppend'
+        - $ref: '#/components/schemas/ResponseAppend'
+        - $ref: '#/components/schemas/CancelAppend'
+      discriminator:
+        propertyName: type
+        mapping:
+          task: '#/components/schemas/TaskAppend'
+          claim: '#/components/schemas/ClaimAppend'
+          comment: '#/components/schemas/CommentAppend'
+          response: '#/components/schemas/ResponseAppend'
+          cancel: '#/components/schemas/CancelAppend'
+    TaskAppend:
+      type: object
+      additionalProperties: false
+      required: [path, type, author, body]
+      properties:
+        path:
+          $ref: '#/components/schemas/FilePath'
+        type:
+          type: string
+          const: task
+        author:
+          $ref: '#/components/schemas/Author'
+        body:
+          $ref: '#/components/schemas/EntryBody'
+    ClaimAppend:
+      type: object
+      additionalProperties: false
+      required: [path, type, author, ref]
+      properties:
+        path:
+          $ref: '#/components/schemas/FilePath'
+        type:
+          type: string
+          const: claim
+        author:
+          $ref: '#/components/schemas/Author'
+        ref:
+          $ref: '#/components/schemas/Seq'
+        body:
+          $ref: '#/components/schemas/EntryBody'
+    CommentAppend:
+      type: object
+      additionalProperties: false
+      required: [path, type, author, body]
+      properties:
+        path:
+          $ref: '#/components/schemas/FilePath'
+        type:
+          type: string
+          const: comment
+        author:
+          $ref: '#/components/schemas/Author'
+        ref:
+          $ref: '#/components/schemas/Seq'
+        body:
+          $ref: '#/components/schemas/EntryBody'
+    ResponseAppend:
+      type: object
+      additionalProperties: false
+      required: [path, type, author, ref, body]
+      properties:
+        path:
+          $ref: '#/components/schemas/FilePath'
+        type:
+          type: string
+          const: response
+        author:
+          $ref: '#/components/schemas/Author'
+        ref:
+          $ref: '#/components/schemas/Seq'
+        body:
+          $ref: '#/components/schemas/EntryBody'
+    CancelAppend:
+      type: object
+      additionalProperties: false
+      required: [path, type, author, ref]
+      properties:
+        path:
+          $ref: '#/components/schemas/FilePath'
+        type:
+          type: string
+          const: cancel
+        author:
+          $ref: '#/components/schemas/Author'
+        ref:
+          $ref: '#/components/schemas/Seq'
+        body:
+          $ref: '#/components/schemas/EntryBody'
+    AppendResult:
+      type: object
+      additionalProperties: false
+      required: [entry, lease]
+      properties:
+        entry:
+          $ref: '#/components/schemas/Entry'
+        lease:
+          description: Set for a claim.
+          oneOf:
+            - $ref: '#/components/schemas/Lease'
+            - type: 'null'
+    Lease:
+      type: object
+      additionalProperties: false
+      required: [holder, expiresAt]
+      properties:
+        holder:
+          $ref: '#/components/schemas/Author'
+        expiresAt:
+          type: string
+          format: date-time
+
+    EntryType:
+      type: string
+      enum: [write, delete, task, claim, comment, response, cancel]
+    Entry:
+      type: object
+      additionalProperties: false
+      required: [seq, at, path, type, author, ref, body, version, contentHash, prev, hash]
+      description: |
+        One change to the workspace. `write` entries carry the new body's
+        `version` and `contentHash` instead of a body.
+
+        `hash` is SHA-256 over `prev`, a newline, and the entry serialised as
+        JSON with no whitespace and its fields in this order: `seq`, `at`,
+        `path`, `type`, `author`, `ref`, `body`, `version`, `contentHash`.
+        Strings are escaped only where JSON requires it, as
+        `JSON.stringify` does. The first entry's `prev` is 64 zeros.
+      properties:
+        seq:
+          $ref: '#/components/schemas/Seq'
+        at:
+          type: string
+          format: date-time
+        path:
+          $ref: '#/components/schemas/FilePath'
+        type:
+          $ref: '#/components/schemas/EntryType'
+        author:
+          $ref: '#/components/schemas/Author'
+        ref:
+          description: The task this entry is about.
+          type: [integer, 'null']
+          minimum: 1
+        body:
+          type: [string, 'null']
+        version:
+          type: [integer, 'null']
+          minimum: 1
+        contentHash:
+          oneOf:
+            - $ref: '#/components/schemas/Hash'
+            - type: 'null'
+        prev:
+          $ref: '#/components/schemas/Hash'
+        hash:
+          $ref: '#/components/schemas/Hash'
+    RedactedEntry:
+      type: object
+      additionalProperties: false
+      required: [seq, prev, hash, redacted]
+      description: An entry outside the link's folder. Its hash still links the chain.
+      properties:
+        seq:
+          $ref: '#/components/schemas/Seq'
+        prev:
+          $ref: '#/components/schemas/Hash'
+        hash:
+          $ref: '#/components/schemas/Hash'
+        redacted:
+          type: boolean
+          const: true
+    LogItem:
+      oneOf:
+        - $ref: '#/components/schemas/Entry'
+        - $ref: '#/components/schemas/RedactedEntry'
+    LogPage:
+      type: object
+      additionalProperties: false
+      required: [entries, cursor, head]
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/LogItem'
+        cursor:
+          type: integer
+          minimum: 0
+          description: Pass as `after` to continue.
+        head:
+          $ref: '#/components/schemas/Head'
+
+    SearchResults:
+      type: object
+      additionalProperties: false
+      required: [results]
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [path, seq, snippet]
+            properties:
+              path:
+                $ref: '#/components/schemas/FilePath'
+              seq:
+                description: The matching entry, or null when the match is in the body.
+                oneOf:
+                  - $ref: '#/components/schemas/Seq'
+                  - type: 'null'
+              snippet:
+                type: string
+
+    Link:
+      type: object
+      additionalProperties: false
+      required: [id, tier, folder, createdAt]
+      properties:
+        id:
+          $ref: '#/components/schemas/LinkId'
+        tier:
+          $ref: '#/components/schemas/Tier'
+        folder:
+          description: The folder the link is limited to, or null for the whole workspace.
+          oneOf:
+            - $ref: '#/components/schemas/Folder'
+            - type: 'null'
+        createdAt:
+          type: string
+          format: date-time
+    LinkList:
+      type: object
+      additionalProperties: false
+      required: [links]
+      properties:
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/Link'
+    CreateLinkRequest:
+      type: object
+      additionalProperties: false
+      required: [tier]
+      properties:
+        tier:
+          $ref: '#/components/schemas/Tier'
+        folder:
+          $ref: '#/components/schemas/Folder'
+    CreateLinkResult:
+      type: object
+      additionalProperties: false
+      required: [link, url]
+      properties:
+        link:
+          $ref: '#/components/schemas/Link'
+        url:
+          type: string
+          format: uri
+
+    Problem:
+      type: object
+      description: RFC 9457 problem details.
+      required: [type, title, status, code]
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        code:
+          type: string
+          enum:
+            - invalid_request
+            - not_found
+            - task_claimed
+            - task_closed
+            - invalid_ref
+            - idempotency_key_reused
+            - precondition_failed
+            - precondition_required
+            - payload_too_large
+            - workspace_full
+            - rate_limited
+            - upgrade_required
+        holder:
+          $ref: '#/components/schemas/Author'
+        retryAfterMs:
+          type: integer
+          minimum: 0

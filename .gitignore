@@ -1,67 +1,25 @@
-# Dependencies
 node_modules
-.pnpm-store
-
-# Build outputs
+.wrangler
 dist
-build
-.next
-.turbo
-out
-
-# Test & Coverage
 coverage
-*.lcov
-
-# Playwright
-test-results/
-playwright-report/
-blob-report/
-
-# IDE
-.idea
-.vscode
-*.swp
-*.swo
-.DS_Store
-
-# Environment
-.env
-.env.*
-!.env.example
-!.env.selfhost.example
-!apps/**/.env.example
-
-# mdplane CLI config (repo-local override)
-.mdplane
-
-# Logs
-logs
-.logs/
 *.log
-npm-debug.log*
-pnpm-debug.log*
-
-# Database
-*.sqlite
-*.sqlite-wal
-*.sqlite-shm
-data/
-
-# Cache
-.cache
-.eslintcache
+.DS_Store
 *.tsbuildinfo
 
-# Misc
-*.bak
-*.tmp
-.tmp/
-.localappdata/
-.vercel
-.env*.local
+# Local configuration and secrets
+.env
+.env.*
+.dev.vars
+.dev.vars.*
+.auth/
 
-# AI agent local configs (installed skills symlinked from .agents/skills/)
+# Local databases
+data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# Local agent configuration
 /.claude
 /.opencode
 /.agents

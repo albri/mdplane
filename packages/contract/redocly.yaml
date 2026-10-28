@@ -1,0 +1,5 @@
+extends:
+  - recommended-strict
+rules:
+  # Workspaces are created without a credential; every other route takes the key in its path.
+  security-defined: off

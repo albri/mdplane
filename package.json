@@ -1,0 +1,19 @@
+{
+  "name": "mdplane",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "generate": "pnpm -r generate",
+    "check": "biome check . && pnpm -r check",
+    "test": "pnpm -r test",
+    "format": "biome check --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.3",
+    "typescript": "^6.0.3"
+  }
+}

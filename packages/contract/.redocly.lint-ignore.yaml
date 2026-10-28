@@ -1,0 +1,4 @@
+# A WebSocket upgrade answers 101, never 2xx.
+openapi.yaml:
+  operation-2xx-response:
+    - '#/paths/~1{tier}~1{key}~1live/get/responses'
