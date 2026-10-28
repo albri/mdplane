@@ -13,6 +13,9 @@ coverage
 .dev.vars.*
 .auth/
 
+# Local planning notes
+/docs/
+
 # Local databases
 data/
 *.sqlite
