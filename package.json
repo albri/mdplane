@@ -2,18 +2,20 @@
   "name": "mdplane",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "generate": "pnpm -r generate",
+    "check": "oxlint --type-aware --deny-warnings && oxfmt --check && tsc -p packages/contract && pnpm -r check",
+    "test": "pnpm -r test",
+    "format": "oxfmt"
+  },
+  "devDependencies": {
+    "oxfmt": "^0.75.0",
+    "oxlint": "^1.90.0",
+    "oxlint-tsgolint": "^7.0.2005",
+    "typescript": "^7.0.2"
+  },
   "engines": {
     "node": ">=22.18"
   },
-  "scripts": {
-    "generate": "pnpm -r generate",
-    "check": "biome check . && pnpm -r check",
-    "test": "pnpm -r test",
-    "format": "biome check --write ."
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^2.6.3",
-    "typescript": "^6.0.3"
-  }
+  "packageManager": "pnpm@9.15.0"
 }

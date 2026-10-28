@@ -7,7 +7,7 @@
   },
   "scripts": {
     "generate": "openapi-ts && node scripts/generate-instructions.ts",
-    "check": "redocly lint openapi.yaml && tsc -p . && pnpm generate && git diff --exit-code -- src/generated",
+    "check": "redocly lint openapi.yaml && pnpm generate && git diff --exit-code -- src/generated",
     "test": "vitest run"
   },
   "dependencies": {
@@ -17,6 +17,7 @@
     "@hey-api/openapi-ts": "^0.99.0",
     "@redocly/cli": "^2.72.0",
     "@types/node": "^22.19.0",
+    "typescript": "^6.0.3",
     "vitest": "^5.0.5",
     "yaml": "^2.9.1"
   }

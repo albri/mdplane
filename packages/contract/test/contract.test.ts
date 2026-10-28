@@ -56,8 +56,8 @@ describe('agent instructions', () => {
   })
 })
 
-describe('hash chain', () => {
-  const entry = (seq: number, body: string): EntryContent => ({
+function entry(seq: number, body: string): EntryContent {
+  return {
     seq,
     at: `2026-11-01T09:0${seq}:00.000Z`,
     path: 'queue.md',
@@ -67,20 +67,23 @@ describe('hash chain', () => {
     body,
     version: null,
     contentHash: null,
-  })
-
-  async function chain(bodies: string[]): Promise<Entry[]> {
-    const sealed: Entry[] = []
-    let prev = GENESIS
-    for (const [i, body] of bodies.entries()) {
-      const content = entry(i + 1, body)
-      const hash = await hashEntry(prev, content)
-      sealed.push({ ...content, prev, hash })
-      prev = hash
-    }
-    return sealed
   }
+}
 
+async function chain(bodies: string[]): Promise<Entry[]> {
+  const sealed: Entry[] = []
+  let prev = GENESIS
+  for (const [i, body] of bodies.entries()) {
+    const content = entry(i + 1, body)
+    // oxlint-disable-next-line no-await-in-loop -- each hash needs the previous one
+    const hash = await hashEntry(prev, content)
+    sealed.push({ ...content, prev, hash })
+    prev = hash
+  }
+  return sealed
+}
+
+describe('hash chain', () => {
   // Computed independently from the canonical form in the spec. Other implementations rely on it.
   test('hashes match the canonical form in the spec', async () => {
     const [first] = await chain(['CI is green on Node 22.'])

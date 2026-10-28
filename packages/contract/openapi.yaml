@@ -671,7 +671,7 @@ components:
             holder: codex@ci
             retryAfterMs: 480000
     PreconditionFailed:
-      description: '`If-Match` or `If-None-Match` doesn''t match the file.'
+      description: "`If-Match` or `If-None-Match` doesn't match the file."
       content:
         application/problem+json:
           schema:

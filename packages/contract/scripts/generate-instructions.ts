@@ -14,6 +14,7 @@ const TIERS = ['r', 'a', 'w'] as const
 type Tier = (typeof TIERS)[number]
 
 const root = new URL('..', import.meta.url)
+// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- our own spec; `redocly lint` validates it
 const spec = parse(readFileSync(new URL('openapi.yaml', root), 'utf8')) as {
   paths: Record<string, PathItem>
   components: { parameters: Record<string, Parameter>; schemas: Record<string, Schema> }

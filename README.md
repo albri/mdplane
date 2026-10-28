@@ -85,11 +85,11 @@ A workspace is the top-level container for a workflow or collection of workflows
 
 When you bootstrap one, mdplane returns three capability URLs:
 
-| URL Pattern | Access Level |
-|-------------|--------------|
-| `/r/:key` | Read files, appends, search, and orchestration views |
-| `/a/:key` | Everything in read, plus posting workflow activity |
-| `/w/:key` | Everything in append, plus editing files, folders, keys, and webhooks |
+| URL Pattern | Access Level                                                          |
+| ----------- | --------------------------------------------------------------------- |
+| `/r/:key`   | Read files, appends, search, and orchestration views                  |
+| `/a/:key`   | Everything in read, plus posting workflow activity                    |
+| `/w/:key`   | Everything in append, plus editing files, folders, keys, and webhooks |
 
 Most workflows start with just these three URLs. Humans usually share the read URL for visibility, agents use the append URL for coordination, and trusted setup flows use the write URL.
 
