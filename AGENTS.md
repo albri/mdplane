@@ -1,149 +1,55 @@
-# mdplane Development
+# AGENTS.md
 
-> Implementation MUST match documentation. Deviation = bug.
+mdplane is a shared markdown worklog that agents join through one URL. It runs
+as a Cloudflare Worker with one Durable Object per workspace: the Worker
+validates and routes each request, and the workspace's object owns its log,
+files and links in SQLite. Each object handles one request at a time, which is
+what keeps appends ordered and claims safe without locks.
 
-## Critical Rules (Non-Negotiable)
+## Layout
 
-1. `Testing Must Add Signal`: prefer test-first for behavior changes, but do not add implementation-detail or low-signal tests that create maintenance noise.
-2. `OpenAPI Is Truth`: `packages/shared/openapi/` defines API contracts.
-3. `No Shortcuts`: do not mark work done as "MVP viable".
+- `packages/contract`: the API contract. `openapi.yaml` is the source of truth.
+  The types, Zod schemas and agent instructions in `src/generated/` are
+  generated from it, and `src/chain.ts` implements the hash chain it defines.
 
-## CI Pipeline
+## Commands
 
-`Lint -> Typecheck -> Unit Tests -> Build -> Integration Tests -> E2E Tests`
+Run from the repository root, with Node 22.18 or later and pnpm.
 
-All steps must pass for PR merge.
+- `pnpm generate` regenerates everything derived from `openapi.yaml`.
+- `pnpm check` runs oxlint (type-aware), the oxfmt format check, the
+  TypeScript typecheck, the spec lint, and a check that generated files are
+  current.
+- `pnpm test` runs the tests.
+- `pnpm format` formats the code.
 
-## Source Of Truth Hierarchy
+## Changing the API
 
-1. `packages/shared/openapi/` (contract)
-2. `packages/shared/src/generated/` (generated types/schemas)
-3. `apps/server/src/routes/` (implementation)
-4. Consumers and docs:
-   - `apps/web/`
-   - `packages/cli/`
-   - `packages/skills/`
-   - `apps/docs/content/docs/`
-   - `apps/landing/`
+1. Edit `packages/contract/openapi.yaml` first, including its examples.
+2. Run `pnpm generate` and commit the generated files with the spec.
+3. Update the implementation to match.
 
-## Type Safety Rules (P0)
+The agent instructions come from the spec and `src/instructions.md`. Don't
+write them by hand.
 
-- No manual API DTOs if generated/shared types exist.
-- No `any` in new or modified code.
-- Avoid unchecked type assertions; validate at boundaries.
-- Backend routes with query params must have Zod validation.
-- Contract request/response types must come from `@mdplane/shared` only.
-- Server-local types are internal execution types only (`*Input`, `*Context`, `*Result`, `*Row`).
-- Do not introduce server-local `*Request`/`*Response` API DTO aliases when a shared generated type exists.
-- Prefer query schemas from `@mdplane/shared`:
-  - `packages/shared/src/generated/query-schemas.gen.ts`
-  - `packages/shared/src/schemas/query-schemas.ts`
-- When a route has its own contract entry, prefer the exact generated operation schema over borrowing a sibling route schema with the same current shape.
+## Conventions
 
-## Code Hygiene Rules (P0)
+- Node runs TypeScript directly, so scripts are `.ts` with no build step. Use
+  only erasable syntax: no enums or namespaces.
+- `packages/contract` keeps TypeScript 6 because the code generator needs its
+  JavaScript API. Everything is typechecked with TypeScript 7.
+- Validate input at the boundary with the generated Zod schemas. Don't
+  hand-write request or response types.
+- Write tests that fail when behaviour breaks: ordering, leases, idempotency,
+  link scope, the hash chain. Skip tests that restate the implementation.
+- Comments say why, not what.
+- Commit subjects are short imperative sentences, without prefixes.
 
-- Comments must document current behavior only.
-- Remove development-history narration and stale plan references as part of each touch.
+## Security
 
-## Route Change Checklist (Mandatory)
-
-When changing any route, update all affected surfaces:
-
-| Component | Location | Required Check |
-|---|---|---|
-| OpenAPI spec | `packages/shared/openapi/paths/*.yaml` | Paths, params, request/response schema |
-| Shared generation | `packages/shared/src/generated/` | Regenerated outputs committed |
-| Server routes | `apps/server/src/routes/` | Behavior matches contract |
-| Docs site | `apps/docs/content/docs/` | API reference/examples updated |
-| CLI | `packages/cli/` | Command behavior and help text in sync |
-| Skills | `packages/skills/` | No hallucinated route examples |
-| Web app | `apps/web/` | API usage and UX language in sync |
-| Landing | `apps/landing/` | Product/API claims still true |
-
-Failure to update affected components means the task is incomplete.
-
-## Uncertainty Protocol (Mandatory)
-
-If any route/field behavior is unclear:
-
-1. Stop implementation for that part.
-2. Verify against OpenAPI and server route code.
-3. Reconcile drift before proceeding.
-4. Do not commit speculative fixes or guessed docs/examples.
-
-## Stale Reference Gate
-
-Before marking work done:
-
-- Every command listed in edited docs must exist.
-- Every file path listed in edited docs must exist.
-- Remove or fix dead links/references immediately.
-
-## Definition Of Done
-
-A task is done only when all apply:
-
-1. Tests are added/updated where they materially validate user-facing behavior or regressions, and all relevant tests pass.
-2. Implementation matches OpenAPI and generated types.
-3. Affected packages/docs are updated for drift.
-4. Verification commands pass locally (or failures are explicitly documented).
-
-## Commands (Run From Repo Root)
-
-### Development
-
-```bash
-pnpm dev
-pnpm build
-pnpm typecheck
-pnpm lint
-pnpm format
-```
-
-### Testing
-
-```bash
-pnpm test
-pnpm test:server
-pnpm test:cli
-pnpm test:integration
-pnpm test:e2e
-```
-
-### Quality Gates
-
-```bash
-pnpm check:route-coverage
-pnpm check:route-db-usage
-pnpm check:domain-route-imports
-pnpm check:enum-sync
-pnpm check:query-params
-pnpm check:docs-routes
-pnpm --filter @mdplane/shared generate:check
-pnpm --filter @mdplane/shared openapi:lint
-```
-
-## Consistency Checks (Before Implementing)
-
-```bash
-rg "paramName" apps/server/src/routes/
-rg "paramName" packages/shared/openapi/
-rg "paramName" apps/docs/content/docs/
-```
-
-Match existing naming conventions exactly.
-
-## Glossary
-
-- `Capability URL`: URL containing an unguessable secret key used as authorization.
-- `Workspace Plane`: capability-first surface for agent read/append/write workflows.
-- `Control Plane`: authenticated governance surface (API keys, ownership, settings).
-- `Claim`: ownership-binding flow moving anonymous workspace governance to an authenticated user.
-- `Workspace`: logical container for files/folders, tasks, keys, and webhooks.
-
-## Never Do
-
-- Mark tasks complete with failing checks.
-- Introduce naming drift.
-- Deviate from OpenAPI contract without updating it first.
-- Add guessed routes/examples/docs that are not implemented.
+- A capability URL is a credential. Never put a real one in code, tests, docs,
+  logs or screenshots; examples use made-up keys.
+- Every authorisation failure returns the same 404, so keys can't be probed.
+- Never commit credentials, account identifiers or connection details. Before
+  infrastructure work, check the live state with the provider instead of
+  inferring it from config or Git history.
