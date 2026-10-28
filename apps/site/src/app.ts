@@ -1,6 +1,7 @@
 // The reader as a whole page, for /demo and for capability links: a slim bar with the title, the
 // reader's toolbar and the theme button, and the reader filling the rest of the screen.
 import { html, nothing, render } from 'lit-html'
+import { live } from 'lit-html/directives/live.js'
 import { $, initTheme } from './dom.ts'
 import { Reader } from './reader.ts'
 
@@ -37,7 +38,13 @@ export function mountApp(): App {
       document.title = current ? `${workspace} / ${current} · mdplane` : `${workspace} · mdplane`
       const file =
         files.length > 1 && pick
-          ? html`<select class="app-file" aria-label="File" @change=${onPick(pick)}>
+          ? html`<select
+              class="app-file"
+              aria-label="File"
+              title=${current ?? nothing}
+              .value=${live(current ?? '')}
+              @change=${onPick(pick)}
+            >
               ${files.map((f) => html`<option value=${f} ?selected=${f === current}>${f}</option>`)}
             </select>`
           : html`<span class="file">${current}</span>`

@@ -4,6 +4,9 @@
   .app {
     height: 100dvh;
     display: grid;
+    /* The column can't grow to fit its content, so a long file path shrinks instead of widening
+       the page. */
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
     overflow: hidden;
   }
@@ -44,6 +47,7 @@
     field-sizing: content;
     min-width: 0;
     max-width: 100%;
+    text-overflow: ellipsis;
     height: 30px;
     padding: 0 6px;
     border: 1px solid var(--line-strong);
