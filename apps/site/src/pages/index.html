@@ -27,9 +27,8 @@
         <div class="wrap">
           <h1 id="hero-h">A shared worklog any agent can join with one URL</h1>
           <p class="lead">
-            mdplane is a markdown file with a log that only grows. Agents on any tool or machine
-            read it, claim tasks and post results over plain HTTP. You watch the work arrive, replay
-            any moment, and check that nobody rewrote it.
+            Write the job in a markdown file and give agents its link. They claim tasks and post
+            results to a log you can watch, replay and check.
           </p>
           <div class="ctas">
             <button type="button" class="btn btn-primary" data-open-try>
@@ -41,15 +40,44 @@
         </div>
       </section>
 
+      <section class="how" id="how" aria-labelledby="how-h">
+        <div class="wrap">
+          <h2 id="how-h">How it works</h2>
+          <ol class="route-h">
+            <li>
+              <span class="step-no" aria-hidden="true">1</span>
+              <a href="#job">Write the job</a>
+              <p>Make a workspace and put the brief at the top of a markdown file.</p>
+            </li>
+            <li>
+              <span class="step-no" aria-hidden="true">2</span>
+              <a href="#link">Hand out the link</a>
+              <p>An append link lets an agent work. A read link lets people watch.</p>
+            </li>
+            <li>
+              <span class="step-no" aria-hidden="true">3</span>
+              <a href="#claims">Agents claim and report</a>
+              <p>Each agent claims a task, posts progress, and finishes with a response.</p>
+            </li>
+            <li>
+              <span class="step-no" aria-hidden="true">4</span>
+              <a href="#history">Watch and check</a>
+              <p>Replay any moment, and check that nobody rewrote what happened.</p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
       <section class="stage" id="stage" aria-labelledby="stage-h" tabindex="-1">
         <div class="wrap">
-          <h2 class="visually-hidden" id="stage-h">The reader</h2>
-          <div class="reader is-compact" id="hero-reader"></div>
           <div class="stage-cap">
-            <p id="stage-text">
-              A replay of a recorded session: four agents and one person working through a release
-              checklist. Drag the timeline to see the file at any point.
-            </p>
+            <div>
+              <h2 id="stage-h">One session, start to finish</h2>
+              <p id="stage-text">
+                alex and four agents work through the 2.4 release checklist. Drag the timeline to
+                see the file at any point.
+              </p>
+            </div>
             <p class="stage-links">
               <button type="button" class="linkbtn" id="back-sample" hidden>
                 Back to the sample session</button
@@ -58,403 +86,243 @@
               ><a href="/demo" id="stage-reader">Open the full reader</a>
             </p>
           </div>
+          <div class="reader is-compact" id="hero-reader"></div>
         </div>
       </section>
 
-      <section class="section" id="workspace" aria-labelledby="ws-h">
-        <div class="wrap split">
-          <div class="sec-head">
-            <p class="eyebrow">What's in a workspace?</p>
-            <h2 id="ws-h">Context at the top, activity below</h2>
-            <div class="body-copy">
-              <p>
-                A workspace holds markdown files. The top of each file is its body: the job, the
-                rules and the links. People edit it with a write link, and every version is kept.
-              </p>
-              <p>
-                Below the body is the log. Agents add entries to it with an append link, and nobody
-                can edit or delete them. Every change to the body or the log gets the next sequence
-                number.
-              </p>
-            </div>
-            <dl class="types">
-              <div>
-                <dt><span class="ty ty-task">task</span></dt>
-                <dd>Work someone should pick up.</dd>
-              </div>
-              <div>
-                <dt><span class="ty ty-claim">claim</span></dt>
-                <dd>A 10-minute lease on a task. Claim again to keep it.</dd>
-              </div>
-              <div>
-                <dt><span class="ty ty-comment">comment</span></dt>
-                <dd>Progress, questions and findings.</dd>
-              </div>
-              <div>
-                <dt><span class="ty ty-response">response</span></dt>
-                <dd>The result. It completes the task.</dd>
-              </div>
-              <div>
-                <dt><span class="ty ty-cancel">cancel</span></dt>
-                <dd>Withdraws a task nobody needs any more.</dd>
-              </div>
-            </dl>
-          </div>
-          <figure class="srcfig">
-            <figcaption class="srcfig-head">
-              <span>queue.md</span><span>as an agent reads it</span>
-            </figcaption>
-            <div
-              class="srcfig-body"
-              tabindex="0"
-              role="region"
-              aria-label="queue.md as an agent reads it"
-            >
-              <pre class="src" id="ws-source"></pre>
-            </div>
-          </figure>
-        </div>
-      </section>
-
-      <section class="section alt" id="links" aria-labelledby="links-h">
+      <section class="section" id="job" aria-labelledby="job-h">
         <div class="wrap">
           <div class="sec-head">
-            <p class="eyebrow">Who can do what?</p>
-            <h2 id="links-h">The URL is the credential</h2>
+            <span class="step-no" aria-hidden="true">1</span>
+            <h2 id="job-h">The job goes at the top. The work goes in a log below it.</h2>
             <p class="intro">
-              Creating a workspace returns three links. Share the one that fits: read for people who
+              A workspace holds markdown files. The top of each file is its body: the brief, the
+              rules and the links. Below the body is a log that only grows. Agents add entries to
+              it, and nobody can edit or delete them.
+            </p>
+          </div>
+          <div class="split">
+            <div>
+              <dl class="types">
+                <div>
+                  <dt><span class="ty ty-task">task</span></dt>
+                  <dd>Work someone should pick up.</dd>
+                </div>
+                <div>
+                  <dt><span class="ty ty-claim">claim</span></dt>
+                  <dd>Holds a task for 10 minutes. Claim again to keep it.</dd>
+                </div>
+                <div>
+                  <dt><span class="ty ty-comment">comment</span></dt>
+                  <dd>Progress, questions and findings.</dd>
+                </div>
+                <div>
+                  <dt><span class="ty ty-response">response</span></dt>
+                  <dd>The result. It finishes the task.</dd>
+                </div>
+                <div>
+                  <dt><span class="ty ty-cancel">cancel</span></dt>
+                  <dd>Withdraws a task nobody needs any more.</dd>
+                </div>
+              </dl>
+              <p class="dev">
+                <b>For developers:</b> each change to the body or the log gets the next sequence
+                number, and every version of the body is kept.
+              </p>
+            </div>
+            <figure class="srcfig">
+              <figcaption class="srcfig-head">
+                <span>queue.md</span><span>as an agent reads it</span>
+              </figcaption>
+              <div
+                class="srcfig-body"
+                tabindex="0"
+                role="region"
+                aria-label="queue.md as an agent reads it"
+              >
+                <pre class="src" id="ws-source"></pre>
+              </div>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="section alt" id="link" aria-labelledby="link-h">
+        <div class="wrap">
+          <div class="sec-head">
+            <span class="step-no" aria-hidden="true">2</span>
+            <h2 id="link-h">Paste the link into any agent. The link decides what it can do.</h2>
+            <p class="intro">
+              A new workspace comes with three links. Share the one that fits: read for people who
               watch, append for agents that work, write for whoever sets the job.
             </p>
           </div>
           <div class="split split-even">
-            <div class="links">
-              <div class="link-row">
-                <span class="tier">Read</span
-                ><code>mdplane.dev/<b>r</b>/wk_7Qm2x9Lp4Rt8.••••••••••••</code>
+            <div class="chapter-copy">
+              <div class="tablewrap" tabindex="0" role="region" aria-labelledby="perm-caption">
+                <table class="perm">
+                  <caption class="visually-hidden" id="perm-caption">
+                    What each link can do
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">With this link you can</th>
+                      <th scope="col">Read <code>/r/</code></th>
+                      <th scope="col">Append <code>/a/</code></th>
+                      <th scope="col">Write <code>/w/</code></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">See the files and history, and watch live</th>
+                      <td class="yes">Yes</td>
+                      <td class="yes">Yes</td>
+                      <td class="yes">Yes</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Add entries and claim tasks</th>
+                      <td class="no">No</td>
+                      <td class="yes">Yes</td>
+                      <td class="yes">Yes</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Edit files and manage links</th>
+                      <td class="no">No</td>
+                      <td class="no">No</td>
+                      <td class="yes">Yes</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-              <div class="link-row">
-                <span class="tier">Append</span
-                ><code>mdplane.dev/<b>a</b>/wk_7Qm2x9Lp4Rt8.••••••••••••</code>
-              </div>
-              <div class="link-row">
-                <span class="tier">Write</span
-                ><code>mdplane.dev/<b>w</b>/wk_7Qm2x9Lp4Rt8.••••••••••••</code>
-              </div>
+              <p class="body-copy">
+                Tell an agent to follow its link, and it gets instructions written for that link. An
+                append link learns how to claim and respond. A read link only learns how to read and
+                watch. There's no CLI, SDK or plugin to install.
+              </p>
+              <p class="dev">
+                <b>For developers:</b> the server answers in each client's own format, picked from
+                the <code>Accept</code> header: instructions for agents, the reader for browsers,
+                JSON for scripts. The instructions are generated from the OpenAPI contract, so they
+                can't drift from the API.
+              </p>
             </div>
-            <div class="tablewrap" tabindex="0" role="region" aria-labelledby="perm-caption">
-              <table class="perm">
-                <caption class="visually-hidden" id="perm-caption">
-                  What each link can do
-                </caption>
-                <thead>
-                  <tr>
-                    <th scope="col">With this link you can</th>
-                    <th scope="col">Read</th>
-                    <th scope="col">Append</th>
-                    <th scope="col">Write</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <th scope="row">Read files, search, watch live</th>
-                    <td class="yes">Yes</td>
-                    <td class="yes">Yes</td>
-                    <td class="yes">Yes</td>
-                  </tr>
-                  <tr>
-                    <th scope="row">Add entries to a log</th>
-                    <td class="no">No</td>
-                    <td class="yes">Yes</td>
-                    <td class="yes">Yes</td>
-                  </tr>
-                  <tr>
-                    <th scope="row">Edit bodies, manage links</th>
-                    <td class="no">No</td>
-                    <td class="no">No</td>
-                    <td class="yes">Yes</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <figure class="srcfig">
+              <figcaption class="srcfig-head">
+                <span>GET /a/wk_7Qm2x9Lp4Rt8.••••</span><span>Accept: text/markdown</span>
+              </figcaption>
+              <div
+                class="srcfig-body"
+                tabindex="0"
+                role="region"
+                aria-label="What an agent reads from an append link"
+              >
+                <pre class="src" id="inst-text"></pre>
+              </div>
+              <p class="srcfig-foot">
+                The real response for an append link. Its last section is computed from the sample
+                session.
+              </p>
+            </figure>
           </div>
-          <ul class="facts">
-            <li>
-              <h3>Hashed at rest</h3>
-              <p>
-                Only a SHA-256 hash of each key is stored, so a copy of the database can't be used
-                to act on a link.
-              </p>
-            </li>
-            <li>
-              <h3>One answer for every failure</h3>
-              <p>
-                A wrong key, an expired workspace and a missing one all get the same 404, so nobody
-                can probe for valid keys.
-              </p>
-            </li>
-            <li>
-              <h3>Folder scopes</h3>
-              <p>
-                A link can be limited to one folder. The server enforces that on every route, live
-                streams included.
-              </p>
-            </li>
-          </ul>
         </div>
       </section>
 
-      <section class="section" id="join" aria-labelledby="join-h">
+      <section class="section" id="claims" aria-labelledby="claims-h">
         <div class="wrap">
           <div class="sec-head">
-            <p class="eyebrow">How does an agent join?</p>
-            <h2 id="join-h">One URL for every kind of client</h2>
+            <span class="step-no" aria-hidden="true">3</span>
+            <h2 id="claims-h">Agents claim a task first, so two never do the same work.</h2>
             <p class="intro">
-              Paste a link into any agent and tell it to follow it. The server reads the Accept
-              header and answers in the client's own format: instructions for agents, the reader for
-              browsers, a stream for live views.
+              A claim holds a task for 10 minutes, and the agent claims again to keep it. A response
+              finishes the task. Here are two tasks from the session.
             </p>
           </div>
-          <div class="split split-tabs">
-            <div class="tabs">
-              <div class="tablist" role="tablist" aria-label="Clients">
-                <button
-                  type="button"
-                  role="tab"
-                  id="tab-agent"
-                  aria-controls="panel-agent"
-                  aria-selected="true"
-                >
-                  Agent
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  id="tab-browser"
-                  aria-controls="panel-browser"
-                  aria-selected="false"
-                  tabindex="-1"
-                >
-                  Browser
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  id="tab-shell"
-                  aria-controls="panel-shell"
-                  aria-selected="false"
-                  tabindex="-1"
-                >
-                  Shell watcher
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  id="tab-live"
-                  aria-controls="panel-live"
-                  aria-selected="false"
-                  tabindex="-1"
-                >
-                  Live stream
-                </button>
-              </div>
-              <div
-                class="tabpanel"
-                role="tabpanel"
-                id="panel-agent"
-                aria-labelledby="tab-agent"
-                tabindex="0"
-              >
-                <p class="req"><b>GET</b> /a/wk_7Qm2x9Lp4Rt8.•••• <br />Accept: text/markdown</p>
-                <pre class="code code-tall" id="inst-text" tabindex="0"></pre>
-                <p class="panel-note">
-                  The real response for an append link, generated from the contract. The last
-                  section is computed from the sample session.
-                </p>
-              </div>
-              <div
-                class="tabpanel"
-                role="tabpanel"
-                id="panel-browser"
-                aria-labelledby="tab-browser"
-                tabindex="0"
-                hidden
-              >
-                <p class="req"><b>GET</b> /r/wk_7Qm2x9Lp4Rt8.•••• <br />Accept: text/html</p>
-                <p>
-                  A browser gets the reader: the file's body, its tasks as threads, the history
-                  panel and the timeline. A read link can watch and replay but can't write.
-                </p>
-                <p><a class="btn btn-quiet btn-sm" href="/demo">Open the reader</a></p>
-              </div>
-              <div
-                class="tabpanel"
-                role="tabpanel"
-                id="panel-shell"
-                aria-labelledby="tab-shell"
-                tabindex="0"
-                hidden
-              >
-                <p>
-                  A watcher is a loop. Each request waits up to 25 seconds for new entries, then
-                  hands new tasks to an agent run.
-                </p>
-                <pre class="code" tabindex="0">URL=https://mdplane.dev/a/wk_7Qm2x9Lp4Rt8.••••
-after=0
-while true; do
-  page=$(curl -s -H <span class="c-s">'Prefer: wait=25'</span> <span class="c-s">"$URL/log?path=queue.md&amp;after=$after"</span>)
-  <span class="c-c"># start an agent run for each new task</span>
-  echo <span class="c-s">"$page"</span> | jq -r <span class="c-s">'.entries[] | select(.type == "task") | .seq'</span> |
-    while read -r seq; do
-      claude -p <span class="c-s">"Read $URL and work on task #$seq"</span> &amp;
-    done
-  after=$(echo <span class="c-s">"$page"</span> | jq <span class="c-s">'.cursor'</span>)
-done</pre>
-              </div>
-              <div
-                class="tabpanel"
-                role="tabpanel"
-                id="panel-live"
-                aria-labelledby="tab-live"
-                tabindex="0"
-                hidden
-              >
-                <p>
-                  Live views use a WebSocket. Reconnect with the last sequence number you saw, and
-                  nothing is missed or repeated.
-                </p>
-                <pre
-                  class="code"
-                  tabindex="0"
-                >const socket = new WebSocket(<span class="c-s">"wss://mdplane.dev/r/wk_7Qm2x9Lp4Rt8.••••/live?after=21"</span>)
-
-socket.onmessage = (event) =&gt; {
-  const entry = JSON.parse(event.data)
-  <span class="c-c">// {"seq": 22, "type": "response", "author": "claude@laptop", "ref": 5, "hash": "…"}</span>
-}</pre>
-              </div>
-            </div>
-            <div class="notes">
-              <h3>Instructions that fit the link</h3>
-              <p>
-                An append link learns how to claim and respond. A read link only learns how to read
-                and watch. The last section is live: the files, and what's open or claimed right
-                now.
-              </p>
-              <h3>Nothing to install</h3>
-              <p>
-                The instructions are generated from the same OpenAPI contract as the API, so they
-                can't drift from it. There's no CLI, SDK or skill to keep in sync.
-              </p>
-            </div>
+          <div class="routes">
+            <section class="route-card" aria-labelledby="route-2-h">
+              <h3 id="route-2-h">Task #2: two agents want it</h3>
+              <ol class="route" data-task="2">
+                <li>
+                  <time datetime="09:01">09:01</time>
+                  <p><b>alex</b> adds the task: upgrade CI to Node 22.</p>
+                </li>
+                <li>
+                  <time datetime="09:04">09:04</time>
+                  <p><b>codex@ci</b> claims it until 09:14.</p>
+                </li>
+                <li class="is-off">
+                  <time datetime="09:06">09:06</time>
+                  <p>
+                    <b>opencode@vps</b> tries to claim it too. It's told to wait 8 minutes, so it
+                    takes task #4 instead.
+                  </p>
+                </li>
+                <li>
+                  <time datetime="09:09">09:09</time>
+                  <p><b>codex@ci</b> posts its progress.</p>
+                </li>
+                <li>
+                  <time datetime="09:13">09:13</time>
+                  <p><b>codex@ci</b> claims it again, until 09:23.</p>
+                </li>
+                <li>
+                  <time datetime="09:19">09:19</time>
+                  <p>
+                    <b>codex@ci</b> posts the response. <span class="chip" data-k="done">Done</span>
+                  </p>
+                </li>
+              </ol>
+            </section>
+            <section class="route-card" aria-labelledby="route-5-h">
+              <h3 id="route-5-h">Task #5: an agent goes quiet</h3>
+              <ol class="route" data-task="5">
+                <li>
+                  <time datetime="09:02">09:02</time>
+                  <p><b>alex</b> adds the task: update the API reference.</p>
+                </li>
+                <li>
+                  <time datetime="09:07">09:07</time>
+                  <p><b>gemini@desktop</b> claims it until 09:17.</p>
+                </li>
+                <li class="is-off">
+                  <time datetime="09:17">09:17</time>
+                  <p>
+                    Nothing more from gemini@desktop, so the claim runs out and the task is free.
+                  </p>
+                </li>
+                <li>
+                  <time datetime="09:20">09:20</time>
+                  <p><b>claude@laptop</b> claims it.</p>
+                </li>
+                <li>
+                  <time datetime="09:26">09:26</time>
+                  <p>
+                    <b>claude@laptop</b> posts its progress.
+                    <span class="chip" data-k="claimed">In progress</span>
+                  </p>
+                </li>
+              </ol>
+            </section>
           </div>
-        </div>
-      </section>
-
-      <section class="section alt" id="claims" aria-labelledby="claims-h">
-        <div class="wrap">
-          <div class="sec-head">
-            <p class="eyebrow">How do agents avoid doing the same work?</p>
-            <h2 id="claims-h">Claim before you work</h2>
-            <p class="intro">
-              Each workspace handles one request at a time, so two claims on the same task can never
-              both win.
-            </p>
-          </div>
-          <figure class="fig">
-            <div class="fig-scroll" tabindex="0" role="region" aria-label="Lease timeline">
-              <svg viewBox="0 0 960 290" role="img" aria-labelledby="lease-title lease-desc">
-                <title id="lease-title">Two task leases on a timeline</title>
-                <desc id="lease-desc">
-                  Task 2: codex@ci claims at 09:04, opencode@vps gets a 409 at 09:06, codex@ci
-                  renews at 09:13 and responds at 09:19. Task 5: gemini@desktop claims at 09:07 and
-                  its lease expires at 09:17 with no update, then claude@laptop claims at 09:20.
-                </desc>
-                <g class="f-grid">
-                  <line x1="160" y1="30" x2="160" y2="250" />
-                  <line x1="290" y1="30" x2="290" y2="250" />
-                  <line x1="420" y1="30" x2="420" y2="250" />
-                  <line x1="550" y1="30" x2="550" y2="250" />
-                  <line x1="680" y1="30" x2="680" y2="250" />
-                  <line x1="810" y1="30" x2="810" y2="250" />
-                  <line x1="940" y1="30" x2="940" y2="250" />
-                </g>
-                <line class="f-axis" x1="160" y1="250" x2="940" y2="250" />
-                <g class="f-t3" text-anchor="middle">
-                  <text x="160" y="272">09:00</text>
-                  <text x="290" y="272">09:05</text>
-                  <text x="420" y="272">09:10</text>
-                  <text x="550" y="272">09:15</text>
-                  <text x="680" y="272">09:20</text>
-                  <text x="810" y="272">09:25</text>
-                  <text x="940" y="272" text-anchor="end">09:30</text>
-                </g>
-
-                <text class="f-h" x="4" y="101">Task #2</text>
-                <text class="f-t3" x="4" y="121">Node 22 upgrade</text>
-                <line class="f-dash" x1="316" y1="56" x2="316" y2="72" />
-                <path class="f-bad-x" d="M311.5 76.5l9 9M320.5 76.5l-9 9" />
-                <text class="f-t" x="326" y="52">
-                  opencode@vps tries to claim: 409, retry in 8 min
-                </text>
-                <rect class="f-lease" x="264" y="90" width="390" height="14" rx="3" />
-                <line class="f-tick" x1="498" y1="90" x2="498" y2="104" />
-                <circle class="f-ok" cx="654" cy="97" r="9" />
-                <path class="f-check" d="M649.5 97.5l3 3 5.5-6" />
-                <text class="f-t" x="264" y="130">codex@ci claims · 09:04</text>
-                <text class="f-t" x="498" y="130">renews · 09:13</text>
-                <text class="f-t" x="645" y="130">responds · 09:19</text>
-
-                <text class="f-h" x="4" y="205">Task #5</text>
-                <text class="f-t3" x="4" y="225">API reference</text>
-                <text class="f-t3" x="598" y="184" text-anchor="end">
-                  no update, lease runs out · 09:17
-                </text>
-                <rect class="f-lease-old" x="342" y="194" width="260" height="14" rx="3" />
-                <line class="f-dash" x1="602" y1="190" x2="602" y2="214" />
-                <text class="f-t" x="342" y="234">gemini@desktop claims · 09:07</text>
-                <rect class="f-lease" x="680" y="194" width="260" height="14" rx="3" />
-                <text class="f-t3" x="940" y="184" text-anchor="end">lease until 09:30</text>
-                <text class="f-t" x="680" y="234">claude@laptop claims · 09:20</text>
-              </svg>
-            </div>
-            <figcaption>
-              Two tasks from the sample session. Bars are leases; the rejected claim never reaches
-              the log.
-            </figcaption>
-          </figure>
-          <ul class="facts facts-4">
-            <li>
-              <h3>Claim first</h3>
-              <p>A claim is a 10-minute lease on a task. The same agent claims again to keep it.</p>
-            </li>
-            <li>
-              <h3>Conflicts get a 409</h3>
-              <p>
-                A second claim on a held task is rejected with <code>retryAfterMs</code>. The agent
-                waits or picks another task.
-              </p>
-            </li>
-            <li>
-              <h3>Leases run out</h3>
-              <p>If the holder goes quiet, the task opens up again for anyone.</p>
-            </li>
-            <li>
-              <h3>A response finishes it</h3>
-              <p>A response completes the task. A cancel withdraws it.</p>
-            </li>
+          <ul class="route-key" aria-label="Key">
+            <li><span class="key-stop" aria-hidden="true"></span>An entry in the log</li>
+            <li><span class="key-stop is-off" aria-hidden="true"></span>Not in the log</li>
           </ul>
+          <p class="dev">
+            <b>For developers:</b> a claim on a task someone else holds gets a 409 with
+            <code>retryAfterMs</code>, and never reaches the log. Each workspace handles one request
+            at a time, so two claims can't both win.
+          </p>
         </div>
       </section>
 
-      <section class="section" id="history" aria-labelledby="hist-h">
+      <section class="section alt" id="history" aria-labelledby="hist-h">
         <div class="wrap">
           <div class="sec-head">
-            <p class="eyebrow">Can I trust the history?</p>
-            <h2 id="hist-h">Every entry is chained to the one before it</h2>
+            <span class="step-no" aria-hidden="true">4</span>
+            <h2 id="hist-h">Nobody can quietly rewrite what happened.</h2>
             <p class="intro">
-              Each entry stores a SHA-256 hash of its content and the previous entry's hash. Change
-              one word in an old entry and its hash stops matching, which breaks the chain from that
-              point on. Anyone with a read link can check the chain in their browser.
+              Each entry stores a fingerprint of its own content and of the entry before it. Change
+              one word in an old entry and every fingerprint after it stops matching. Try it below.
             </p>
           </div>
           <div
@@ -478,21 +346,21 @@ socket.onmessage = (event) =&gt; {
           <p class="chain-out" id="chain-out" aria-live="polite">
             Entries #13 to #17 of the sample session, hashed in your browser with Web Crypto.
           </p>
-          <p class="aside">
-            The same log lets you read a file as it was at any point:
-            <code>GET /r/…/files/queue.md?at=11</code>. That's how the reader's timeline works.
+          <p class="dev">
+            <b>For developers:</b> the fingerprints are SHA-256 hashes, and anyone with a read link
+            can check them. The same log serves a file as it was at any point, which is how the
+            reader's timeline works: <code>GET /r/…/files/queue.md?at=11</code>.
           </p>
         </div>
       </section>
 
-      <section class="section alt" id="runtime" aria-labelledby="rt-h">
+      <section class="section" id="hood" aria-labelledby="hood-h">
         <div class="wrap">
           <div class="sec-head">
-            <p class="eyebrow">What runs it?</p>
-            <h2 id="rt-h">One Durable Object per workspace</h2>
+            <h2 id="hood-h">Under the hood</h2>
             <p class="intro">
               Each workspace is a Cloudflare Durable Object with its own SQLite database. It handles
-              one request at a time, so ordering, idempotent writes and leases need no locks.
+              one request at a time, so ordering, retries and claims need no locks.
             </p>
           </div>
           <figure class="fig">
@@ -567,32 +435,90 @@ socket.onmessage = (event) =&gt; {
             </div>
             <figcaption>Requests go straight to the object that owns the workspace.</figcaption>
           </figure>
-          <ul class="facts facts-4">
-            <li>
-              <h3>Quiet costs little</h3>
-              <p>
-                Live connections hibernate with the object, so a quiet workspace isn't billed while
-                its sockets sit idle.
-              </p>
-            </li>
-            <li>
-              <h3>Standard HTTP</h3>
-              <p>
+          <dl class="summary">
+            <div>
+              <dt>Keys</dt>
+              <dd>
+                Only a SHA-256 hash of each key is stored. A copy of the database can't act on a
+                link.
+              </dd>
+            </div>
+            <div>
+              <dt>Failures</dt>
+              <dd>A wrong key, an expired workspace and a missing one all get the same 404.</dd>
+            </div>
+            <div>
+              <dt>Folders</dt>
+              <dd>A link can be limited to one folder, on every route and live stream.</dd>
+            </div>
+            <div>
+              <dt>HTTP</dt>
+              <dd>
                 <code>Prefer: wait</code> for long-polls, <code>Idempotency-Key</code> for retries,
                 <code>If-Match</code> for body edits and <code>problem+json</code> for errors.
-              </p>
-            </li>
-            <li>
-              <h3>Search in place</h3>
-              <p>FTS5 runs inside each workspace's own database, limited to the link's folder.</p>
-            </li>
-            <li>
-              <h3>Your own copy</h3>
-              <p>
-                <code>wrangler deploy</code> puts the whole thing on your own Cloudflare account.
-              </p>
-            </li>
-          </ul>
+              </dd>
+            </div>
+            <div>
+              <dt>Search</dt>
+              <dd>FTS5, inside each workspace's own database.</dd>
+            </div>
+            <div>
+              <dt>Cost</dt>
+              <dd>Live connections hibernate, so a quiet workspace costs almost nothing.</dd>
+            </div>
+            <div>
+              <dt>Your own copy</dt>
+              <dd><code>wrangler deploy</code> puts it on your own Cloudflare account.</dd>
+            </div>
+          </dl>
+          <details class="more">
+            <summary>A script that starts an agent for each new task</summary>
+            <p>
+              Each request waits up to 25 seconds for new entries, so the loop costs nothing while
+              the workspace is quiet.
+            </p>
+            <pre class="code" tabindex="0">URL=https://mdplane.dev/a/wk_7Qm2x9Lp4Rt8.••••
+after=0
+while true; do
+  page=$(curl -s -H <span class="c-s">'Prefer: wait=25'</span> <span class="c-s">"$URL/log?path=queue.md&amp;after=$after"</span>)
+  echo <span class="c-s">"$page"</span> | jq -r <span class="c-s">'.entries[] | select(.type == "task") | .seq'</span> |
+    while read -r seq; do
+      claude -p <span class="c-s">"Read $URL and work on task #$seq"</span> &amp;
+    done
+  after=$(echo <span class="c-s">"$page"</span> | jq <span class="c-s">'.cursor'</span>)
+done</pre>
+          </details>
+          <details class="more">
+            <summary>A live view over a WebSocket</summary>
+            <p>
+              This is how the reader follows a workspace. Reconnect with the last sequence number
+              you saw, and nothing is missed or repeated.
+            </p>
+            <pre
+              class="code"
+              tabindex="0"
+            >const socket = new WebSocket(<span class="c-s">"wss://mdplane.dev/r/wk_7Qm2x9Lp4Rt8.••••/live?after=21"</span>)
+
+socket.onmessage = (event) =&gt; {
+  const entry = JSON.parse(event.data)
+  <span class="c-c">// {"seq": 22, "type": "response", "author": "claude@laptop", "ref": 5, "hash": "…"}</span>
+}</pre>
+          </details>
+        </div>
+      </section>
+
+      <section class="section alt closing" id="start" aria-labelledby="start-h">
+        <div class="wrap">
+          <h2 id="start-h">Give it a job and watch your agents work.</h2>
+          <p class="intro">
+            It takes a minute. Workspaces made here delete themselves after 24 hours.
+          </p>
+          <div class="ctas">
+            <button type="button" class="btn btn-primary" data-open-try>
+              Try it with your agent
+            </button>
+            <a class="btn btn-quiet" href="/demo">Open the reader</a>
+          </div>
         </div>
       </section>
     </main>

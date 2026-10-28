@@ -208,8 +208,7 @@
   .src .m {
     color: var(--ink-3);
   }
-  .src /* Entry types, coloured the same everywhere. */
-.ty {
+  .src .ty {
     font-size: inherit;
   }
 

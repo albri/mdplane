@@ -1,16 +1,15 @@
-// The landing page: the sample session replaying in the hero, the explainer figures, the chain
-// demo and the Try it dialog.
+// The landing page: the sample session replaying under the route, the figures each chapter draws
+// from it, the chain demo and the Try it dialog.
 import { instructions, renderInstructions } from '@mdplane/contract/core'
 import { render } from 'lit-html'
 import { initChainDemo } from './chain-demo.ts'
-import { $, initTabs, initTheme, motionOK } from './dom.ts'
+import { $, initTheme, motionOK } from './dom.ts'
 import { agentView, type Session, stateAt } from './model.ts'
 import { highlight, Reader } from './reader.ts'
 import { sampleSession } from './sample.ts'
 import { initTryIt } from './try-it.ts'
 
 initTheme()
-initTabs()
 
 const hero = new Reader($('#hero-reader'), { variant: 'compact', level: 3 })
 const sample = await sampleSession()

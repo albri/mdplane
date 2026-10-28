@@ -1,7 +1,9 @@
-/* The landing page: hero, the sample stage, and the explainer sections. */
+/* The landing page. It tells one story: a route of four steps, the sample session replaying,
+   then a chapter for each step, what's under the hood, and the way in again. Lines carry the
+   structure; the route's stops and rails are borders so they survive forced colours. */
 @layer pages {
   .hero {
-    padding-block: clamp(48px, 7vw, 104px) clamp(32px, 4vw, 56px);
+    padding-block: clamp(48px, 7vw, 104px) clamp(28px, 3.5vw, 44px);
   }
   .hero h1 {
     font-size: var(--text-display);
@@ -12,7 +14,7 @@
   }
   .hero .lead {
     margin-top: 26px;
-    max-width: 60ch;
+    max-width: 52ch;
     font-size: var(--text-lead);
     line-height: 1.5;
     color: var(--ink-2);
@@ -29,6 +31,105 @@
     font-size: var(--text-small);
     color: var(--ink-3);
   }
+
+  /* ---------- the route: four numbered stops on one line ---------- */
+  .how {
+    padding-block: 8px clamp(40px, 5vw, 64px);
+    scroll-margin-top: var(--head-h);
+  }
+  .how h2 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .step-no {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--action);
+    border-radius: 50%;
+    background: var(--page);
+    color: var(--action-ink);
+    font: 650 0.875rem/1 var(--font-sans);
+    letter-spacing: 0;
+  }
+  .route-h {
+    list-style: none;
+    padding: 0;
+    margin-top: 20px;
+    display: grid;
+  }
+  .route-h li {
+    position: relative;
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr);
+    column-gap: 16px;
+    row-gap: 4px;
+    padding-bottom: 22px;
+  }
+  .route-h li:last-child {
+    padding-bottom: 0;
+  }
+  .route-h .step-no {
+    grid-row: 1 / span 2;
+  }
+  .route-h li:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 14.5px;
+    top: 32px;
+    bottom: 0;
+    border-left: 3px solid var(--action);
+  }
+  .route-h a {
+    align-self: center;
+    width: fit-content;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    color: var(--ink);
+    text-decoration-color: var(--link-line);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.2em;
+  }
+  .route-h a:hover {
+    color: var(--action-ink);
+  }
+  .route-h p {
+    grid-column: 2;
+    color: var(--ink-2);
+    font-size: var(--text-small);
+  }
+  @media (min-width: 760px) {
+    .route-h {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      column-gap: 28px;
+    }
+    .route-h li {
+      grid-template-columns: none;
+      align-content: start;
+      row-gap: 8px;
+      padding-bottom: 0;
+    }
+    .route-h .step-no {
+      grid-row: auto;
+      margin-bottom: 6px;
+    }
+    .route-h li:not(:last-child)::before {
+      left: 32px;
+      right: -28px;
+      top: 14.5px;
+      bottom: auto;
+      border-left: 0;
+      border-top: 3px solid var(--action);
+    }
+    .route-h p {
+      grid-column: auto;
+    }
+  }
+
+  /* ---------- the sample session ---------- */
   .stage {
     background: var(--sunk);
     border-block: 1px solid var(--line);
@@ -39,13 +140,19 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
-    align-items: baseline;
+    align-items: end;
     gap: 8px 28px;
-    margin-top: 16px;
+    margin-bottom: 16px;
     font-size: var(--text-small);
     color: var(--ink-2);
   }
-  .stage-cap > p:first-child {
+  .stage-cap h2 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .stage-cap p {
     max-width: 70ch;
   }
   .stage-links {
@@ -54,7 +161,7 @@
     gap: 6px 20px;
   }
 
-  /* ---------- sections ---------- */
+  /* ---------- chapters ---------- */
   .section {
     padding-block: clamp(64px, 9vw, 128px);
     border-top: 1px solid var(--line);
@@ -72,19 +179,20 @@
     max-width: 780px;
     margin-bottom: clamp(32px, 4.5vw, 56px);
   }
-  .eyebrow {
-    font-size: var(--text-small);
-    font-weight: 500;
-    color: var(--ink-2);
-  }
-  .sec-head h2 {
+  .sec-head h2,
+  .closing h2 {
     font-size: var(--text-title);
     font-weight: 650;
     letter-spacing: -0.03em;
     line-height: 1.06;
   }
-  .sec-head .intro,
-  .sec-head > p:not(.eyebrow) {
+  /* A chapter's number is the same stop as on the route, so the page reads as one line. */
+  .sec-head > .step-no {
+    width: 36px;
+    height: 36px;
+    font-size: 0.9375rem;
+  }
+  .intro {
     font-size: var(--text-lead);
     line-height: 1.5;
     color: var(--ink-2);
@@ -98,9 +206,6 @@
   .split > * {
     min-width: 0;
   }
-  .split > .sec-head {
-    margin-bottom: 0;
-  }
   @media (min-width: 1000px) {
     .split {
       grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
@@ -108,14 +213,29 @@
     .split-even {
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     }
-    .split-tabs {
-      grid-template-columns: minmax(0, 8fr) minmax(0, 4fr);
-    }
   }
   .body-copy {
-    display: grid;
-    gap: 14px;
     color: var(--ink-2);
+  }
+  /* The protocol detail, kept out of the story but one line away. */
+  .dev {
+    margin-top: 28px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+    max-width: 72ch;
+    color: var(--ink-2);
+    font-size: var(--text-small);
+  }
+  .chapter-copy {
+    display: grid;
+    gap: 20px;
+  }
+  .chapter-copy > .dev {
+    margin-top: 4px;
+  }
+  .dev b {
+    font-weight: 600;
+    color: var(--ink);
   }
 
   /* append type list */
@@ -171,38 +291,19 @@
     padding: 18px 20px;
   }
 
-  /* links and permissions */
-  .links {
-    display: grid;
-    gap: 10px;
-    align-content: start;
-  }
-  .link-row {
-    display: grid;
-    grid-template-columns: 70px minmax(0, 1fr);
-    align-items: center;
-    gap: 12px;
-    padding: 14px 16px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-md);
-    background: var(--page);
-  }
-  .link-row .tier {
+  .srcfig-foot {
+    padding: 12px 20px 14px;
+    border-top: 1px solid var(--line);
+    color: var(--ink-3);
     font-size: var(--text-caption);
-    font-weight: 600;
-    color: var(--ink-2);
   }
-  .link-row code {
-    font-size: 0.875rem;
-    color: var(--ink-2);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  @media (max-width: 759.98px) {
+    .srcfig-body {
+      max-height: 360px;
+    }
   }
-  .link-row code b {
-    font-weight: 400;
-    color: var(--action-ink);
-  }
+
+  /* links and what they allow */
   .tablewrap {
     overflow-x: auto;
     border: 1px solid var(--line);
@@ -240,108 +341,119 @@
   .perm td.no {
     color: var(--ink-3);
   }
-  .facts {
-    list-style: none;
-    padding: 0;
-    display: grid;
-    gap: 28px;
-    margin-top: clamp(36px, 5vw, 56px);
+  /* Each link's path sits under its name, so the headers stay two tidy lines. */
+  .perm thead code {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--action-ink);
   }
-  @media (min-width: 760px) {
-    .facts {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-    .facts-4 {
+
+  /* ---------- a task's route: one stop per event ---------- */
+  .routes {
+    display: grid;
+    gap: 20px;
+  }
+  @media (min-width: 900px) {
+    .routes {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
-  @media (min-width: 1100px) {
-    .facts-4 {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
+  .route-card {
+    padding: 22px 24px 24px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--page);
   }
-  .facts li {
-    border-top: 1px solid var(--line-strong);
-    padding-top: 16px;
-    display: grid;
-    gap: 6px;
-    align-content: start;
-  }
-  .facts h3 {
+  .route-card h3 {
+    margin-bottom: 18px;
     font-size: 1.0625rem;
     font-weight: 600;
     letter-spacing: -0.01em;
   }
-  .facts p {
-    color: var(--ink-2);
-    font-size: var(--text-small);
+  .route {
+    --time: 3rem;
+    list-style: none;
+    padding: 0;
   }
-
-  /* tabs */
-  .tabs {
-    border: 1px solid var(--line);
-    border-radius: var(--radius-lg);
-    background: var(--page);
-    overflow: hidden;
-  }
-  .tablist {
-    display: flex;
-    gap: 4px;
-    padding: 6px;
-    background: var(--sunk);
-    border-bottom: 1px solid var(--line);
-    overflow-x: auto;
-  }
-  .tablist [role='tab'] {
-    border: 0;
-    background: transparent;
-    padding: 8px 12px;
-    border-radius: var(--radius-sm);
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--ink-2);
-    white-space: nowrap;
-    cursor: pointer;
-  }
-  .tablist [role='tab']:hover {
-    color: var(--ink);
-  }
-  .tablist [role='tab'][aria-selected='true'] {
-    background: var(--page);
-    color: var(--ink);
-    box-shadow: 0 0 0 1px var(--line);
-  }
-  .tabpanel {
-    padding: 20px;
+  .route li {
+    position: relative;
     display: grid;
-    gap: 14px;
+    grid-template-columns: var(--time) 14px minmax(0, 1fr);
+    column-gap: 12px;
+    padding-bottom: 16px;
   }
-  .tabpanel[hidden] {
-    display: none;
+  .route li:last-child {
+    padding-bottom: 0;
   }
-  .req {
+  .route time {
+    grid-column: 1;
     font: 400 0.8125rem/1.6 var(--font-mono);
-    color: var(--ink-2);
+    color: var(--ink-3);
   }
-  .req b {
-    font-weight: 400;
-    color: var(--action-ink);
+  .route li::before {
+    content: '';
+    position: relative;
+    z-index: 1;
+    grid-column: 2;
+    grid-row: 1;
+    width: 14px;
+    height: 14px;
+    margin-top: 4px;
+    box-sizing: border-box;
+    border: 7px solid var(--action);
+    border-radius: 50%;
+    background: var(--page);
   }
-  .tabpanel > p:not(.req) {
+  .route li:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: calc(var(--time) + 12px + 5.5px);
+    top: 11px;
+    bottom: -11px;
+    border-left: 3px solid var(--action);
+  }
+  .route li.is-off::before {
+    border: 2px dashed var(--ink-3);
+  }
+  .route p {
+    grid-column: 3;
     color: var(--ink-2);
     font-size: var(--text-small);
+    line-height: 1.5;
   }
-  .notes {
-    display: grid;
-    gap: 16px;
-    color: var(--ink-2);
-    font-size: var(--text-small);
-    align-content: start;
-  }
-  .notes h3 {
-    font-size: 1.0625rem;
+  .route b {
     font-weight: 600;
     color: var(--ink);
+  }
+  .route .chip {
+    margin-left: 4px;
+    vertical-align: 1px;
+  }
+  .route-key {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+    margin-top: 16px;
+    color: var(--ink-2);
+    font-size: var(--text-caption);
+  }
+  .route-key li {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .key-stop {
+    width: 12px;
+    height: 12px;
+    box-sizing: border-box;
+    border: 6px solid var(--action);
+    border-radius: 50%;
+  }
+  .key-stop.is-off {
+    border: 2px dashed var(--ink-3);
   }
 
   /* figures */
@@ -367,15 +479,6 @@
     font-size: var(--text-caption);
     border-top: 1px solid var(--line);
   }
-  .f-grid {
-    stroke: var(--line);
-    stroke-width: 1;
-    stroke-dasharray: 2 5;
-  }
-  .f-axis {
-    stroke: var(--line-strong);
-    stroke-width: 1;
-  }
   .f-t {
     fill: var(--ink-2);
     font: 400 13px var(--font-mono);
@@ -387,38 +490,6 @@
   .f-h {
     fill: var(--ink);
     font: 600 15px var(--font-sans);
-  }
-  .f-lease {
-    fill: var(--action);
-  }
-  .f-lease-old {
-    fill: var(--line-strong);
-  }
-  .f-tick {
-    stroke: var(--page);
-    stroke-width: 2;
-  }
-  .f-ok {
-    fill: var(--ok);
-  }
-  .f-check {
-    fill: none;
-    stroke: var(--page);
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-  .f-bad-x {
-    fill: none;
-    stroke: var(--bad);
-    stroke-width: 2;
-    stroke-linecap: round;
-  }
-  .f-dash {
-    fill: none;
-    stroke: var(--ink-3);
-    stroke-width: 1.5;
-    stroke-dasharray: 4 4;
   }
   .f-box {
     fill: var(--sunk);
@@ -583,12 +654,63 @@
   .chain-out.is-bad {
     color: var(--bad);
   }
-  .aside {
-    margin-top: 28px;
-    padding-top: 18px;
+
+  /* ---------- under the hood ---------- */
+  /* Name and value rows, ruled: the reference part of the page. */
+  .summary {
+    margin-top: clamp(40px, 5vw, 64px);
     border-top: 1px solid var(--line);
+  }
+  .summary div {
+    display: grid;
+    gap: 4px 24px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  @media (min-width: 760px) {
+    .summary div {
+      grid-template-columns: 10rem minmax(0, 1fr);
+    }
+  }
+  .summary dt {
+    font-weight: 600;
+  }
+  .summary dd {
+    max-width: 72ch;
+    color: var(--ink-2);
+  }
+  /* Worked examples, one ruled row each, open on request. */
+  .more {
+    border-bottom: 1px solid var(--line);
+  }
+  .more summary {
+    width: fit-content;
+    padding-block: 14px;
+    font-weight: 600;
+  }
+  .more summary:hover {
+    color: var(--action-ink);
+  }
+  .more p {
+    max-width: 72ch;
+    margin-bottom: 14px;
     color: var(--ink-2);
     font-size: var(--text-small);
-    max-width: 72ch;
+  }
+  .more .code {
+    margin-bottom: 20px;
+  }
+
+  /* ---------- the way in, again ---------- */
+  .closing .wrap {
+    display: grid;
+    gap: 16px;
+    justify-items: start;
+  }
+  .closing h2 {
+    max-width: 20ch;
+  }
+  .closing .ctas {
+    margin-top: 12px;
   }
 }

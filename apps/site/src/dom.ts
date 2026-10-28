@@ -153,37 +153,6 @@ export async function copyText(text: string): Promise<boolean> {
   }
 }
 
-export function initTabs(): void {
-  for (const list of $$('[role="tablist"]')) {
-    const tabs = $$('[role="tab"]', list).filter((t) => t instanceof HTMLButtonElement)
-    const select = (tab: HTMLButtonElement, focus: boolean) => {
-      for (const t of tabs) {
-        const on = t === tab
-        t.setAttribute('aria-selected', String(on))
-        t.tabIndex = on ? 0 : -1
-        const panel = document.getElementById(t.getAttribute('aria-controls') ?? '')
-        if (panel) panel.hidden = !on
-      }
-      if (focus) tab.focus()
-    }
-    for (const tab of tabs) tab.addEventListener('click', () => select(tab, false))
-    list.addEventListener('keydown', (event) => {
-      const i = tabs.findIndex((t) => t === document.activeElement)
-      if (i < 0) return
-      const next = {
-        ArrowRight: (i + 1) % tabs.length,
-        ArrowLeft: (i - 1 + tabs.length) % tabs.length,
-        Home: 0,
-        End: tabs.length - 1,
-      }[event.key]
-      const tab = next === undefined ? undefined : tabs[next]
-      if (!tab) return
-      event.preventDefault()
-      select(tab, true)
-    })
-  }
-}
-
 // Whether a key press belongs to the focused control rather than to a page shortcut.
 export function ownsKeys(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false

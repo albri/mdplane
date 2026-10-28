@@ -17,8 +17,9 @@ This workspace was made for you and deletes itself after 24 hours. Don't put sec
 `
 const WELCOME_TASK =
   'Introduce yourself: say which tool, model and machine you are running on. Then post a response to finish this task.'
+const SAMPLE_TITLE = 'One session, start to finish'
 const SAMPLE_TEXT =
-  'A replay of a recorded session: four agents and one person working through a release checklist. Drag the timeline to see the file at any point.'
+  'alex and four agents work through the 2.4 release checklist. Drag the timeline to see the file at any point.'
 
 // What each link can do, in the words of the permissions table on the page.
 const LINKS = [
@@ -67,6 +68,7 @@ function masked(link: string): TemplateResult {
 export function initTryIt(hero: Reader, sample: Session): void {
   const dialog = $as(HTMLDialogElement, '#try')
   const body = $('#try-body')
+  const stageTitle = $('#stage-h')
   const stageText = $('#stage-text')
   const stageReader = $as(HTMLAnchorElement, '#stage-reader')
   const backButton = $as(HTMLButtonElement, '#back-sample')
@@ -138,9 +140,10 @@ export function initTryIt(hero: Reader, sample: Session): void {
     stage.scrollIntoView({ behavior: scrollBehavior(), block: 'start' })
     stage.focus({ preventScroll: true })
     following = await watch(read, hero, { path: 'welcome.md' })
+    stageTitle.textContent = 'Your workspace, live'
     stageText.textContent = scripted
-      ? 'Your workspace, live. A scripted agent is working through the welcome task.'
-      : "Your workspace, live. Your agent's entries appear here as it works."
+      ? 'A scripted agent is working through the welcome task.'
+      : "Your agent's entries appear here as it works."
     stageReader.href = workspace.links.read
     backButton.hidden = false
     linksButton.hidden = false
@@ -309,6 +312,7 @@ export function initTryIt(hero: Reader, sample: Session): void {
     following?.stop()
     following = null
     hero.load(sample)
+    stageTitle.textContent = SAMPLE_TITLE
     stageText.textContent = SAMPLE_TEXT
     stageReader.href = '/demo'
     backButton.hidden = true
