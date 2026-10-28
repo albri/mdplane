@@ -1,6 +1,8 @@
 import { zCreateWorkspaceResponse } from '@mdplane/contract'
 import { expect, expectAccessible, test } from './fixtures.ts'
 
+test.use({ permissions: ['clipboard-read', 'clipboard-write'] })
+
 test('a scripted agent works through the welcome task, live', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'Try it with your agent' }).first().click()
@@ -13,6 +15,18 @@ test('a scripted agent works through the welcome task, live', async ({ page }) =
   await expect(dialog).not.toContainText(/\/[raw]\/[\w-]+\.[\w-]{8,}/)
   await expectAccessible(page)
 
+  // Copying all three keeps them together, labelled, so the prompt can't push one off the clipboard.
+  await dialog.getByRole('button', { name: 'Copy all links' }).click()
+  await expect(dialog.getByRole('status')).toHaveText('All links copied.')
+  const saved = await page.evaluate(() => navigator.clipboard.readText())
+  for (const [name, tier] of [
+    ['Read', 'r'],
+    ['Append', 'a'],
+    ['Write', 'w'],
+  ]) {
+    expect(saved).toMatch(new RegExp(`^${name}: http://\\S+/${tier}/wk_\\w+\\.\\S+$`, 'm'))
+  }
+
   await dialog.getByRole('button', { name: 'Run a scripted agent' }).click()
   await expect(dialog).toBeHidden()
   const hero = page.locator('#hero-reader')
@@ -22,6 +36,11 @@ test('a scripted agent works through the welcome task, live', async ({ page }) =
   await expect(hero.locator('[role="status"]')).toHaveText(
     'New entry: scripted-agent@browser responded to task #2.',
   )
+
+  // The links stay a click away for as long as the page is open.
+  await page.getByRole('button', { name: 'Your links' }).click()
+  await expect(dialog.getByRole('button', { name: 'Copy all links' })).toBeFocused()
+  await dialog.getByRole('button', { name: 'Close dialog' }).click()
 
   await page.getByRole('link', { name: 'Open the full reader' }).click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(/welcome\s*\/?\s*welcome\.md/)

@@ -1,6 +1,7 @@
 // "Try it with your agent": a real workspace made from the landing page, a prompt to hand to an
 // agent, and the page's reader following the workspace live. Links are never shown in full; the
-// buttons copy them.
+// buttons copy them. The dialog keeps the workspace for as long as the page is open, so a link
+// pushed off the clipboard can be copied again.
 import type { CreateWorkspaceResponse } from '@mdplane/contract/core'
 import { html, nothing, render, type TemplateResult } from 'lit-html'
 import { classMap } from 'lit-html/directives/class-map.js'
@@ -19,10 +20,21 @@ const WELCOME_TASK =
 const SAMPLE_TEXT =
   'A replay of a recorded session: four agents and one person working through a release checklist. Drag the timeline to see the file at any point.'
 
+// What each link can do, in the words of the permissions table on the page.
 const LINKS = [
-  ['read', 'Read link'],
-  ['append', 'Append link'],
-  ['write', 'Write link'],
+  { tier: 'read', name: 'Read', can: 'See the files and their history, and watch live.', note: '' },
+  {
+    tier: 'append',
+    name: 'Append',
+    can: 'Also add entries and claim tasks.',
+    note: 'The prompt uses it.',
+  },
+  {
+    tier: 'write',
+    name: 'Write',
+    can: 'Also edit files and manage links.',
+    note: 'Keep it to yourself.',
+  },
 ] as const
 
 type Phase =
@@ -32,6 +44,16 @@ type Phase =
 
 const prompt = (link: string) =>
   `Read ${link} and follow the instructions. Pick up the open task in welcome.md and post your result.`
+
+const until = (workspace: CreateWorkspaceResponse) =>
+  workspace.expiresAt ? `until ${dateTime()(workspace.expiresAt)}` : 'until you delete it'
+
+// The links as one block that still makes sense pasted into notes.
+const linksText = (workspace: CreateWorkspaceResponse) =>
+  [
+    `mdplane workspace links. They work ${until(workspace)}.`,
+    ...LINKS.map(({ tier, name, can }) => `\n${name}: ${workspace.links[tier]}\n${can}`),
+  ].join('\n')
 
 // A link as the page shows it: where it points, with the key hidden.
 function masked(link: string): TemplateResult {
@@ -48,10 +70,11 @@ export function initTryIt(hero: Reader, sample: Session): void {
   const stageText = $('#stage-text')
   const stageReader = $as(HTMLAnchorElement, '#stage-reader')
   const backButton = $as(HTMLButtonElement, '#back-sample')
+  const linksButton = $as(HTMLButtonElement, '#open-links')
   let phase: Phase = { name: 'start' }
   let copied: string | null = null
   // Shown when the browser won't copy, so the text can be copied by hand.
-  let manual: { label: string; text: string } | null = null
+  let manual: string | null = null
   let announcement = ''
   let following: Watch | null = null
 
@@ -89,11 +112,11 @@ export function initTryIt(hero: Reader, sample: Session): void {
     }
   }
 
-  async function copy(id: string, label: string, text: string): Promise<void> {
+  async function copy(id: string, name: string, text: string): Promise<void> {
     const done = await copyText(text)
     copied = done ? id : null
-    manual = done ? null : { label, text }
-    announcement = done ? `${label} copied.` : ''
+    manual = done ? null : text
+    announcement = done ? `${name.charAt(0).toUpperCase()}${name.slice(1)} copied.` : ''
     draw()
     if (done) {
       window.setTimeout(() => {
@@ -101,7 +124,7 @@ export function initTryIt(hero: Reader, sample: Session): void {
         draw()
       }, 1600)
     } else {
-      $as(HTMLInputElement, '.manual input', body).select()
+      $as(HTMLTextAreaElement, '.manual textarea', body).select()
     }
   }
 
@@ -120,18 +143,54 @@ export function initTryIt(hero: Reader, sample: Session): void {
       : "Your workspace, live. Your agent's entries appear here as it works."
     stageReader.href = workspace.links.read
     backButton.hidden = false
+    linksButton.hidden = false
     if (scripted) void runScriptedAgent(workspace.links.append)
   }
 
-  const copyButton = (id: string, label: string, text: string, className = 'btn-quiet') =>
+  // `short` buttons say only "Copy" and rely on their row for the rest; their accessible name
+  // still says what they copy.
+  const copyButton = (
+    id: string,
+    name: string,
+    text: string,
+    { primary = false, short = false } = {},
+  ) =>
     html`<button
       type="button"
-      class="btn btn-sm ${className}"
+      class=${classMap({ btn: true, 'btn-sm': true, 'btn-primary': primary, 'btn-quiet': !primary })}
       id=${id}
-      @click=${() => void copy(id, label, text)}
+      @click=${() => void copy(id, name, text)}
     >
-      ${copied === id ? 'Copied' : `Copy ${label.toLowerCase()}`}
+      ${
+        copied === id
+          ? 'Copied'
+          : short
+            ? html`Copy<span class="visually-hidden"> ${name}</span>`
+            : `Copy ${name}`
+      }
     </button>`
+
+  const links = (workspace: CreateWorkspaceResponse) =>
+    html`<section class="keys" aria-labelledby="try-keys-h">
+      <div class="keys-head">
+        <h3 id="try-keys-h">Your links</h3>
+        ${copyButton('try-copy-all', 'all links', linksText(workspace))}
+      </div>
+      <p>
+        Only a hash of each key is stored, so a lost link can't be recovered. Save them before you
+        leave this page.
+      </p>
+      <ul>
+        ${LINKS.map(
+          ({ tier, name, can, note }) =>
+            html`<li>
+              <span class="tier">${name}</span>
+              <span class="can">${can}${note ? ` ${note}` : ''}</span>
+              ${copyButton(`try-copy-${tier}`, `${tier} link`, workspace.links[tier], { short: true })}
+            </li>`,
+        )}
+      </ul>
+    </section>`
 
   function template(): TemplateResult {
     const workspace = phase.name === 'created' ? phase.workspace : null
@@ -146,27 +205,20 @@ export function initTryIt(hero: Reader, sample: Session): void {
       </li>`
     }
     return html`
-      <p class="dlg-lead">
-        Make a real workspace, hand its link to an agent, and watch the work arrive in the reader on
-        this page. It deletes itself after 24 hours, so don't put secrets in it.
-      </p>
+      ${
+        workspace
+          ? nothing
+          : html`<p class="dlg-lead">
+              Make a real workspace, hand its link to an agent, and watch the work arrive in the
+              reader on this page. It deletes itself after 24 hours, so don't put secrets in it.
+            </p>`
+      }
       <ol class="steps">
         ${step(
           1,
           workspace ? 'Workspace created' : 'Create a workspace',
           workspace
-            ? html`<p>
-                  ${
-                    workspace.expiresAt
-                      ? `It lasts until ${dateTime()(workspace.expiresAt)}.`
-                      : 'It lasts until you delete it.'
-                  }
-                </p>
-                <div class="dlg-actions" role="group" aria-label="Links">
-                  ${LINKS.map(([key, label]) =>
-                    copyButton(`try-copy-${key}`, label, workspace.links[key]),
-                  )}
-                </div>`
+            ? html`<p>It lasts ${until(workspace)}.</p>`
             : html`<div class="dlg-actions">
                   <button
                     type="button"
@@ -199,12 +251,9 @@ export function initTryIt(hero: Reader, sample: Session): void {
                   open task in welcome.md and post your result.
                 </blockquote>
                 <div class="dlg-actions">
-                  ${copyButton(
-                    'try-copy-prompt',
-                    'Prompt',
-                    prompt(workspace.links.append),
-                    'btn-primary',
-                  )}
+                  ${copyButton('try-copy-prompt', 'prompt', prompt(workspace.links.append), {
+                    primary: true,
+                  })}
                 </div>`
             : nothing,
         )}
@@ -235,13 +284,14 @@ export function initTryIt(hero: Reader, sample: Session): void {
             : nothing,
         )}
       </ol>
+      ${workspace ? links(workspace) : nothing}
       ${
-        manual
-          ? html`<label class="manual">
-              Your browser didn't allow copying. Copy the ${manual.label.toLowerCase()} from here:
-              <input readonly .value=${manual.text} />
+        manual === null
+          ? nothing
+          : html`<label class="manual">
+              Your browser blocked copying. Select the text and copy it from here:
+              <textarea readonly rows="3" .value=${manual}></textarea>
             </label>`
-          : nothing
       }
       <p class="visually-hidden" role="status">${announcement}</p>
     `
@@ -251,6 +301,7 @@ export function initTryIt(hero: Reader, sample: Session): void {
     button.addEventListener('click', () => {
       if (phase.name === 'start') set({ name: 'start' })
       dialog.showModal()
+      if (button === linksButton) $('#try-copy-all', body).focus()
     })
   }
 
@@ -261,6 +312,7 @@ export function initTryIt(hero: Reader, sample: Session): void {
     stageText.textContent = SAMPLE_TEXT
     stageReader.href = '/demo'
     backButton.hidden = true
+    linksButton.hidden = true
     stageReader.focus()
   })
 
