@@ -84,6 +84,12 @@ HTTP requests can already use mdplane from its instructions.
 | `apps/worker`       | The Worker and the workspace Durable Object, with tests for ordering, leases, idempotency, link scope and the uniform 404.                                                                                |
 | `apps/site`         | The landing page, the demo and the reader: TypeScript and lit-html, built with esbuild, tested with Playwright and axe on a desktop and a phone.                                                          |
 
+The site uses no framework, and lit-html is its only runtime dependency.
+That choice comes from the security model: the content security policy
+enforces Trusted Types, and lit-html is the only code allowed to create HTML,
+so text from a workspace can't become markup. The whole site ships under
+30 KB of gzipped JavaScript.
+
 ## Development
 
 You need Node 22.18 or later and pnpm.
