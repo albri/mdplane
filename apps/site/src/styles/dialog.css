@@ -1,8 +1,8 @@
-/* The "Try it" dialog on the landing page. */
+/* The "Try it" dialog on the landing page: three steps, each opening once it can be done. */
 @layer pages {
   dialog.try {
-    width: min(600px, calc(100vw - 32px));
-    max-height: calc(100vh - 32px);
+    width: min(560px, calc(100vw - 32px));
+    max-height: calc(100dvh - 32px);
     padding: 0;
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
@@ -15,8 +15,8 @@
   }
   .dlg {
     display: grid;
-    gap: 18px;
-    padding: 24px;
+    gap: 14px;
+    padding: 22px 24px 24px;
   }
   .dlg-head {
     display: flex;
@@ -25,86 +25,18 @@
     gap: 16px;
   }
   .dlg-head h2 {
-    font-size: 1.5rem;
+    font-size: 1.375rem;
     font-weight: 650;
     letter-spacing: -0.02em;
   }
-  .dlg-note {
+  .dlg-head .ic {
+    margin-right: -8px;
+  }
+  .dlg-lead {
     color: var(--ink-2);
     font-size: var(--text-small);
-    padding: 10px 12px;
-    border: 1px dashed var(--line-strong);
-    border-radius: var(--radius-md);
+    line-height: 1.55;
   }
-  .dlg-steps {
-    list-style: none;
-    padding: 0;
-    display: grid;
-    gap: 18px;
-    counter-reset: dstep;
-  }
-  .dlg-steps > li {
-    display: grid;
-    grid-template-columns: 28px minmax(0, 1fr);
-    gap: 10px;
-    counter-increment: dstep;
-    transition: opacity var(--t-move) var(--ease);
-  }
-  .dlg-steps > li::before {
-    content: counter(dstep);
-    font: 400 0.8125rem/1.8 var(--font-mono);
-    color: var(--ink-3);
-  }
-  .dlg-steps > li.is-locked {
-    opacity: 0.45;
-  }
-  .dlg-step {
-    display: grid;
-    gap: 10px;
-    min-width: 0;
-  }
-  .dlg-step h3 {
-    font-size: 1.0625rem;
-    font-weight: 600;
-  }
-  .dlg-step p {
-    color: var(--ink-2);
-    font-size: var(--text-small);
-  }
-  .try-links {
-    display: grid;
-    gap: 6px;
-  }
-  .try-links div {
-    display: grid;
-    grid-template-columns: 62px minmax(0, 1fr);
-    gap: 8px;
-    font-size: 0.8125rem;
-  }
-  .try-links span {
-    color: var(--ink-3);
-  }
-  .try-links code {
-    overflow-wrap: anywhere;
-    color: var(--ink);
-  }
-  .prompt {
-    display: grid;
-    gap: 10px;
-    padding: 12px 14px;
-    background: var(--sunk);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-md);
-  }
-  .prompt p {
-    font: 400 0.8125rem/1.6 var(--font-mono);
-    color: var(--ink);
-    overflow-wrap: anywhere;
-  }
-  .prompt .btn {
-    justify-self: start;
-  }
-
   .dlg-actions {
     display: flex;
     flex-wrap: wrap;
@@ -113,5 +45,125 @@
   .dlg-error {
     color: var(--bad);
     font-size: var(--text-small);
+  }
+
+  /* A numbered rail: done steps get a tick, the current one the accent. */
+  .steps {
+    list-style: none;
+    padding: 0;
+    margin-top: 18px;
+    counter-reset: step;
+  }
+  .step {
+    position: relative;
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr);
+    column-gap: 14px;
+    padding-bottom: 22px;
+    counter-increment: step;
+  }
+  .step:last-child {
+    padding-bottom: 0;
+  }
+  .step::before {
+    content: counter(step);
+    content: counter(step) / '';
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--line-strong);
+    border-radius: 50%;
+    background: var(--page);
+    font: 500 0.75rem/1 var(--font-mono);
+    color: var(--ink-3);
+  }
+  .step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 12.5px;
+    top: 32px;
+    bottom: 6px;
+    width: 1px;
+    background: var(--line);
+  }
+  .step.is-current::before {
+    border-color: var(--action);
+    color: var(--action-ink);
+  }
+  .step.is-done::before {
+    content: '✓';
+    content: '✓' / '';
+    border-color: var(--ok);
+    background: var(--ok);
+    color: var(--page);
+  }
+  .step h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 26px;
+  }
+  .step.is-locked h3 {
+    color: var(--ink-3);
+    font-weight: 500;
+  }
+  .step-body {
+    grid-column: 2;
+    display: grid;
+    gap: 12px;
+    margin-top: 6px;
+    min-width: 0;
+    color: var(--ink-2);
+    font-size: var(--text-small);
+  }
+
+  .prompt {
+    margin: 0;
+    padding: 12px 14px;
+    border-left: 3px solid var(--action);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    background: var(--sunk);
+    color: var(--ink);
+    line-height: 1.55;
+  }
+  .masked {
+    font: 400 0.875em var(--font-mono);
+    color: var(--ink-2);
+    overflow-wrap: anywhere;
+  }
+  .masked b {
+    font-weight: 400;
+    color: var(--ink);
+  }
+
+  .curl summary {
+    width: fit-content;
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+  .curl summary:hover {
+    color: var(--ink);
+  }
+  .curl[open] summary {
+    margin-bottom: 8px;
+  }
+  .curl .code {
+    padding: 12px 14px;
+  }
+
+  .manual {
+    display: grid;
+    gap: 6px;
+    color: var(--ink-2);
+    font-size: var(--text-small);
+  }
+  .manual input {
+    width: 100%;
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    background: var(--sunk);
+    font: 400 0.8125rem var(--font-mono);
   }
 }

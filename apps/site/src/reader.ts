@@ -5,7 +5,17 @@ import { html, nothing, render, type TemplateResult } from 'lit-html'
 import { classMap } from 'lit-html/directives/class-map.js'
 import { createRef, ref } from 'lit-html/directives/ref.js'
 import { repeat } from 'lit-html/directives/repeat.js'
-import { $$, clock, cssProps, heading, motionOK, ownsKeys, reveal, scrollBehavior } from './dom.ts'
+import {
+  $$,
+  clock,
+  cssProps,
+  dateTime,
+  heading,
+  motionOK,
+  ownsKeys,
+  reveal,
+  scrollBehavior,
+} from './dom.ts'
 import { markdown } from './markdown.ts'
 import {
   agentView,
@@ -764,7 +774,7 @@ export class Reader {
           session.expiresAt
             ? html`<div>
                 <dt>Deletes itself</dt>
-                <dd>${when(session.expiresAt, session.timeZone)}</dd>
+                <dd>${dateTime(session.timeZone)(session.expiresAt)}</dd>
               </div>`
             : nothing
         }
@@ -842,16 +852,6 @@ function rowTarget(key: string, pos: number, head: number): number | null {
       return null
   }
 }
-
-const when = (time: string, timeZone?: string) =>
-  new Intl.DateTimeFormat('en-GB', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-    ...(timeZone ? { timeZone } : {}),
-  }).format(new Date(time))
 
 const ENTRY_LINE =
   /^(- #(\d+) \d\d:\d\d UTC )(\S+), (write|delete|task|claim|comment|response|cancel)(.*)$/

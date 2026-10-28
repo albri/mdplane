@@ -8,6 +8,9 @@ test('a scripted agent works through the welcome task, live', async ({ page }) =
   await expect(dialog.getByRole('button', { name: 'Create workspace' })).toBeFocused()
   await dialog.getByRole('button', { name: 'Create workspace' }).click()
   await expect(dialog.getByRole('button', { name: 'Copy prompt' })).toBeFocused()
+  // The buttons copy the links; the page never shows a key.
+  await expect(dialog).toContainText('••••')
+  await expect(dialog).not.toContainText(/\/[raw]\/[\w-]+\.[\w-]{8,}/)
   await expectAccessible(page)
 
   await dialog.getByRole('button', { name: 'Run a scripted agent' }).click()

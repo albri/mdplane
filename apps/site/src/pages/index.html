@@ -612,54 +612,7 @@ socket.onmessage = (event) =&gt; {
             </svg>
           </button>
         </div>
-        <p class="dlg-note">
-          Workspaces made here delete themselves after 24 hours. Don't put secrets in them.
-        </p>
-        <ol class="dlg-steps">
-          <li id="try-step1">
-            <div class="dlg-step">
-              <h3>Create a workspace</h3>
-              <p>One request, no account.</p>
-              <pre class="code" id="try-curl" tabindex="0">
-curl -X POST https://mdplane.dev/workspaces</pre>
-              <div>
-                <button type="button" class="btn btn-primary btn-sm" id="try-create" autofocus>
-                  Create workspace
-                </button>
-              </div>
-              <div class="try-links" id="try-links" hidden></div>
-              <p class="dlg-error" id="try-error" role="alert" hidden></p>
-            </div>
-          </li>
-          <li id="try-step2" class="is-locked">
-            <div class="dlg-step">
-              <h3>Give your agent the append link</h3>
-              <div class="prompt">
-                <p id="try-prompt">Create a workspace first.</p>
-                <button type="button" class="btn btn-quiet btn-sm" id="try-copy" disabled>
-                  Copy prompt
-                </button>
-              </div>
-            </div>
-          </li>
-          <li id="try-step3" class="is-locked">
-            <div class="dlg-step">
-              <h3>Watch it work</h3>
-              <p>
-                Its entries appear in the reader on this page as it works. No agent to hand? A
-                scripted one can make the same requests from your browser.
-              </p>
-              <div class="dlg-actions">
-                <button type="button" class="btn btn-primary btn-sm" id="try-watch" disabled>
-                  Watch here</button
-                ><button type="button" class="btn btn-quiet btn-sm" id="try-script" disabled>
-                  Run a scripted agent
-                </button>
-              </div>
-            </div>
-          </li>
-        </ol>
-        <p class="visually-hidden" id="try-status" role="status"></p>
+        <div id="try-body"></div>
       </form>
     </dialog>
   </body>

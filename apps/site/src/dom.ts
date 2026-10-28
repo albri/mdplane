@@ -37,6 +37,18 @@ export function clock(timeZone?: string) {
   return (time: number | string) => format.format(new Date(time))
 }
 
+export function dateTime(timeZone?: string) {
+  const format = new Intl.DateTimeFormat('en-GB', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    ...(timeZone ? { timeZone } : {}),
+  })
+  return (time: number | string) => format.format(new Date(time))
+}
+
 const HEADINGS = [literal`h1`, literal`h2`, literal`h3`, literal`h4`, literal`h5`, literal`h6`]
 
 // A heading at a level chosen at runtime, so a component's outline can nest inside any page's.
@@ -131,18 +143,13 @@ export function initTheme(): void {
   })
 }
 
-// Copies text, or selects it for a manual copy when the clipboard isn't available.
-export async function copyText(text: string, source: HTMLElement): Promise<'copied' | 'selected'> {
+// Whether the text reached the clipboard. A browser can refuse, so callers need a fallback.
+export async function copyText(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text)
-    return 'copied'
+    return true
   } catch {
-    const range = document.createRange()
-    range.selectNodeContents(source)
-    const selection = window.getSelection()
-    selection?.removeAllRanges()
-    selection?.addRange(range)
-    return 'selected'
+    return false
   }
 }
 
