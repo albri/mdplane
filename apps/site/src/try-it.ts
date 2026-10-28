@@ -5,7 +5,7 @@
 import type { CreateWorkspaceResponse } from '@mdplane/contract/core'
 import { html, nothing, render, type TemplateResult } from 'lit-html'
 import { classMap } from 'lit-html/directives/class-map.js'
-import { ApiError, append, createFile, createWorkspace, parseLink } from './api.ts'
+import { ApiError, append, createFile, createWorkspace, isRateLimited, parseLink } from './api.ts'
 import { $, $as, $$, copyText, dateTime, scrollBehavior } from './dom.ts'
 import { watch, type Watch } from './live.ts'
 import type { Session } from './model.ts'
@@ -41,7 +41,10 @@ const LINKS = [
 type Phase =
   | { name: 'start'; error?: string }
   | { name: 'creating' }
-  | { name: 'created'; workspace: CreateWorkspaceResponse }
+  | { name: 'created'; workspace: CreateWorkspaceResponse; task: number }
+
+// A workspace made but not finished, so trying again carries on instead of making another.
+type Partial = { workspace: CreateWorkspaceResponse; file: boolean; taskKey: string }
 
 const prompt = (link: string) =>
   `Read ${link} and follow the instructions. Pick up the open task in welcome.md and post your result.`
@@ -79,6 +82,7 @@ export function initTryIt(hero: Reader, sample: Session): void {
   let manual: string | null = null
   let announcement = ''
   let following: Watch | null = null
+  let partial: Partial | null = null
 
   const draw = () => render(template(), body)
   const set = (next: Phase, say = '') => {
@@ -90,25 +94,40 @@ export function initTryIt(hero: Reader, sample: Session): void {
   async function create(): Promise<void> {
     set({ name: 'creating' })
     try {
-      const workspace = await createWorkspace('welcome')
-      await createFile(workspace.links.write, 'welcome.md', WELCOME)
-      await append(workspace.links.write, {
-        path: 'welcome.md',
-        type: 'task',
-        author: 'mdplane',
-        body: WELCOME_TASK,
-      })
+      partial ??= {
+        workspace: await createWorkspace('welcome'),
+        file: false,
+        taskKey: crypto.randomUUID(),
+      }
+      const { workspace } = partial
+      if (!partial.file) {
+        // A 412 means an earlier try made the file and only its answer was lost.
+        await createFile(workspace.links.write, 'welcome.md', WELCOME).catch((error: unknown) => {
+          if (!(error instanceof ApiError && error.status === 412)) throw error
+        })
+        partial.file = true
+      }
+      // The same key on every try, so the task is only ever added once.
+      const { entry } = await append(
+        workspace.links.write,
+        { path: 'welcome.md', type: 'task', author: 'mdplane', body: WELCOME_TASK },
+        partial.taskKey,
+      )
+      partial = null
       set(
-        { name: 'created', workspace },
+        { name: 'created', workspace, task: entry.seq },
         'Workspace created. Next, copy the prompt for your agent.',
       )
       $('#try-copy-prompt', body).focus()
     } catch (error) {
       set({
         name: 'start',
-        error:
-          error instanceof ApiError && error.status === 429
-            ? 'Too many workspaces from your address. Try again in a minute.'
+        error: isRateLimited(error)
+          ? partial
+            ? 'Too many requests. Try again in a minute to finish setting up your workspace.'
+            : 'Too many workspaces from your address. Try again in a minute.'
+          : partial
+            ? "Couldn't finish setting up your workspace. Try again."
             : "Couldn't create a workspace. Try again.",
       })
     }
@@ -118,7 +137,9 @@ export function initTryIt(hero: Reader, sample: Session): void {
     const done = await copyText(text)
     copied = done ? id : null
     manual = done ? null : text
-    announcement = done ? `${name.charAt(0).toUpperCase()}${name.slice(1)} copied.` : ''
+    announcement = done
+      ? `${name.charAt(0).toUpperCase()}${name.slice(1)} copied.`
+      : `Your browser blocked copying the ${name}. It's selected below to copy by hand.`
     draw()
     if (done) {
       window.setTimeout(() => {
@@ -130,24 +151,48 @@ export function initTryIt(hero: Reader, sample: Session): void {
     }
   }
 
-  async function follow(workspace: CreateWorkspaceResponse, scripted: boolean): Promise<void> {
+  async function follow(
+    workspace: CreateWorkspaceResponse,
+    task: number,
+    scripted: boolean,
+  ): Promise<void> {
     const read = parseLink(workspace.links.read)
     if (!read) return
     dialog.close()
     following?.stop()
+    following = null
     hero.touched = true
+    // The heading changes before focus moves to the stage, so focus announces the new one.
+    stageTitle.textContent = 'Your workspace, live'
+    stageText.textContent = 'Connecting to your workspace…'
+    backButton.hidden = false
+    linksButton.hidden = false
     const stage = $('#stage')
     stage.scrollIntoView({ behavior: scrollBehavior(), block: 'start' })
     stage.focus({ preventScroll: true })
-    following = await watch(read, hero, { path: 'welcome.md' })
-    stageTitle.textContent = 'Your workspace, live'
+    try {
+      following = await watch(read, hero, {
+        path: 'welcome.md',
+        onStatus: (status) => {
+          if (status === 'ended')
+            stageText.textContent = 'This workspace has expired or its link was revoked.'
+        },
+      })
+    } catch {
+      stageText.textContent =
+        "Couldn't connect to your workspace. Check your connection and try again."
+      return
+    }
     stageText.textContent = scripted
       ? 'A scripted agent is working through the welcome task.'
       : "Your agent's entries appear here as it works."
     stageReader.href = workspace.links.read
-    backButton.hidden = false
-    linksButton.hidden = false
-    if (scripted) void runScriptedAgent(workspace.links.append)
+    if (scripted) {
+      runScriptedAgent(workspace.links.append, task).catch(() => {
+        stageText.textContent =
+          'The scripted agent stopped: a request failed. Try it again from Your links.'
+      })
+    }
   }
 
   // `short` buttons say only "Copy" and rely on their row for the rest; their accessible name
@@ -197,6 +242,7 @@ export function initTryIt(hero: Reader, sample: Session): void {
 
   function template(): TemplateResult {
     const workspace = phase.name === 'created' ? phase.workspace : null
+    const task = phase.name === 'created' ? phase.task : 0
     const step = (n: number, title: string, content: TemplateResult | typeof nothing) => {
       const done = n === 1 && workspace !== null
       const current = workspace ? n === 2 : n === 1
@@ -272,14 +318,14 @@ export function initTryIt(hero: Reader, sample: Session): void {
                   <button
                     type="button"
                     class="btn btn-quiet btn-sm"
-                    @click=${() => void follow(workspace, false)}
+                    @click=${() => void follow(workspace, task, false)}
                   >
                     Watch here
                   </button>
                   <button
                     type="button"
                     class="btn btn-quiet btn-sm"
-                    @click=${() => void follow(workspace, true)}
+                    @click=${() => void follow(workspace, task, true)}
                   >
                     Run a scripted agent
                   </button>
@@ -324,7 +370,7 @@ export function initTryIt(hero: Reader, sample: Session): void {
 }
 
 // Three requests from this browser, the same ones an agent makes: claim, comment, respond.
-async function runScriptedAgent(link: string): Promise<void> {
+async function runScriptedAgent(link: string, task: number): Promise<void> {
   const steps = [
     ['claim', 'Claiming the welcome task.'],
     [
@@ -340,6 +386,12 @@ async function runScriptedAgent(link: string): Promise<void> {
     // oxlint-disable-next-line no-await-in-loop -- the steps are paced so you can watch them land
     await new Promise((resolve) => window.setTimeout(resolve, 1800))
     // oxlint-disable-next-line no-await-in-loop -- each step follows the one before
-    await append(link, { path: 'welcome.md', type, author: 'scripted-agent@browser', ref: 2, body })
+    await append(link, {
+      path: 'welcome.md',
+      type,
+      author: 'scripted-agent@browser',
+      ref: task,
+      body,
+    })
   }
 }
