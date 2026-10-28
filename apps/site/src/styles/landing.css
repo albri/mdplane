@@ -53,6 +53,7 @@
     background: var(--page);
     color: var(--action-ink);
     font: 650 0.875rem/1 var(--font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: 0;
   }
   .route-h {
@@ -185,12 +186,6 @@
     font-weight: 650;
     letter-spacing: -0.03em;
     line-height: 1.06;
-  }
-  /* A chapter's number is the same stop as on the route, so the page reads as one line. */
-  .sec-head > .step-no {
-    width: 36px;
-    height: 36px;
-    font-size: 0.9375rem;
   }
   .intro {
     font-size: var(--text-lead);
