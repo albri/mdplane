@@ -4,6 +4,7 @@ import type { output } from 'zod'
 import {
   type AppendResult,
   canonical,
+  deriveTasks,
   type Entry,
   type EntryContent,
   type FileSummary,
@@ -133,7 +134,7 @@ export class Workspace extends DurableObject<Env> {
   }
 
   override async alarm(): Promise<void> {
-    for (const socket of this.ctx.getWebSockets()) socket.close(1001, 'Workspace expired')
+    for (const socket of this.ctx.getWebSockets()) socket.close(1008, 'Workspace expired')
     await this.ctx.storage.deleteAll()
     this.exists = false
     this.wake()
@@ -270,10 +271,7 @@ export class Workspace extends DurableObject<Env> {
       .toArray()
   }
 
-  // A task's status is derived from the entries that refer to it. A lease is the claim's time
-  // plus the lease length, and lapses on its own.
   private tasks(path: string, since: number, upto: number, asOf: number): TaskView[] {
-    const tasks = new Map<number, TaskView>()
     const rows = this.sql.exec<Entry>(
       `SELECT ${ENTRY} FROM entries
        WHERE path = ? AND seq > ? AND seq <= ? AND type IN ('task', 'claim', 'response', 'cancel')
@@ -282,39 +280,7 @@ export class Workspace extends DurableObject<Env> {
       since,
       upto,
     )
-    for (const row of rows) {
-      if (row.type === 'task') {
-        tasks.set(row.seq, {
-          seq: row.seq,
-          author: row.author,
-          body: row.body ?? '',
-          createdAt: row.at,
-          status: 'open',
-          holder: null,
-          leaseExpiresAt: null,
-        })
-        continue
-      }
-      const task = row.ref === null ? undefined : tasks.get(row.ref)
-      if (!task) continue
-      if (row.type === 'claim') {
-        task.status = 'claimed'
-        task.holder = row.author
-        task.leaseExpiresAt = new Date(Date.parse(row.at) + this.leaseMs).toISOString()
-      } else {
-        task.status = row.type === 'response' ? 'done' : 'cancelled'
-        task.holder = null
-        task.leaseExpiresAt = null
-      }
-    }
-    for (const task of tasks.values()) {
-      if (task.leaseExpiresAt && Date.parse(task.leaseExpiresAt) <= asOf) {
-        task.status = 'open'
-        task.holder = null
-        task.leaseExpiresAt = null
-      }
-    }
-    return [...tasks.values()]
+    return deriveTasks(rows, asOf, this.leaseMs)
   }
 
   overview(auth: Auth): Result<Overview> {

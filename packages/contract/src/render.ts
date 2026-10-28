@@ -1,5 +1,6 @@
 // Markdown views for agents. JSON clients get the contract's types; these are for reading.
-import type { Entry, FileView, Link, TaskView, Workspace } from '@mdplane/contract'
+import { instructions } from './generated/instructions.gen.ts'
+import type { Entry, FileView, Link, TaskView, Workspace } from './generated/types.gen.ts'
 
 const time = (iso: string) => `${iso.slice(11, 16)} UTC`
 const dateTime = (iso: string) => `${iso.slice(0, 10)} ${time(iso)}`
@@ -83,4 +84,12 @@ export function renderNow(workspace: Workspace, tasks: Record<string, TaskView[]
       lines.push(`  - #${task.seq} ${status(task)}: ${firstLine(task.body)}`)
   }
   return `${lines.join('\n').trimEnd()}\n`
+}
+
+// What `GET $URL` returns to an agent: how to use its link, then what is happening now.
+export function renderInstructions(
+  workspace: Workspace,
+  tasks: Record<string, TaskView[]>,
+): string {
+  return `${instructions[workspace.link.tier].trimEnd()}\n\n${renderNow(workspace, tasks)}`
 }

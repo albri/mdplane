@@ -1,5 +1,6 @@
 import {
-  instructions,
+  renderFile,
+  renderInstructions,
   type Tier,
   zAppendRequest,
   zCreateLinkRequest,
@@ -25,7 +26,6 @@ import {
   tooLarge,
 } from './http.ts'
 import { hashSecret, linkUrl, newLinkId, newSecret, newWorkspaceId, parseLink } from './keys.ts'
-import { renderFile, renderNow } from './render.ts'
 import type { Auth, Result } from './workspace.ts'
 
 export { Workspace } from './workspace.ts'
@@ -47,13 +47,36 @@ const ENTRY_BODY_LIMIT = 16_384
 
 const app = new Hono<App>()
 
+// Pages load nothing from other origins, so a capability URL can't leak to one.
+const CSP =
+  "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+
+async function htmlPage(c: Context<App>, path: string, status: number): Promise<Response> {
+  const asset = await c.env.ASSETS.fetch(new URL(path, c.req.url))
+  return new Response(asset.body, {
+    status,
+    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+  })
+}
+
 // Capability URLs must not leak through caches or the Referer header.
 app.use(async (c, next) => {
   await next()
   if (c.res.status === 101) return
+  // Browsers get a page instead of problem JSON. It is the same page for every 404, so it says
+  // no more than the JSON does.
+  if (
+    c.res.status === 404 &&
+    negotiate(c.req.header('Accept'), ['application/problem+json', 'text/html']) === 'text/html'
+  ) {
+    c.res = await htmlPage(c, '/404', 404)
+  }
   c.res.headers.set('Cache-Control', 'no-store')
   c.res.headers.set('Referrer-Policy', 'no-referrer')
   c.res.headers.set('X-Content-Type-Options', 'nosniff')
+  if (c.res.headers.get('Content-Type')?.startsWith('text/html')) {
+    c.res.headers.set('Content-Security-Policy', CSP)
+  }
 })
 
 app.notFound(() => notFound())
@@ -85,7 +108,10 @@ async function readJson(c: Context<App>): Promise<{ value: unknown } | Response>
   }
 }
 
-function respond<T>(result: Result<T>, send: (value: T) => Response): Response {
+function respond<T>(
+  result: Result<T>,
+  send: (value: T) => Response | Promise<Response>,
+): Response | Promise<Response> {
   if (!result.ok) {
     return result.problem.status === 404 ? notFound() : problem(result.problem)
   }
@@ -154,10 +180,15 @@ app.get(
     const result = await stub.overview(auth)
     return respond(result, ({ workspace, tasks }) => {
       const headers = { ETag: `"${workspace.head.hash}"`, Vary: 'Accept' }
-      // The browser reader is served from here once it exists; until then browsers get markdown.
-      const type = negotiate(c.req.header('Accept'), ['text/markdown', 'application/json'])
+      const type = negotiate(c.req.header('Accept'), [
+        'text/markdown',
+        'application/json',
+        'text/html',
+      ])
       if (type === 'application/json') return c.json(workspace, 200, headers)
-      const text = `${instructions[auth.tier]}\n\n${renderNow(workspace, tasks)}`
+      // The reader is the same page for every link; it reads the key from its own URL.
+      if (type === 'text/html') return htmlPage(c, '/reader', 200)
+      const text = renderInstructions(workspace, tasks)
       return c.body(text, 200, { ...headers, 'Content-Type': 'text/markdown; charset=utf-8' })
     })
   }),

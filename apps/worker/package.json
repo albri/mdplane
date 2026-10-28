@@ -7,7 +7,7 @@
     "deploy": "wrangler deploy",
     "types": "wrangler types",
     "check": "wrangler types --check",
-    "test": "vitest run"
+    "test": "pnpm --filter @mdplane/site build && vitest run"
   },
   "dependencies": {
     "@mdplane/contract": "workspace:*",

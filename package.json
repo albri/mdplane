@@ -4,9 +4,10 @@
   "type": "module",
   "scripts": {
     "generate": "pnpm -r generate",
-    "check": "oxlint --type-aware --deny-warnings && oxfmt --check && tsc -p packages/contract && tsc -p apps/worker && pnpm -r check",
+    "check": "oxlint --type-aware --deny-warnings && oxfmt --check && tsc -p packages/contract && tsc -p apps/worker && tsc -p apps/site && pnpm -r check",
     "test": "pnpm -r test",
-    "format": "oxfmt"
+    "format": "oxfmt",
+    "build": "pnpm --filter @mdplane/site build"
   },
   "devDependencies": {
     "oxfmt": "^0.75.0",

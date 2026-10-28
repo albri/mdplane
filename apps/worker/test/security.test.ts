@@ -225,3 +225,31 @@ describe('creating workspaces', () => {
     expect(limited.headers.get('Retry-After')).toBe('60')
   })
 })
+
+const BROWSER = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+
+describe('browsers', () => {
+  test('get the reader from a working link, under a strict content security policy', async () => {
+    const ws = await createWorkspace()
+    const response = await call(ws.read, { headers: { Accept: BROWSER } })
+    expect(response.status).toBe(200)
+    expect(response.headers.get('Content-Type')).toContain('text/html')
+    expect(response.headers.get('Content-Security-Policy')).toContain("script-src 'self'")
+    expect(response.headers.get('Cache-Control')).toBe('no-store')
+    const html = await response.text()
+    expect(html).toContain('id="full-reader"')
+    expect(html).not.toContain(ws.read.split('.')[1])
+  })
+
+  test('get the same page for every 404', async () => {
+    const ws = await createWorkspace()
+    const pages = await Promise.all(
+      [`/r/${MADE_UP}`, `/w/${ws.read.slice(3)}`, `${ws.read}/files/nope.md`, '/nowhere'].map(
+        async (path) => snapshot(await call(path, { headers: { Accept: BROWSER } })),
+      ),
+    )
+    expect(pages[0]?.status).toBe(404)
+    expect(pages[0]?.type).toContain('text/html')
+    for (const page of pages) expect(page).toEqual(pages[0])
+  })
+})

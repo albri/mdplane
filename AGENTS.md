@@ -10,11 +10,18 @@ what keeps appends ordered and claims safe without locks.
 
 - `packages/contract`: the API contract. `openapi.yaml` is the source of truth.
   The types, Zod schemas and agent instructions in `src/generated/` are
-  generated from it, and `src/chain.ts` implements the hash chain it defines.
+  generated from it. `src/chain.ts` implements the hash chain, `src/tasks.ts`
+  derives task status and `src/render.ts` renders the markdown views; the
+  Worker and the reader share all three. Browser code imports
+  `@mdplane/contract/core`, which leaves out Zod.
 - `apps/worker`: the Worker. `src/index.ts` routes and validates requests,
   and `src/workspace.ts` is the Durable Object that owns a workspace's state.
   `worker-configuration.d.ts` is generated from `wrangler.jsonc` by
   `pnpm --filter @mdplane/worker types`.
+- `apps/site`: the landing page and the reader, as HTML, CSS and TypeScript.
+  `pnpm build` bundles it into `dist/`, which the Worker serves as static
+  assets. A browser opening a link gets `reader.html`, which reads the key from
+  its own URL.
 
 ## Commands
 
@@ -26,7 +33,8 @@ Run from the repository root, with Node 22.18 or later and pnpm.
   current.
 - `pnpm test` runs the tests.
 - `pnpm format` formats the code.
-- `pnpm --filter @mdplane/worker dev` runs the Worker locally.
+- `pnpm build` builds the site. The Worker's `dev` and `deploy` build it first.
+- `pnpm --filter @mdplane/worker dev` runs the Worker and the site locally.
 
 ## Changing the API
 
@@ -57,6 +65,9 @@ write them by hand.
 - A capability URL is a credential. Never put a real one in code, tests, docs,
   logs or screenshots; examples use made-up keys.
 - Every authorisation failure returns the same 404, so keys can't be probed.
+- Text in a workspace comes from whoever holds a link, so the reader escapes
+  it before rendering. Pages load nothing from other origins and never show a
+  link's secret on screen.
 - Never commit credentials, account identifiers or connection details. Before
   infrastructure work, check the live state with the provider instead of
   inferring it from config or Git history.

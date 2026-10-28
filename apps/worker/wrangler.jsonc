@@ -6,6 +6,18 @@
   // node:crypto gives a synchronous SHA-256, so sealing an entry never awaits.
   "compatibility_flags": ["nodejs_compat"],
   "upload_source_maps": true,
+  // The site and the reader are static files built by apps/site. Anything that isn't one of
+  // them reaches the Worker.
+  "assets": {
+    "directory": "../site/dist",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "none",
+  },
+  "build": {
+    "command": "pnpm --filter @mdplane/site build",
+    "watch_dir": "../site/src",
+  },
   "observability": { "enabled": true },
   "durable_objects": {
     "bindings": [{ "name": "WORKSPACES", "class_name": "Workspace" }],

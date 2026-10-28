@@ -1,0 +1,19 @@
+{
+  "name": "@mdplane/site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@mdplane/contract": "workspace:*"
+  },
+  "devDependencies": {
+    "@fontsource-variable/schibsted-grotesk": "^5.3.0",
+    "@fontsource/fragment-mono": "^5.3.0",
+    "@types/node": "^22.19.0",
+    "esbuild": "^0.28.2",
+    "vitest": "^5.0.5"
+  }
+}
