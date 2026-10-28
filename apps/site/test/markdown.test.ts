@@ -47,6 +47,43 @@ describe('the markdown parser', () => {
     ])
   })
 
+  // A body can be 256 KB, and the reader parses it on the main thread. Openers that never close
+  // used to cost a scan of the rest of the text each, which froze the page for over a minute.
+  test('parses a hostile 256 KB body in linear time', () => {
+    const size = 256 * 1024
+    // Quadratic took over a minute; linear takes a few milliseconds.
+    const slow = ['[', '[a', '[a](', '[a](/', '`', '>'].filter((opener) => {
+      const started = performance.now()
+      parse(opener.repeat(Math.floor(size / opener.length)))
+      return performance.now() - started > 500
+    })
+    expect(slow).toEqual([])
+  })
+
+  test('reads quotes too deep to nest as text', () => {
+    const blocks = parse('>'.repeat(20))
+    let depth = 0
+    let node = blocks[0]
+    while (node?.type === 'quote') {
+      depth++
+      node = node.children[0]
+    }
+    expect(depth).toBe(8)
+    expect(node).toEqual({ type: 'paragraph', children: text('>'.repeat(12)) })
+  })
+
+  test('reads unclosed and refused markup as the text it is', () => {
+    expect(parseInline('[a] [b](/x) **c `e')).toEqual([
+      { type: 'text', text: '[a] ' },
+      { type: 'link', href: '/x', children: text('b') },
+      { type: 'text', text: ' **c `e' },
+    ])
+    expect(parseInline('[x](javascript:y) [z](/ok)')).toEqual([
+      { type: 'text', text: '[x](javascript:y) ' },
+      { type: 'link', href: '/ok', children: text('z') },
+    ])
+  })
+
   test('reads the structures briefs use', () => {
     expect(
       parse(

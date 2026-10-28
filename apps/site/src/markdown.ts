@@ -24,8 +24,32 @@ export type Block =
 export const isSafeHref = (href: string) =>
   /^(https?:\/\/|\/|#)/i.test(href) && !/^\/[/\\]/.test(href)
 
-const INLINE = /`([^`]+)`|\*\*([^*]+)\*\*|\*([^*\s][^*]*)\*|\[([^\]]+)\]\(([^)\s]+)\)/g
+// Where the next match of `pattern` starts, at or after `from`. Openers are tried left to right,
+// so searches only move forward and an answer stays good until they pass it. That keeps a body
+// full of openers that never close, like 256 KB of `[`, to one read of the text.
+function finder(text: string, search: RegExp): (from: number) => number {
+  let start = Infinity
+  let found = -1
+  return (from) => {
+    if (from >= start && (found === -1 || found >= from)) return found
+    search.lastIndex = from
+    found = search.exec(text)?.index ?? -1
+    start = from
+    return found
+  }
+}
 
+// Global so that `lastIndex` sets where each search starts. Every search sets it first.
+const TICK = /`/g
+const STAR = /\*/g
+const CLOSE = /]/g
+const HREF_END = /[)\s]/g
+
+const isSpace = (c: string | undefined) => c !== undefined && /\s/.test(c)
+
+// `code`, **strong**, *em* and [label](href), matched as /`([^`]+)`|\*\*([^*]+)\*\*|
+// \*([^*\s][^*]*)\*|\[([^\]]+)\]\(([^)\s]+)\)/ would, but in one pass. A regex retries the rest of
+// the text from every unclosed opener, which is quadratic.
 export function parseInline(text: string): Inline[] {
   const nodes: Inline[] = []
   // Adjacent text joins up, so a refused link reads as the text around it.
@@ -34,19 +58,55 @@ export function parseInline(text: string): Inline[] {
     if (last?.type === 'text') last.text += part
     else if (part) nodes.push({ type: 'text', text: part })
   }
-  let last = 0
-  for (const match of text.matchAll(INLINE)) {
-    const [whole, code, strong, em, label, href] = match
-    addText(text.slice(last, match.index))
-    if (code !== undefined) nodes.push({ type: 'code', text: code })
-    else if (strong !== undefined) nodes.push({ type: 'strong', children: parseInline(strong) })
-    else if (em !== undefined) nodes.push({ type: 'em', children: parseInline(em) })
-    else if (label !== undefined && href !== undefined && isSafeHref(href))
-      nodes.push({ type: 'link', href, children: parseInline(label) })
-    else addText(whole)
-    last = match.index + whole.length
+  const tick = finder(text, TICK)
+  const star = finder(text, STAR)
+  const close = finder(text, CLOSE)
+  const hrefEnd = finder(text, HREF_END)
+  // Text from `plain` up to `i` hasn't been emitted yet.
+  let plain = 0
+  let i = 0
+  const emit = (node: Inline, next: number) => {
+    addText(text.slice(plain, i))
+    nodes.push(node)
+    i = plain = next
   }
-  addText(text.slice(last))
+  while (i < text.length) {
+    const c = text[i]
+    if (c === '`') {
+      const end = tick(i + 1)
+      if (end > i + 1) {
+        emit({ type: 'code', text: text.slice(i + 1, end) }, end + 1)
+        continue
+      }
+    } else if (c === '*' && text[i + 1] === '*') {
+      const end = star(i + 2)
+      if (end > i + 2 && text[end + 1] === '*') {
+        emit({ type: 'strong', children: parseInline(text.slice(i + 2, end)) }, end + 2)
+        continue
+      }
+    } else if (c === '*' && text[i + 1] !== undefined && !isSpace(text[i + 1])) {
+      const end = star(i + 1)
+      if (end !== -1) {
+        emit({ type: 'em', children: parseInline(text.slice(i + 1, end)) }, end + 1)
+        continue
+      }
+    } else if (c === '[') {
+      const labelEnd = close(i + 1)
+      const end = labelEnd > i + 1 && text[labelEnd + 1] === '(' ? hrefEnd(labelEnd + 2) : -1
+      if (end > labelEnd + 2 && text[end] === ')') {
+        const href = text.slice(labelEnd + 2, end)
+        if (isSafeHref(href)) {
+          emit({ type: 'link', href, children: parseInline(text.slice(i + 1, labelEnd)) }, end + 1)
+        } else {
+          // A refused link stays text, label and all.
+          i = end + 1
+        }
+        continue
+      }
+    }
+    i++
+  }
+  addText(text.slice(plain))
   return nodes
 }
 
@@ -56,6 +116,10 @@ const NUMBERED = /^\s*\d+[.)]\s+(.*)$/
 const RULE = /^(-{3,}|\*{3,})\s*$/
 const FENCE = '```'
 
+// Quotes nest by recursion, so a line of thousands of `>` would overflow the stack. Deeper ones
+// read as text.
+const MAX_QUOTE_DEPTH = 8
+
 const startsBlock = (line: string) =>
   line.startsWith(FENCE) ||
   line.startsWith('>') ||
@@ -63,7 +127,7 @@ const startsBlock = (line: string) =>
   BULLET.test(line) ||
   NUMBERED.test(line)
 
-export function parse(source: string): Block[] {
+export function parse(source: string, depth = 0): Block[] {
   const lines = source.replace(/\r\n?/g, '\n').split('\n')
   const blocks: Block[] = []
   let i = 0
@@ -93,14 +157,16 @@ export function parse(source: string): Block[] {
       const pattern = ordered ? NUMBERED : BULLET
       const items = take((l) => pattern.test(l)).map((l) => parseInline(pattern.exec(l)?.[1] ?? ''))
       blocks.push({ type: 'list', ordered, items })
-    } else if (line.startsWith('>')) {
+    } else if (line.startsWith('>') && depth < MAX_QUOTE_DEPTH) {
       const quoted = take((l) => l.startsWith('>')).map((l) => l.replace(/^>\s?/, ''))
-      blocks.push({ type: 'quote', children: parse(quoted.join('\n')) })
+      blocks.push({ type: 'quote', children: parse(quoted.join('\n'), depth + 1) })
     } else if (RULE.test(line)) {
       blocks.push({ type: 'rule' })
       i++
     } else {
-      const text = take((l) => l.trim() !== '' && !startsBlock(l)).join(' ')
+      // The first line is taken whatever it starts with, so a quote too deep to nest still moves on.
+      i++
+      const text = [line, ...take((l) => l.trim() !== '' && !startsBlock(l))].join(' ')
       blocks.push({ type: 'paragraph', children: parseInline(text) })
     }
   }
@@ -151,5 +217,26 @@ function block(node: Block, level: number): TemplateResult {
   }
 }
 
-export const markdown = (source: string, level = 1): TemplateResult[] =>
-  parse(source).map((node) => block(node, level))
+// Parsed bodies by content hash. A reader redraws on every step through the history, and the
+// body it shows changes far less often than that.
+const parsed = new Map<string, Block[]>()
+const PARSED_MAX = 32
+
+function parseCached(source: string, key: string | undefined): Block[] {
+  if (key === undefined) return parse(source)
+  const hit = parsed.get(key)
+  if (hit) {
+    // Most recently used goes last, so the first key is the one to drop.
+    parsed.delete(key)
+    parsed.set(key, hit)
+    return hit
+  }
+  const blocks = parse(source)
+  parsed.set(key, blocks)
+  if (parsed.size > PARSED_MAX) parsed.delete(parsed.keys().next().value ?? key)
+  return blocks
+}
+
+// `key` names the source, such as a write's content hash, so the same body isn't parsed twice.
+export const markdown = (source: string, level = 1, key?: string): TemplateResult[] =>
+  parseCached(source, key).map((node) => block(node, level))
