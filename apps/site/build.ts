@@ -2,13 +2,29 @@
 // are bundled into dist/assets/ under content-hashed names, so they can be cached for good. Pages
 // are filled in from src/pages: `{{> name}}` includes partials/name.html, and `{{file}}` becomes
 // the hashed URL of that output, such as `{{main.css}}` or `{{landing.js}}`.
-import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { basename } from 'node:path'
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
+import { basename, relative } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { build, type BuildOptions, type Metafile } from 'esbuild'
 
 const root = new URL('.', import.meta.url)
 const dist = new URL('dist/', root)
 const pages = new URL('src/pages/', root)
+
+// Each build writes to a folder of its own and swaps it in when it's done. The dev server rebuilds
+// on every change, so builds overlap, and in one shared folder they delete each other's files.
+const outDir = relative(fileURLToPath(root), mkdtempSync(fileURLToPath(new URL('.dist-', root))))
+const out = new URL(`${outDir}/`, root)
+process.on('exit', () => rmSync(out, { recursive: true, force: true }))
 
 const common = {
   absWorkingDir: root.pathname,
@@ -17,7 +33,7 @@ const common = {
   sourcemap: 'linked',
   // The oldest browsers with everything the pages use, such as light-dark() and popovers.
   target: ['chrome123', 'edge123', 'firefox125', 'safari17.5'],
-  outdir: 'dist/assets',
+  outdir: `${outDir}/assets`,
   entryNames: '[name]-[hash]',
   chunkNames: 'chunk-[hash]',
   assetNames: '[name]-[hash]',
@@ -26,8 +42,7 @@ const common = {
   logLevel: 'warning',
 } satisfies BuildOptions
 
-rmSync(dist, { recursive: true, force: true })
-cpSync(new URL('public/', root), dist, { recursive: true })
+cpSync(new URL('public/', root), out, { recursive: true })
 
 const [modules, classic] = await Promise.all([
   build({
@@ -47,7 +62,7 @@ const [modules, classic] = await Promise.all([
   build({ ...common, entryPoints: ['src/theme.ts'], format: 'iife' }),
 ])
 const outputs: Metafile['outputs'] = { ...modules.metafile.outputs, ...classic.metafile.outputs }
-const url = (file: string) => `/${file.replace(/^dist\//, '')}`
+const url = (file: string) => `/${relative(outDir, file)}`
 
 // Entry points by their source name, and fonts by their file name.
 const assets = new Map<string, string>()
@@ -58,7 +73,7 @@ for (const [file, output] of Object.entries(outputs)) {
 
 // Chunks a module imports, so the page can fetch them alongside it instead of after it.
 const preloads = (src: string) =>
-  (outputs[`dist${src}`]?.imports ?? [])
+  (outputs[`${outDir}${src}`]?.imports ?? [])
     .filter((i) => i.kind === 'import-statement' && !i.external)
     .map((i) => `<link rel="modulepreload" href="${url(i.path)}" />`)
 
@@ -87,14 +102,38 @@ function fill(html: string): string {
 }
 
 for (const page of readdirSync(pages).filter((name) => name.endsWith('.html'))) {
-  writeFileSync(new URL(page, dist), fill(include(read(page))))
+  writeFileSync(new URL(page, out), fill(include(read(page))))
 }
 
 // The fonts' licences travel with them.
-mkdirSync(new URL('licenses/', dist), { recursive: true })
+mkdirSync(new URL('licenses/', out))
 for (const [font, pkg] of [
   ['schibsted-grotesk', '@fontsource-variable/schibsted-grotesk'],
   ['fragment-mono', '@fontsource/fragment-mono'],
 ]) {
-  cpSync(new URL(`node_modules/${pkg}/LICENSE`, root), new URL(`licenses/${font}.txt`, dist))
+  cpSync(new URL(`node_modules/${pkg}/LICENSE`, root), new URL(`licenses/${font}.txt`, out))
 }
+
+// The last build to finish wins. Renames are atomic where deletes aren't, so the old build moves
+// aside under this build's own name and is deleted from there. If another build lands in between,
+// that one moves aside too.
+const isCode = (error: unknown, ...codes: string[]) =>
+  error instanceof Error && 'code' in error && codes.includes(String(error.code))
+const target = fileURLToPath(dist).replace(/\/$/, '')
+const retired: string[] = []
+for (;;) {
+  const aside = `${fileURLToPath(out).replace(/\/$/, '')}-old-${retired.length}`
+  try {
+    renameSync(target, aside)
+    retired.push(aside)
+  } catch (error) {
+    if (!isCode(error, 'ENOENT')) throw error
+  }
+  try {
+    renameSync(out, target)
+    break
+  } catch (error) {
+    if (!isCode(error, 'ENOTEMPTY', 'EEXIST')) throw error
+  }
+}
+for (const path of retired) rmSync(path, { recursive: true, force: true })

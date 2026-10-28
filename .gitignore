@@ -1,6 +1,7 @@
 node_modules
 .wrangler
 dist
+.dist-*
 coverage
 *.log
 .DS_Store
