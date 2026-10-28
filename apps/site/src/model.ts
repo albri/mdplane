@@ -11,6 +11,19 @@ import {
   type Tier,
 } from '@mdplane/contract/core'
 
+// Whether a live reader is connected to its workspace's stream. It ends only when the link stops
+// working.
+export type LiveStatus = 'connecting' | 'live' | 'reconnecting' | 'ended'
+
+// Where a reader gets the bodies a session doesn't carry. The sample carries all of its own.
+export type BodySource = {
+  // Starts fetching a write's body, unless it's here already or on its way.
+  want: (write: Entry) => void
+  // Why the body isn't here, when there's more to say than that it's loading.
+  problem: (write: Entry) => { message: string; retry: boolean } | null
+  retry: (write: Entry) => void
+}
+
 export type Session = {
   workspaceId: string
   name: string | null
@@ -23,6 +36,7 @@ export type Session = {
   log: LogItem[]
   // File bodies by content hash. A write entry carries only the hash.
   bodies: Map<string, string>
+  source?: BodySource
   mode: 'replay' | 'live'
   expiresAt: string | null
   timeZone?: string
@@ -39,6 +53,8 @@ export type Thread = {
 export type State = {
   pos: number
   list: Entry[]
+  // The entries since the file was last deleted, which are the ones its tasks come from.
+  life: Entry[]
   now: number
   write: Entry | null
   body: string | null
@@ -76,6 +92,7 @@ export function stateAt(session: Session, pos: number, live = false): State {
   return {
     pos,
     list,
+    life,
     now,
     write,
     body: write?.contentHash ? (session.bodies.get(write.contentHash) ?? null) : null,
@@ -116,7 +133,7 @@ const headOf = (log: LogItem[]) => {
 
 // What an agent gets from `GET $URL/files/{path}` at this point, rendered by the server's code.
 export function agentView(session: Session, state: State): string {
-  const life = state.list.slice(state.list.findLastIndex((e) => e.type === 'delete') + 1)
+  const { life } = state
   const view: FileView = {
     path: session.path,
     at: state.list.at(-1)?.seq ?? 0,

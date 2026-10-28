@@ -70,12 +70,21 @@
     border-color: color-mix(in srgb, var(--ok) 50%, var(--line));
     color: var(--ok);
   }
-  .rd-flag.is-live::before {
+  .rd-flag.is-reconnecting {
+    border-style: solid;
+    border-color: color-mix(in srgb, var(--warn) 50%, var(--line));
+    color: var(--warn);
+  }
+  .rd-flag:is(.is-live, .is-reconnecting)::before {
     content: '';
     width: 6px;
     height: 6px;
     border-radius: 50%;
     background: currentColor;
+  }
+  .rd-flag.is-reconnecting::before {
+    background: transparent;
+    border: 1px solid currentColor;
   }
   .rd-verify,
   .rd-details {
@@ -237,6 +246,22 @@
     font-size: 0.8125rem;
     color: var(--ink-3);
   }
+  .doc-more,
+  .doc-problem {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+  }
+  .doc-more {
+    padding: 10px 0;
+    color: var(--ink-3);
+    font-size: 0.8125rem;
+  }
+  .ent-more {
+    color: var(--ink-3);
+    font: 400 0.75rem/1.5 var(--font-mono);
+  }
   .doc-empty {
     color: var(--ink-3);
     font-size: 0.875rem;
@@ -374,14 +399,21 @@
     font: 400 0.75rem/1.4 var(--font-mono);
     color: var(--ink-3);
   }
+  /* A long log draws only the rows near the screen and the current entry. Each row is placed by
+     its index, and the list keeps the height of all of them, so the scrollbar is true. */
   .lg-list {
+    position: relative;
+    height: calc(var(--rows, 0) * var(--row-h, 66px));
     list-style: none;
     padding: 0;
   }
-  /* A long log only lays out the rows on screen. */
-  .lg-list li {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 66px;
+  .lg-list > li {
+    position: absolute;
+    inset-inline: 0;
+    top: calc(var(--i, 0) * var(--row-h, 66px));
+    height: var(--row-h, 66px);
+    /* A row's layout can't affect any other, so changing one doesn't lay out the rest. */
+    contain: strict;
   }
   .lg-row {
     display: grid;

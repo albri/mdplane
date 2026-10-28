@@ -1,7 +1,10 @@
 // A capability URL opened in a browser: the reader on the real workspace, kept live.
-import { ApiError, parseLink } from './api.ts'
+import { isGone, isRateLimited, parseLink } from './api.ts'
 import { mountApp } from './app.ts'
 import { type Watch, watch } from './live.ts'
+
+const GONE =
+  "This link doesn't work. It may be mistyped, revoked, or for a workspace that has expired."
 
 const app = mountApp()
 const fileFromHash = () => decodeURIComponent(location.hash.slice(1)) || undefined
@@ -26,6 +29,10 @@ async function main(): Promise<void> {
   const live: Watch = await watch(link, app.reader, {
     path: fileFromHash(),
     onFiles: () => showTitle(live),
+    // The link was revoked or its workspace expired while the page was open.
+    onStatus: (status) => {
+      if (status === 'ended') app.say(GONE)
+    },
   })
   showTitle(live)
   if (!app.reader.session) {
@@ -35,18 +42,25 @@ async function main(): Promise<void> {
         : 'No files yet. They appear here as soon as someone creates one.',
     )
   }
+  // Every change goes to the watch, even back to the file on screen: a switch still on its way
+  // would otherwise land after it.
   window.addEventListener('hashchange', () => {
     const path = fileFromHash()
-    if (path && path !== app.reader.session?.path && live.files().includes(path)) {
-      void live.show(path).then(() => showTitle(live))
+    if (path && live.files().includes(path)) {
+      live.show(path).then(
+        () => showTitle(live),
+        () => app.say("Couldn't open that file. Check your connection and reload the page."),
+      )
     }
   })
 }
 
 main().catch((error: unknown) => {
   app.say(
-    error instanceof ApiError && error.status === 404
-      ? "This link doesn't work. It may be mistyped, revoked, or for a workspace that has expired."
-      : "Couldn't load this workspace. Check your connection and reload the page.",
+    isGone(error)
+      ? GONE
+      : isRateLimited(error)
+        ? 'Too many requests on this link for now. Wait a minute, then reload the page.'
+        : "Couldn't load this workspace. Check your connection and reload the page.",
   )
 })

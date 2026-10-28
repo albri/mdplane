@@ -3,8 +3,8 @@
 import { type Entry, GENESIS, type LogItem, verifyChain } from '@mdplane/contract/core'
 import { html, nothing, render, type TemplateResult } from 'lit-html'
 import { classMap } from 'lit-html/directives/class-map.js'
+import { guard } from 'lit-html/directives/guard.js'
 import { createRef, ref } from 'lit-html/directives/ref.js'
-import { repeat } from 'lit-html/directives/repeat.js'
 import {
   $$,
   clock,
@@ -22,6 +22,7 @@ import {
   countTasks,
   describe,
   leaseEnd,
+  type LiveStatus,
   minutesLeft,
   type Session,
   type State,
@@ -59,6 +60,21 @@ const dwell = (entry: Entry | undefined) =>
 const FLIP = { duration: 320, easing: 'cubic-bezier(0.2, 0.7, 0.1, 1)' }
 // Past this, the timeline's ticks would merge into a bar.
 const MAX_TICKS = 240
+// A history this long or shorter draws every row, so the browser can find any of them.
+const ALL_ROWS = 100
+// Past that, rows are drawn this far beyond each edge of the screen, so scrolling meets rows that
+// are already there.
+const OVERSCAN = 4
+// The file shows the tasks and comments with an entry among this many of its latest, and more on
+// request. A log can hold 10,000 entries, which would be far too many to draw at every step.
+const DOC_DEPTH = 40
+
+const LIVE = {
+  connecting: ['Connecting…', 'Connecting to the live stream'],
+  live: ['Live', 'New entries appear as they are added'],
+  reconnecting: ['Reconnecting…', 'Lost the live stream. Reconnecting'],
+  ended: ['Ended', 'This link has stopped working, so nothing new will arrive'],
+} as const
 
 type Verification =
   | { state: 'idle' | 'checking' | 'unsupported' }
@@ -97,7 +113,19 @@ export class Reader {
   private view: 'rendered' | 'source' = 'rendered'
   private pane: 'doc' | 'log' = 'doc'
   private timer: number | null = null
+  private status: LiveStatus = 'connecting'
   private state: State | null = null
+  // Drawing waits for the next frame, so a burst of slider input or live entries draws once.
+  private frame: number | null = null
+  private pending: {
+    reveal: ScrollBehavior | null
+    flip: Map<string, number> | null
+    focusRow: boolean
+  } = { reveal: null, flip: null, focusRow: false }
+  // Measured from a drawn row. Every row is three single lines, so they're all this tall.
+  private rowHeight = 66
+  private rowsDrawn = new Set<number>()
+  private docDepth = DOC_DEPTH
   private arrived = new Set<number>()
   private flips: Animation[] = []
   private announcement = ''
@@ -151,8 +179,10 @@ export class Reader {
     this.pos = Math.max(1, Math.min(session.entries.length, pos ?? session.entries.length))
     this.arrived = new Set()
     this.verification = { state: 'idle' }
+    this.docDepth = DOC_DEPTH
+    // Cards measured in the last file have nothing to slide from in this one.
+    this.pending = { reveal: 'instant', flip: null, focusRow: false }
     this.draw()
-    this.reveal('instant')
     void this.verify()
   }
 
@@ -193,15 +223,34 @@ export class Reader {
   }
 
   // An entry was added to this file. Follow it only if the reader was at the head.
-  appended(): void {
+  appended({ animate = true }: { animate?: boolean } = {}): void {
     const entry = this.session?.entries.at(-1)
     if (this.pos === this.head - 1 && entry) {
       this.announcement = `New entry: ${describe(entry)}.`
-      this.move(this.head, { behavior: scrollBehavior(), animate: true })
+      this.move(this.head, { behavior: animate ? scrollBehavior() : 'instant', animate })
     } else {
       this.draw()
     }
     void this.verify()
+  }
+
+  // How the live stream is doing. Losing it, getting it back and its end are said aloud too.
+  connection(status: LiveStatus): void {
+    const was = this.status
+    if (status === was) return
+    this.status = status
+    if (this.session?.mode === 'live') {
+      if (status === 'ended') this.announcement = `${LIVE.ended[1]}.`
+      else if (status === 'reconnecting' && was === 'live')
+        this.announcement = `${LIVE.reconnecting[1]}.`
+      else if (status === 'live' && was === 'reconnecting') this.announcement = 'Live again.'
+    }
+    this.draw()
+  }
+
+  // A body arrived or failed, which matters only if the version on screen was waiting for one.
+  bodiesChanged(): void {
+    if (this.state?.write && this.state.body === null) this.draw()
   }
 
   // An entry was added to another file, which only extends the workspace's chain.
@@ -265,7 +314,11 @@ export class Reader {
     const next = Math.max(1, Math.min(this.head, target))
     if (!session || next === this.pos) return
     const from = this.pos
-    const flip = how.animate && motionOK() && this.view === 'rendered' ? this.measure() : null
+    // Cards are measured once per frame, before anything moves: a second move in the same frame
+    // starts from the same places.
+    if (how.animate && motionOK() && this.view === 'rendered' && this.frame === null) {
+      this.pending.flip = this.measure()
+    }
     this.pos = next
     const entry = session.entries[next - 1]
     if (how.announce && entry) this.announcement = this.positionText(entry)
@@ -273,9 +326,8 @@ export class Reader {
       how.animate && next > from && next - from <= 2
         ? new Set(session.entries.slice(from, next).map((e) => e.seq))
         : new Set()
+    this.pending.reveal = how.behavior
     this.draw()
-    this.reveal(how.behavior)
-    if (flip) this.slide(flip)
   }
 
   private say(text: string): void {
@@ -290,22 +342,88 @@ export class Reader {
 
   private setView(view: Reader['view']): void {
     this.view = view
+    this.pending.reveal = 'instant'
     this.draw()
-    this.reveal('instant')
   }
 
   private setPane(pane: Reader['pane']): void {
     this.pane = pane
+    this.pending.reveal = 'instant'
     this.draw()
-    this.reveal('instant')
   }
 
   private draw(): void {
+    if (!this.session || this.frame !== null) return
+    this.frame = requestAnimationFrame(() => this.paint())
+  }
+
+  private paint(): void {
+    this.frame = null
     const session = this.session
     if (!session) return
     this.state = stateAt(session, this.pos, this.live)
     render(this.template(session, this.state), this.root)
     if (this.bar) render(this.toolbar(session), this.bar)
+    const { reveal: scroll, flip, focusRow } = this.pending
+    this.pending = { reveal: null, flip: null, focusRow: false }
+    if (scroll) this.reveal(scroll)
+    if (flip) this.slide(flip)
+    if (focusRow) {
+      this.log.value?.querySelector<HTMLElement>('[aria-current]')?.focus({ preventScroll: true })
+    }
+    this.fitRows()
+  }
+
+  // Rows are placed by arithmetic, so their height has to be known. It changes only with fonts.
+  private fitRows(): void {
+    const row = this.log.value?.querySelector('.lg-row')
+    const height = row instanceof HTMLElement ? row.offsetHeight : 0
+    if (height > 0 && height !== this.rowHeight) {
+      this.rowHeight = height
+      // Every row below the first has moved, the current one with them.
+      this.pending.reveal ??= 'instant'
+      this.draw()
+    }
+  }
+
+  // Which history rows to draw: those on screen, and those around the current entry so moving to
+  // it scrolls onto rows that are already there. Indexes count from 0.
+  private visibleRows(count: number): number[] {
+    if (count <= ALL_ROWS) {
+      this.rowsDrawn = new Set(Array.from({ length: count }, (_, i) => i))
+      return [...this.rowsDrawn]
+    }
+    const screen = this.onScreen()
+    const span = (screen ? screen[1] - screen[0] : 12) + OVERSCAN
+    const bands: Array<[number, number]> = [[this.pos - 1 - span, this.pos + span]]
+    if (screen) bands.push([screen[0] - OVERSCAN, screen[1] + OVERSCAN])
+    const rows = new Set<number>()
+    for (const [from, to] of bands) {
+      for (let i = Math.max(0, from); i < Math.min(count, to); i++) rows.add(i)
+    }
+    this.rowsDrawn = rows
+    return [...rows].toSorted((a, b) => a - b)
+  }
+
+  // The rows the history panel shows at its current scroll, as [first, end).
+  private onScreen(): [number, number] | null {
+    const box = this.log.value
+    const list = box?.querySelector('.lg-list')
+    if (!box || !list || box.clientHeight === 0) return null
+    const top = Math.floor((box.scrollTop - topIn(box, list)) / this.rowHeight)
+    return [top, top + Math.ceil(box.clientHeight / this.rowHeight) + 1]
+  }
+
+  // Scrolling draws again only when it brings rows on screen that aren't drawn yet.
+  private readonly onLogScroll = (): void => {
+    const screen = this.onScreen()
+    if (!screen) return
+    for (let i = Math.max(0, screen[0]); i < Math.min(this.head, screen[1]); i++) {
+      if (!this.rowsDrawn.has(i)) {
+        this.draw()
+        return
+      }
+    }
   }
 
   // Keeps the current entry in view in both the file and the history.
@@ -362,6 +480,7 @@ export class Reader {
     this.move(this.head, { behavior: scrollBehavior(), announce: true })
   }
 
+  // Input arrives faster than frames while dragging; the draw it asks for is shared.
   private readonly onRange = (event: Event): void => {
     if (!(event.target instanceof HTMLInputElement)) return
     this.interact()
@@ -386,7 +505,7 @@ export class Reader {
     event.preventDefault()
     this.interact()
     this.move(target, { behavior: scrollBehavior(), animate: true })
-    this.log.value?.querySelector<HTMLElement>('[aria-current]')?.focus({ preventScroll: true })
+    this.pending.focusRow = true
   }
 
   private template(session: Session, state: State): TemplateResult {
@@ -413,20 +532,31 @@ export class Reader {
           ${
             this.view === 'source'
               ? html`<pre class="src">${highlight(agentView(session, state))}</pre>`
-              : this.file(state)
+              : this.file(session, state)
           }
         </section>
-        <section class="rd-log" ${ref(this.log)} aria-labelledby=${`${this.id}-log`}>
+        <section
+          class="rd-log"
+          ${ref(this.log)}
+          aria-labelledby=${`${this.id}-log`}
+          @scroll=${this.onLogScroll}
+        >
           <div class="lg-head">
             ${heading(this.level, 'History', { id: `${this.id}-log` })}
             <span class="lg-count">${this.pos} of ${this.head}</span>
           </div>
-          <ol class="lg-list" @click=${this.onRowClick} @keydown=${this.onRowKey}>
-            ${repeat(
-              session.entries,
-              (e) => e.seq,
-              (e, i) => this.row(e, i + 1),
-            )}
+          <ol
+            class="lg-list"
+            ${cssProps({ '--rows': String(this.head), '--row-h': `${this.rowHeight}px` })}
+            @click=${this.onRowClick}
+            @keydown=${this.onRowKey}
+          >
+            ${this.visibleRows(session.entries.length).map((i) => {
+              const entry = session.entries[i]
+              // Rows are reused by place rather than keyed by entry, so scrubbing a long log
+              // updates the rows it has instead of making new ones.
+              return entry ? this.row(entry, i + 1) : nothing
+            })}
           </ol>
         </section>
       </div>
@@ -452,9 +582,15 @@ export class Reader {
         ><span aria-hidden="true">.••••••••••••</span>
         <span class="visually-hidden">, key hidden</span>
       </span>
-      <span class=${classMap({ 'rd-flag': true, 'is-live': session.mode === 'live' })}>
-        ${session.mode === 'live' ? 'Live' : 'Replay'}
-      </span>
+      ${
+        session.mode === 'live'
+          ? html`<span
+              class=${classMap({ 'rd-flag': true, [`is-${this.status}`]: true })}
+              title=${LIVE[this.status][1]}
+              >${LIVE[this.status][0]}</span
+            >`
+          : html`<span class="rd-flag">Replay</span>`
+      }
       ${
         v.state === 'unsupported'
           ? nothing
@@ -494,7 +630,7 @@ export class Reader {
     `
   }
 
-  private file(state: State): TemplateResult {
+  private file(session: Session, state: State): TemplateResult {
     const time = this.time
     const { write, deletion } = state
     const body = write
@@ -506,13 +642,7 @@ export class Reader {
           <p class="doc-meta">
             Body · version ${write.version ?? 1} · ${write.author} at ${time(write.at)}
           </p>
-          <div class="prose">
-            ${
-              state.body === null
-                ? html`<p class="doc-empty">Loading this version…</p>`
-                : markdown(state.body, this.level)
-            }
-          </div>
+          <div class="prose">${this.body(session, state, write)}</div>
         </section>`
       : html`<p
           class=${classMap({ 'doc-empty': true, ...(deletion ? this.marks(deletion) : {}) })}
@@ -520,30 +650,35 @@ export class Reader {
         >
           This file was deleted at this point in its history.
         </p>`
+    // Only the tasks and comments with one of the latest entries are drawn, which always includes
+    // the current one. The rest are a click away.
+    const cut = state.life.length > this.docDepth ? (state.life.at(-this.docDepth)?.seq ?? 0) : 0
+    const threads = state.threads.filter(
+      (t) => t.entry.seq >= cut || (t.kids.at(-1)?.seq ?? 0) >= cut,
+    )
+    const notes = state.notes.filter((e) => e.seq >= cut)
     return html`
       ${body}
       <div class="doc-loghead" data-flip="tasks">
         ${heading(this.level, 'Tasks')}
         <p>${summary(state.threads)}</p>
       </div>
+      ${this.more(state.threads.length - threads.length, 'task', 'tasks')}
       ${
-        state.threads.length > 0
+        threads.length > 0
           ? html`<ol class="tasks">
-              ${repeat(
-                state.threads,
-                (t) => t.entry.seq,
-                (t) => this.task(t, state),
-              )}
+              ${threads.map((t) => this.task(t, state, cut))}
             </ol>`
-          : html`<p class="doc-empty">No tasks yet.</p>`
+          : state.threads.length > 0
+            ? nothing
+            : html`<p class="doc-empty">No tasks yet.</p>`
       }
       ${
         state.notes.length > 0
           ? html`<div class="doc-loghead" data-flip="notes">${heading(this.level, 'Comments')}</div>
+              ${this.more(state.notes.length - notes.length, 'comment', 'comments')}
               <ol class="notes">
-                ${repeat(
-                  state.notes,
-                  (e) => e.seq,
+                ${notes.map(
                   (e) =>
                     html`<li
                       class=${classMap({ ent: true, [`ent-${e.type}`]: true, ...this.marks(e) })}
@@ -559,13 +694,56 @@ export class Reader {
     `
   }
 
+  // A version's body, fetched when it's first shown unless the session carries it.
+  private body(session: Session, state: State, write: Entry): unknown {
+    const hash = write.contentHash ?? undefined
+    if (state.body !== null) {
+      const source = state.body
+      return guard([hash, this.level], () => markdown(source, this.level, hash))
+    }
+    session.source?.want(write)
+    const problem = session.source?.problem(write) ?? null
+    if (!problem) return html`<p class="doc-empty">Loading this version…</p>`
+    return html`<p class="doc-empty doc-problem">
+      ${problem.message}
+      ${
+        problem.retry
+          ? html`<button
+              type="button"
+              class="btn btn-quiet btn-sm"
+              @click=${() => session.source?.retry(write)}
+            >
+              Try again
+            </button>`
+          : nothing
+      }
+    </p>`
+  }
+
+  // Says how many earlier tasks or comments aren't drawn, with a way to draw more of them.
+  private more(hidden: number, one: string, many: string): TemplateResult | typeof nothing {
+    if (hidden === 0) return nothing
+    return html`<p class="doc-more">
+      ${count(hidden)} earlier ${hidden === 1 ? one : many} not shown.
+      <button type="button" class="btn btn-quiet btn-sm" @click=${this.showEarlier}>
+        Show more
+      </button>
+    </p>`
+  }
+
+  private readonly showEarlier = (): void => {
+    this.docDepth *= 2
+    this.draw()
+  }
+
   private marks(entry: Entry): Record<string, boolean> {
     return { 'is-current': entry.seq === this.entry?.seq, 'is-new': this.arrived.has(entry.seq) }
   }
 
-  private task({ task, entry, kids, lapsed }: Thread, state: State): TemplateResult {
+  private task({ task, entry, kids, lapsed }: Thread, state: State, cut: number): TemplateResult {
     const time = this.time
     const closer = kids.findLast((k) => k.type === 'response' || k.type === 'cancel')
+    const earlier = kids.filter((k) => k.seq < cut).length
     let meta = `${entry.author} · ${time(entry.at)}`
     if (task.status === 'claimed' && task.holder && task.leaseExpiresAt) {
       const until = Date.parse(task.leaseExpiresAt)
@@ -593,17 +771,24 @@ export class Reader {
       ${
         kids.length > 0
           ? html`<ol class="thread">
-              ${repeat(
-                kids,
-                (k) => k.seq,
-                (k, i) =>
-                  html`<li
-                    class=${classMap({ ent: true, [`ent-${k.type}`]: true, ...this.marks(k) })}
-                    data-seq=${k.seq}
-                  >
-                    ${this.item(k, renews(kids, i))}
-                  </li>`,
-              )}
+              ${
+                earlier > 0
+                  ? html`<li class="ent-more">
+                      ${count(earlier)} earlier ${earlier === 1 ? 'entry' : 'entries'} not shown
+                    </li>`
+                  : nothing
+              }
+              ${kids
+                .slice(earlier)
+                .map(
+                  (k, i) =>
+                    html`<li
+                      class=${classMap({ ent: true, [`ent-${k.type}`]: true, ...this.marks(k) })}
+                      data-seq=${k.seq}
+                    >
+                      ${this.item(k, renews(kids, earlier + i))}
+                    </li>`,
+                )}
             </ol>`
           : nothing
       }
@@ -636,7 +821,11 @@ export class Reader {
         : e.type === 'delete'
           ? 'Deleted the file'
           : (e.body ?? '')
-    return html`<li>
+    return html`<li
+      ${cssProps({ '--i': String(index - 1) })}
+      aria-posinset=${index}
+      aria-setsize=${this.head}
+    >
       <button
         type="button"
         class=${classMap({ 'lg-row': true, 'is-current': current, 'is-future': index > this.pos })}
@@ -836,7 +1025,10 @@ export class Reader {
   }
 }
 
-const topIn = (box: HTMLElement, el: HTMLElement) =>
+const counter = new Intl.NumberFormat('en-GB')
+const count = (n: number) => counter.format(n)
+
+const topIn = (box: HTMLElement, el: Element) =>
   el.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop
 
 // A claim by the same author as an earlier one renews the lease rather than taking the task.
