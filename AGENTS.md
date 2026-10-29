@@ -89,10 +89,12 @@ write them by hand.
 - Keep the site accessible: `pnpm e2e` fails on any axe finding and on any
   console error.
 - Comments say why, not what.
-- Commit subjects and PR titles follow Conventional Commits: a type such as
-  `feat`, `fix`, `docs`, `test`, `ci` or `chore`, then a short imperative
-  sentence. PRs are squash-merged, so each PR's title becomes its commit on
-  main.
+- Commit subjects and PR titles are plain imperative sentences in sentence
+  case, with no type prefix: "Keep @types/node on the runtime's major", not
+  "chore: keep @types/node on the runtime's major".
+- PRs are squash-merged. The commit on main takes the PR's title as its
+  subject and the PR's commit messages as its body, so keep one commit per
+  PR, with a body that says why.
 
 ## Security
 
