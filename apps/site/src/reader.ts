@@ -45,12 +45,13 @@ const ICONS = {
   close: icon(
     'M4.3 3.2 8 6.9l3.7-3.7 1.1 1.1L9.1 8l3.7 3.7-1.1 1.1L8 9.1l-3.7 3.7-1.1-1.1L6.9 8 3.2 4.3z',
   ),
+  more: icon('M3.4 5.4 4.5 4.3 8 7.8l3.5-3.5 1.1 1.1L8 10z'),
 }
 
 const TIERS = {
-  r: ['Read', 'Read: view, search and watch'],
-  a: ['Append', 'Append: read and add to the log'],
-  w: ['Write', 'Write: everything, including bodies and links'],
+  r: 'Read: view, search and watch',
+  a: 'Append: read and add to the log',
+  w: 'Write: everything, including bodies and links',
 } as const
 
 const STATUS = { open: 'Open', claimed: 'In progress', done: 'Done', cancelled: 'Cancelled' }
@@ -142,6 +143,12 @@ export class Reader {
   private checks = 0
   // Where a live workspace's history parted from the head this browser remembered, once found.
   private changedAt: number | null = null
+  // Tasks open because someone opened them. The task the current entry belongs to opens on its
+  // own, unless it was closed since the reader moved there.
+  private opened = new Set<number>()
+  private shut: number | null = null
+  // The compact reader has no details panel, so its chain details open above the footer.
+  private chainOpen = false
   private readonly doc = createRef<HTMLElement>()
   private readonly log = createRef<HTMLElement>()
 
@@ -177,6 +184,16 @@ export class Reader {
     return this.session?.mode === 'live' && this.pos === this.head
   }
 
+  // The task the current entry adds or is about.
+  private get here(): number | null {
+    const entry = this.entry
+    return entry?.type === 'task' ? entry.seq : (entry?.ref ?? null)
+  }
+
+  private isOpen(task: number): boolean {
+    return this.opened.has(task) || (task === this.here && this.shut !== task)
+  }
+
   load(session: Session, { pos }: { pos?: number } = {}): void {
     this.pause()
     this.session = session
@@ -185,6 +202,8 @@ export class Reader {
     this.arrived = new Set()
     this.verification = { state: 'idle' }
     this.changedAt = null
+    this.opened = new Set()
+    this.shut = null
     this.docDepth = DOC_DEPTH
     // Cards measured in the last file have nothing to slide from in this one.
     this.pending = { reveal: 'instant', flip: null, focusRow: false }
@@ -341,6 +360,7 @@ export class Reader {
       this.pending.flip = this.measure()
     }
     this.pos = next
+    this.shut = null
     const entry = session.entries[next - 1]
     if (how.announce && entry) this.announcement = this.positionText(entry)
     this.arrived =
@@ -361,8 +381,10 @@ export class Reader {
     this.draw()
   }
 
+  // On a phone, a view of the file shows the file, since the history pane has no views.
   private setView(view: Reader['view']): void {
     this.view = view
+    this.pane = 'doc'
     this.pending.reveal = 'instant'
     this.draw()
   }
@@ -453,7 +475,9 @@ export class Reader {
     const log = this.log.value
     const seq = this.entry?.seq
     if (!doc || !log || seq === undefined) return
-    const target = doc.querySelector(`[data-seq="${seq}"]`)
+    // A closed task shows only its row, so that's what stays in view.
+    const target =
+      doc.querySelector(`[data-seq="${seq}"]`) ?? doc.querySelector(`[data-task="${this.here}"]`)
     if (target) reveal(doc, target, { behavior, from: target.closest('.task') ?? target })
     const row = log.querySelector('[aria-current]')
     const head = log.querySelector('.lg-head')
@@ -490,13 +514,13 @@ export class Reader {
 
   private get verifyText(): string {
     const v = this.verification
-    if (v.state === 'ok') return `History verified: all ${v.count} entries match their hashes.`
+    if (v.state === 'ok') return `History checked: all ${v.count} entries match their hashes.`
     if (v.state === 'broken') return `History broken: entry #${v.at} doesn't match its hash.`
     if (v.state === 'changed') {
       return `History changed: entry #${v.at} isn't the one this browser checked on an earlier visit.`
     }
     if (v.state === 'unsupported') return "This browser can't check the history."
-    return ''
+    return 'Checking…'
   }
 
   private readonly latest = (): void => {
@@ -513,6 +537,38 @@ export class Reader {
 
   private readonly onVerify = (): void => {
     if (this.verification.state !== 'checking') void this.verify({ full: true, announce: true })
+  }
+
+  // The status line's check leads to the chain details: in the details panel or column for the
+  // full reader, and above the footer for the compact one.
+  private readonly onCheck = (event: Event): void => {
+    if (this.variant === 'compact') {
+      this.chainOpen = !this.chainOpen
+      this.draw()
+      return
+    }
+    const info = this.root.querySelector('.rd-info')
+    const chain = this.root.querySelector('.info-chain')
+    if (!(info instanceof HTMLElement) || !(chain instanceof HTMLElement)) return
+    if (!info.checkVisibility()) {
+      // The source makes the popover hand focus back to the button when it closes.
+      const source = event.currentTarget
+      info.showPopover(source instanceof HTMLElement ? { source } : undefined)
+    }
+    chain.focus()
+  }
+
+  private readonly onTask = (event: Event): void => {
+    const row = event.currentTarget
+    if (!(row instanceof HTMLElement)) return
+    const task = Number(row.dataset.task)
+    if (this.isOpen(task)) {
+      this.opened.delete(task)
+      if (task === this.here) this.shut = task
+    } else {
+      this.opened.add(task)
+    }
+    this.draw()
   }
 
   private readonly onRowClick = (event: Event): void => {
@@ -536,6 +592,7 @@ export class Reader {
     const full = this.variant === 'full'
     return html`
       ${this.bar ? nothing : html`<div class="rd-bar">${this.toolbar(session)}</div>`}
+      ${this.alarm()}
       <div class="rd-panes">
         <div class="seg" role="group" aria-label="Show">
           ${(['doc', 'log'] as const).map(
@@ -549,6 +606,7 @@ export class Reader {
               </button>`,
           )}
         </div>
+        ${this.viewSwitch()}
       </div>
       <div class="rd-body" data-pane=${this.pane}>
         ${full ? this.info(session, state) : nothing}
@@ -584,75 +642,158 @@ export class Reader {
           </ol>
         </section>
       </div>
+      ${
+        this.variant === 'compact' && this.chainOpen
+          ? html`<div class="rd-chain" id=${`${this.id}-chain`}>${this.chain(session)}</div>`
+          : nothing
+      }
       ${this.timeline(session)}
       <p class="visually-hidden" role="status">${this.announcement}</p>
     `
   }
 
+  // The bar says what you're looking at and how. Where you are in time, and whether the history
+  // checks out, is the footer's job. The compact reader keeps its masked link up here, to show
+  // that what it shows is a link; the full reader's link is in the details.
   private toolbar(session: Session): TemplateResult {
-    const [tier, tierTitle] = TIERS[session.tier]
-    const v = this.verification
-    const label = {
-      idle: 'Check history',
-      checking: 'Checking…',
-      unsupported: '',
-      ok: '✓ Verified',
-      broken: v.state === 'broken' ? `Broken at #${v.at}` : '',
-      changed: v.state === 'changed' ? `Changed at #${v.at}` : '',
-    }[v.state]
     return html`
-      <span class="rd-tier" title=${tierTitle}>${tier}</span>
-      <span class="rd-url">
-        ${session.host}/${session.tier}/<b>${session.workspaceId}</b
-        ><span aria-hidden="true">.••••••••••••</span>
-        <span class="visually-hidden">, key hidden</span>
-      </span>
+      ${this.variant === 'compact' ? html`<span class="rd-url">${this.link(session)}</span>` : nothing}
+      <div class="rd-ctl">
+        ${this.viewSwitch()}
+        ${
+          this.variant === 'full'
+            ? html`<button type="button" class="rd-details" popovertarget=${`${this.id}-info`}>
+                Details
+              </button>`
+            : nothing
+        }
+      </div>
+    `
+  }
+
+  private link(session: Session): TemplateResult {
+    return html`${session.host}/${session.tier}/<b>${session.workspaceId}</b
+      ><span aria-hidden="true">.••••••••••••</span>
+      <span class="visually-hidden">, key hidden</span>`
+  }
+
+  // Drawn twice, in the bar and in the phone's tab row, and shown in one of them at a time.
+  private viewSwitch(): TemplateResult {
+    return html`<div class="seg rd-view" role="group" aria-label="View">
+      ${(['rendered', 'source'] as const).map(
+        (view) =>
+          html`<button
+            type="button"
+            aria-pressed=${String(this.view === view)}
+            @click=${() => this.setView(view)}
+          >
+            ${view === 'rendered' ? 'Rendered' : 'Markdown'}
+          </button>`,
+      )}
+    </div>`
+  }
+
+  // The live stream and the history check, as quiet text. Away from the head, the first part is
+  // the way back to it, as on a live video. Only trouble is coloured.
+  private standing(session: Session): TemplateResult {
+    const behind = this.pos < this.head
+    const live = session.mode === 'live'
+    const following = live && this.status === 'live'
+    let state: TemplateResult | typeof nothing = nothing
+    if (live && !(following && behind)) {
+      state = html`<span
+        class=${classMap({ 'rd-mode': true, [`is-${this.status}`]: true })}
+        title=${LIVE[this.status][1]}
+        ><i aria-hidden="true"></i>${LIVE[this.status][0]}</span
+      >`
+    } else if (!live && !behind) {
+      state = html`<span class="rd-mode">Replay</span>`
+    }
+    return html`<p class="rd-status">
       ${
-        session.mode === 'live'
-          ? html`<span
-              class=${classMap({ 'rd-flag': true, [`is-${this.status}`]: true })}
-              title=${LIVE[this.status][1]}
-              >${LIVE[this.status][0]}</span
-            >`
-          : html`<span class="rd-flag">Replay</span>`
+        behind
+          ? html`<button type="button" class="rd-jump" @click=${this.latest}>
+              ${following ? html`<i aria-hidden="true"></i>Back to live` : 'Latest'}
+            </button>`
+          : nothing
       }
+      ${state} ${this.check()}
+    </p>`
+  }
+
+  // The history check's part of the status. Once there's a result it leads to the chain.
+  private check(): TemplateResult | typeof nothing {
+    const v = this.verification
+    let label: string
+    if (v.state === 'ok') label = 'Checked'
+    else if (v.state === 'broken') label = `History broken at #${v.at}`
+    else if (v.state === 'changed') label = `History changed at #${v.at}`
+    else if (v.state === 'unsupported') return nothing
+    else return html`<span class="rd-checking">Checking…</span>`
+    const bad = v.state !== 'ok'
+    const compact = this.variant === 'compact'
+    return html`<button
+      type="button"
+      class=${classMap({ 'rd-check': true, 'is-bad': bad })}
+      title=${v.state === 'ok' ? `${v.count} entries, head ${v.head.slice(0, 7)}` : nothing}
+      aria-label=${`${label}. Show the chain`}
+      aria-expanded=${compact ? String(this.chainOpen) : nothing}
+      aria-controls=${compact && this.chainOpen ? `${this.id}-chain` : nothing}
+      @click=${this.onCheck}
+    >
+      ${bad ? '✕' : '✓'} ${label}
+    </button>`
+  }
+
+  // A history that doesn't check out is the one thing the reader shouts about.
+  private alarm(): TemplateResult | typeof nothing {
+    const v = this.verification
+    if (v.state !== 'broken' && v.state !== 'changed') return nothing
+    return html`<div class="rd-alarm" role="alert">
+      <p>
+        <strong>History ${v.state} at #${v.at}.</strong>
+        ${
+          v.state === 'broken'
+            ? `Entry #${v.at} doesn't match its hash, so it or an entry before it was edited.`
+            : `Entry #${v.at} isn't the one this browser checked on an earlier visit, so the history was rewritten from there.`
+        }
+      </p>
+    </div>`
+  }
+
+  // The chain's length, its head and what the check found, with a way to check it again.
+  private chain(session: Session): TemplateResult {
+    const last = session.log.at(-1)
+    const v = this.verification
+    const n = session.log.length
+    return html`<p class="info-hash">
+        ${last ? `${count(n)} ${n === 1 ? 'entry' : 'entries'} in the workspace · head ${last.hash.slice(0, 12)}` : 'No entries yet'}
+      </p>
+      <p
+        class=${classMap({
+          'verify-out': true,
+          ok: v.state === 'ok',
+          bad: v.state === 'broken' || v.state === 'changed',
+        })}
+      >
+        ${
+          v.state === 'ok'
+            ? `All ${count(v.count)} entries match their hashes. Checked in your browser with Web Crypto.`
+            : this.verifyText
+        }
+      </p>
       ${
         v.state === 'unsupported'
           ? nothing
           : html`<button
               type="button"
-              class=${classMap({
-                'rd-verify': true,
-                'is-ok': v.state === 'ok',
-                'is-bad': v.state === 'broken' || v.state === 'changed',
-              })}
-              title=${v.state === 'ok' ? `${v.count} entries, head ${v.head.slice(0, 7)}` : nothing}
-              aria-disabled=${String(v.state === 'checking')}
+              class="btn btn-quiet btn-sm verify-again"
+              aria-disabled=${String(v.state === 'checking' || v.state === 'idle')}
               @click=${this.onVerify}
             >
-              ${label}
+              Check again
             </button>`
-      }
-      <div class="seg" role="group" aria-label="View">
-        ${(['rendered', 'source'] as const).map(
-          (view) =>
-            html`<button
-              type="button"
-              aria-pressed=${String(this.view === view)}
-              @click=${() => this.setView(view)}
-            >
-              ${view === 'rendered' ? 'Rendered' : 'Markdown'}
-            </button>`,
-        )}
-      </div>
-      ${
-        this.variant === 'full'
-          ? html`<button type="button" class="rd-details" popovertarget=${`${this.id}-info`}>
-              Details
-            </button>`
-          : nothing
-      }
-    `
+      }`
   }
 
   private file(session: Session, state: State): TemplateResult {
@@ -762,40 +903,59 @@ export class Reader {
   }
 
   private marks(entry: Entry): Record<string, boolean> {
-    return { 'is-current': entry.seq === this.entry?.seq, 'is-new': this.arrived.has(entry.seq) }
+    return { 'is-current': this.isCurrent(entry), 'is-new': this.arrived.has(entry.seq) }
   }
 
+  // One row per task: its number, title, status and who has it. The row opens on its thread, which
+  // starts with the task's own entry, since the row says what it is but not who added it.
   private task({ task, entry, kids, lapsed }: Thread, state: State, cut: number): TemplateResult {
     const time = this.time
     const closer = kids.findLast((k) => k.type === 'response' || k.type === 'cancel')
     const earlier = kids.filter((k) => k.seq < cut).length
-    let meta = `${entry.author} · ${time(entry.at)}`
+    let meta = `Added by ${entry.author} at ${time(entry.at)}`
     if (task.status === 'claimed' && task.holder && task.leaseExpiresAt) {
       const until = Date.parse(task.leaseExpiresAt)
-      meta += ` · ${task.holder} holds it until ${time(until)}, ${minutesLeft(until, state.now)}`
+      meta = `${task.holder} holds it until ${time(until)}, ${minutesLeft(until, state.now)}`
     } else if (lapsed) {
-      meta += ` · ${lapsed.author}'s lease ran out at ${time(leaseEnd(lapsed))}`
+      meta = `${lapsed.author}'s lease ran out at ${time(leaseEnd(lapsed))}`
     } else if (closer) {
-      meta += ` · ${task.status === 'done' ? 'done' : 'cancelled'} by ${closer.author} at ${time(closer.at)}`
+      meta = `${task.status === 'done' ? 'Done' : 'Cancelled'} by ${closer.author} at ${time(closer.at)}`
     }
+    const open = this.isOpen(entry.seq)
+    const id = `${this.id}-t${entry.seq}`
     return html`<li
       class=${classMap({
         task: true,
         [`is-${lapsed ? 'expired' : task.status}`]: true,
-        ...this.marks(entry),
+        'is-open': open,
+        'is-here': entry.seq === this.here,
+        'is-new': this.arrived.has(entry.seq),
       })}
-      data-seq=${entry.seq}
       data-flip=${`t${entry.seq}`}
     >
-      <div class="task-head">
+      <button
+        type="button"
+        class="task-row"
+        data-task=${entry.seq}
+        aria-expanded=${String(open)}
+        aria-controls=${open ? id : nothing}
+        @click=${this.onTask}
+      >
         <span class="task-num">#${entry.seq}</span>
-        <p class="task-text">${task.body}</p>
+        <span class="task-text">${task.body}</span>
         <span class="chip" data-k=${task.status}>${STATUS[task.status]}</span>
-        <p class="task-meta">${meta}</p>
-      </div>
+        <span class="task-meta">${meta}</span>
+        ${ICONS.more}
+      </button>
       ${
-        kids.length > 0
-          ? html`<ol class="thread">
+        open
+          ? html`<ol class="thread" id=${id}>
+              <li
+                class=${classMap({ ent: true, 'ent-task': true, 'is-current': this.isCurrent(entry) })}
+                data-seq=${entry.seq}
+              >
+                ${this.item(entry, false, false)}
+              </li>
               ${
                 earlier > 0
                   ? html`<li class="ent-more">
@@ -820,7 +980,11 @@ export class Reader {
     </li>`
   }
 
-  private item(e: Entry, renewed: boolean): TemplateResult {
+  private isCurrent(entry: Entry): boolean {
+    return entry.seq === this.entry?.seq
+  }
+
+  private item(e: Entry, renewed: boolean, body = true): TemplateResult {
     const time = this.time
     const lease =
       e.type === 'claim'
@@ -830,7 +994,7 @@ export class Reader {
         <span class="ty ty-${e.type}">${renewed ? 'claim · renewed' : e.type}</span>
         ${e.author} · ${time(e.at)}${lease}
       </p>
-      ${e.body ? html`<p class="ent-body">${e.body}</p>` : nothing}`
+      ${body && e.body ? html`<p class="ent-body">${e.body}</p>` : nothing}`
   }
 
   private row(e: Entry, index: number): TemplateResult {
@@ -880,7 +1044,7 @@ export class Reader {
     return html`<div class="rd-time">
       <button
         type="button"
-        class="ic"
+        class="ic rd-back"
         aria-label="Previous entry"
         aria-keyshortcuts="ArrowLeft"
         aria-disabled=${String(this.pos <= 1)}
@@ -899,7 +1063,7 @@ export class Reader {
       </button>
       <button
         type="button"
-        class="ic"
+        class="ic rd-fwd"
         aria-label="Next entry"
         aria-keyshortcuts="ArrowRight"
         aria-disabled=${String(this.pos >= n)}
@@ -931,21 +1095,7 @@ export class Reader {
         />
       </div>
       <p class="rd-pos">#${seq}<span class="of">${of}</span> · ${at}</p>
-      <button
-        type="button"
-        class="rd-latest"
-        aria-disabled=${String(this.pos >= n)}
-        @click=${this.latest}
-      >
-        Latest
-      </button>
-      ${
-        this.variant === 'full'
-          ? html`<p class="rd-keys" aria-hidden="true">
-              <kbd>←</kbd><kbd>→</kbd> step <kbd>Space</kbd> play
-            </p>`
-          : nothing
-      }
+      ${this.standing(session)}
     </div>`
   }
 
@@ -960,8 +1110,6 @@ export class Reader {
       const link = e.type === 'write' || e.type === 'delete'
       people.set(e.author, { n: (known?.n ?? 0) + 1, link: known?.link ?? link })
     }
-    const last = session.log.at(-1)
-    const v = this.verification
     return html`<aside class="rd-info" id=${id} popover tabindex="0" aria-labelledby=${`${id}-h`}>
       <div class="info-head">
         ${heading(this.level, 'Workspace', { id: `${id}-h` })}
@@ -986,7 +1134,10 @@ export class Reader {
         </div>
         <div>
           <dt>Your link</dt>
-          <dd>${TIERS[session.tier][1]}</dd>
+          <dd>
+            ${TIERS[session.tier]}
+            <span class="rd-url">${this.link(session)}</span>
+          </dd>
         </div>
         <div>
           <dt>Showing</dt>
@@ -1027,28 +1178,12 @@ export class Reader {
           )}
         </ul>
       </section>
-      <section class="info-block">
-        ${heading(this.level + 1, 'Chain')}
-        <p class="info-hash">
-          ${
-            last
-              ? `${session.log.length} ${session.log.length === 1 ? 'entry' : 'entries'} in the workspace · head ${last.hash.slice(0, 12)}`
-              : 'No entries yet'
-          }
-        </p>
-        <p
-          class=${classMap({
-            'verify-out': true,
-            ok: v.state === 'ok',
-            bad: v.state === 'broken' || v.state === 'changed',
-          })}
-        >
-          ${
-            v.state === 'ok'
-              ? `All ${v.count} entries match their hashes. Checked in your browser with Web Crypto.`
-              : this.verifyText
-          }
-        </p>
+      <section class="info-block info-keys">
+        ${heading(this.level + 1, 'Keys')}
+        <p><kbd>←</kbd> <kbd>→</kbd> step through the history. <kbd>Space</kbd> plays it.</p>
+      </section>
+      <section class="info-block info-chain" tabindex="-1" aria-labelledby=${`${id}-chain`}>
+        ${heading(this.level + 1, 'Chain', { id: `${id}-chain` })} ${this.chain(session)}
       </section>
     </aside>`
   }

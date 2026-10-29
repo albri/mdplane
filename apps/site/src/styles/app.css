@@ -20,7 +20,7 @@
     border-bottom: 1px solid var(--line);
   }
   .app-title {
-    flex: 1 1 10rem;
+    flex: 1 1 6rem;
     min-width: 0;
     display: flex;
     align-items: center;
@@ -60,11 +60,8 @@
   .app-tools {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 14px;
     min-width: 0;
-  }
-  .app-tools .rd-url {
-    max-width: 36ch;
   }
   .app-main {
     min-height: 0;
@@ -80,34 +77,16 @@
     color: var(--ink-2);
   }
   @media (max-width: 1099.98px) {
-    .app-tools .rd-url,
     .app-bar .brand-name,
     .app-bar #theme-label {
       display: none;
     }
   }
-  /* On a phone the bar takes two rows: what you're reading, with Details and the theme button,
-     then how you're reading it. The toolbar's items join the bar's own rows. */
+  /* On a phone the bar keeps to one row: what you're reading, Details and the theme button. The
+     view switch moves down into the reader's tab row. */
   @media (max-width: 759.98px) {
     .app-bar {
       padding-inline: 12px;
-    }
-    .app-tools {
-      display: contents;
-    }
-    .app-tools :is(.rd-tier, .rd-url) {
-      display: none;
-    }
-    .app-bar :is(.rd-details, .theme-btn) {
-      order: 1;
-    }
-    .app-bar::after {
-      content: '';
-      order: 2;
-      flex-basis: 100%;
-    }
-    .app-tools > * {
-      order: 3;
     }
   }
 

@@ -36,9 +36,9 @@ test('a scripted agent works through the welcome task, live', async ({ page }) =
   await dialog.getByRole('button', { name: 'Run a scripted agent' }).click()
   await expect(dialog).toBeHidden()
   const hero = page.locator('#hero-reader')
-  await expect(hero.locator('.rd-flag')).toHaveText('Live')
+  await expect(hero.locator('.rd-mode')).toHaveText('Live')
   await expect(hero.locator('.task .chip')).toHaveText('Done', { timeout: 15_000 })
-  await expect(hero.getByRole('button', { name: '✓ Verified' })).toBeVisible()
+  await expect(hero.getByRole('button', { name: 'Checked. Show the chain' })).toBeVisible()
   await expect(hero.locator('[role="status"]')).toHaveText(
     'New entry: scripted-agent@browser responded to task #2.',
   )
@@ -123,6 +123,8 @@ test('shows the same markdown an agent reads', async ({ page, request }) => {
   expect(await view.textContent()).toBe(await agentReads())
 
   await page.getByRole('slider', { name: 'Position in the history' }).fill('4')
+  // The view redraws on the next frame, so wait for something only the earlier point lacks.
+  await expect(view).not.toContainText('cancel on #3')
   await expect(view).toContainText('claim on #2')
   expect(await view.textContent()).toBe(await agentReads(4))
 })

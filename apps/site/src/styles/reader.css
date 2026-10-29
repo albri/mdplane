@@ -23,25 +23,20 @@
   }
 
   /* ---------- toolbar ---------- */
+  /* What you're looking at and how: the compact reader's masked link, then the controls. */
   .rd-bar {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 14px;
     min-width: 0;
     padding: 8px 12px 8px 14px;
     border-bottom: 1px solid var(--line);
   }
-  .rd-tier {
-    flex: none;
-    padding: 3px 8px;
-    border: 1px solid transparent;
-    border-radius: var(--radius-sm);
-    background: var(--sunk-2);
-    color: var(--ink-2);
-    font: 600 0.75rem/1.2 var(--font-sans);
-  }
+  /* Positioned, so the hidden words for screen readers are clipped with the rest of the link
+     rather than widening the page. */
   .rd-url {
-    flex: 1;
+    position: relative;
+    flex: 0 1 auto;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -53,44 +48,17 @@
     font-weight: 400;
     color: var(--ink);
   }
-  .rd-flag {
+  .rd-ctl {
     flex: none;
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    border: 1px dashed var(--line-strong);
-    color: var(--ink-2);
-    font-size: 0.75rem;
-    font-weight: 500;
+    gap: 8px;
+    margin-left: auto;
   }
-  .rd-flag.is-live {
-    border-style: solid;
-    border-color: color-mix(in srgb, var(--ok) 50%, var(--line));
-    color: var(--ok);
-  }
-  .rd-flag.is-reconnecting {
-    border-style: solid;
-    border-color: color-mix(in srgb, var(--warn) 50%, var(--line));
-    color: var(--warn);
-  }
-  .rd-flag:is(.is-live, .is-reconnecting)::before {
-    content: '';
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: currentColor;
-  }
-  .rd-flag.is-reconnecting::before {
-    background: transparent;
-    border: 1px solid currentColor;
-  }
-  .rd-verify,
   .rd-details {
     flex: none;
-    min-height: 28px;
-    padding: 3px 9px;
+    min-height: 30px;
+    padding: 3px 10px;
     border: 1px solid var(--line-strong);
     border-radius: var(--radius-sm);
     background: transparent;
@@ -99,17 +67,39 @@
     color: var(--ink-2);
     white-space: nowrap;
   }
-  :is(.rd-verify, .rd-details):not([aria-disabled='true']):hover {
+  .rd-details:hover {
     background: var(--sunk);
     color: var(--ink);
   }
-  .rd-verify.is-ok {
-    border-color: color-mix(in srgb, var(--ok) 45%, var(--line));
-    color: var(--ok);
+
+  /* A history that doesn't check out: the loudest thing the reader shows. */
+  .rd-alarm {
+    padding: 12px 16px 13px 14px;
+    border-bottom: 1px solid var(--line);
+    border-left: 5px solid var(--bad);
+    background: color-mix(in srgb, var(--bad) 7%, var(--page));
+    color: var(--ink);
+    font-size: 0.875rem;
+    line-height: 1.5;
   }
-  .rd-verify.is-bad {
-    border-color: var(--bad);
+  .rd-alarm strong {
     color: var(--bad);
+    font-size: 1rem;
+    font-weight: 700;
+    margin-right: 4px;
+  }
+  /* The compact reader's chain details, opened from the status line. */
+  .rd-chain {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 16px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    background: var(--sunk);
+  }
+  .rd-chain .verify-out {
+    margin-top: 0;
   }
 
   /* On a phone the panels take turns. */
@@ -277,32 +267,69 @@
     gap: 12px;
     padding-block: 8px 4px;
   }
+  /* One row per task, as a button that opens its thread. The row reaches into the panel's
+     padding, so its hover and highlight have room around the text. */
   .task {
-    padding: 14px 0 16px;
     border-top: 1px solid var(--line);
   }
   .task:first-child {
     border-top: 0;
   }
-  .task-head {
+  .task-row {
     display: grid;
-    grid-template-columns: 32px minmax(0, 1fr) auto;
-    gap: 2px 10px;
-    align-items: start;
+    grid-template-columns: 32px minmax(0, 1fr) auto 16px;
+    column-gap: 10px;
+    row-gap: 2px;
+    align-items: baseline;
+    width: calc(100% + 20px);
+    margin-inline: -10px;
+    padding: 11px 10px 12px;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    line-height: 1.45;
+    transition: background-color var(--t-quick) var(--ease);
+  }
+  .task-row:hover {
+    background: var(--sunk);
+  }
+  .task-row:focus-visible {
+    outline-offset: -2px;
   }
   .task-num {
-    font: 400 0.8125rem/1.65 var(--font-mono);
+    font: 400 0.8125rem/1.6 var(--font-mono);
     color: var(--ink-3);
   }
   .task-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-weight: 600;
-    line-height: 1.45;
     color: var(--ink);
   }
+  /* Level with the title's first line, however many it wraps to once open. */
+  .task-row > svg {
+    grid-area: 1 / 4;
+    align-self: start;
+    margin-top: 3px;
+    color: var(--ink-3);
+    transition: rotate var(--t-quick) var(--ease);
+  }
   .task-meta {
-    grid-column: 2 / 4;
+    grid-area: 2 / 2 / auto / -1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-size: 0.8125rem;
     color: var(--ink-3);
+  }
+  .task.is-open .task-text {
+    white-space: normal;
+  }
+  .task.is-open .task-row > svg {
+    rotate: 180deg;
   }
   .task.is-done .task-text {
     color: var(--ink-2);
@@ -312,9 +339,19 @@
     font-weight: 500;
     text-decoration: line-through;
   }
+  /* The task the current entry belongs to, tinted like the history's current row. */
+  .task.is-here > .task-row {
+    background: color-mix(in srgb, var(--action-tint) 65%, var(--page));
+  }
+  .task.is-here > .task-row:hover {
+    background: var(--action-tint);
+  }
+  .task.is-here .task-num {
+    color: var(--action-ink);
+  }
   .thread {
     list-style: none;
-    margin: 10px 0 0 42px;
+    margin: 4px 0 16px 42px;
     padding: 0 0 0 14px;
     border-left: 1px solid var(--line-strong);
     display: grid;
@@ -341,10 +378,10 @@
   }
 
   /* The entry the timeline is on, marked in the file as well as in the history. */
-  :is(.doc-body, .doc-empty, .task, .ent).is-current {
+  :is(.doc-body, .doc-empty, .ent).is-current {
     position: relative;
   }
-  :is(.doc-body, .doc-empty, .task, .ent).is-current::before {
+  :is(.doc-body, .doc-empty, .ent).is-current::before {
     content: '';
     position: absolute;
     inset-block: 2px;
@@ -540,6 +577,28 @@
     font: 400 0.75rem/1.6 var(--font-mono);
     color: var(--ink-3);
   }
+  /* The link stays on one line and is cut short, so every grid it sits in has to let it. */
+  .rd-info,
+  .rd-info .kv,
+  .rd-info .kv div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .kv .rd-url {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.75rem;
+  }
+  .info-keys p {
+    color: var(--ink-2);
+  }
+  .info-keys kbd + kbd {
+    margin-left: 2px;
+  }
+  @media (pointer: coarse) {
+    .info-keys {
+      display: none;
+    }
+  }
   .info-hash {
     font: 400 0.75rem/1.5 var(--font-mono);
     color: var(--ink-2);
@@ -555,6 +614,26 @@
   }
   .verify-out.bad {
     color: var(--bad);
+  }
+  .verify-again {
+    margin-top: 12px;
+  }
+  .rd-chain .verify-again {
+    margin-top: 0;
+  }
+  /* Opened from the status line, the chain section shows where focus went. */
+  .info-chain:focus {
+    animation: point 1.6s var(--ease);
+  }
+  @keyframes point {
+    0% {
+      background-color: var(--action-tint);
+      box-shadow: 0 0 0 8px var(--action-tint);
+    }
+    100% {
+      background-color: transparent;
+      box-shadow: 0 0 0 8px transparent;
+    }
   }
 
   /* ---------- timeline ---------- */
@@ -681,43 +760,81 @@
     font: 400 0.75rem/1.4 var(--font-mono);
     color: var(--ink-2);
   }
-  .rd-latest {
+  /* Status is text, at the footer's end: the live stream, or the way back to it, and the history
+     check. Colour and weight are kept for when something is wrong. */
+  .rd-status {
     flex: none;
-    min-height: 30px;
-    margin-left: 8px;
-    padding: 4px 11px;
-    border: 1px solid var(--line-strong);
-    border-radius: var(--radius-sm);
-    background: transparent;
-    font-size: 0.8125rem;
-    font-weight: 500;
-  }
-  .rd-latest:hover {
-    background: var(--sunk);
-  }
-  .rd-latest[aria-disabled='true'] {
-    color: var(--ink-3);
-    background: transparent;
-  }
-  .rd-keys {
-    flex: none;
-    display: none;
+    display: flex;
     align-items: center;
-    gap: 4px;
-    margin-left: 12px;
-    font-size: 0.75rem;
+    gap: 16px;
+    margin-left: 14px;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+  .rd-mode,
+  .rd-jump {
+    display: inline-flex;
+    align-items: center;
+  }
+  :is(.rd-mode, .rd-jump) i {
+    width: 7px;
+    height: 7px;
+    margin-right: 6px;
+    border-radius: 50%;
+    background: var(--ok);
+  }
+  .rd-mode.is-connecting {
     color: var(--ink-3);
   }
-  .rd-keys kbd + kbd {
-    margin-right: 2px;
+  .rd-mode:is(.is-connecting, .is-reconnecting) i {
+    background: transparent;
+    border: 1.5px solid currentColor;
   }
-
+  .rd-mode.is-reconnecting {
+    color: var(--warn);
+    font-weight: 600;
+  }
+  .rd-mode.is-ended {
+    color: var(--bad);
+    font-weight: 600;
+  }
+  .rd-mode.is-ended i {
+    display: none;
+  }
+  .rd-checking {
+    color: var(--ink-3);
+  }
+  /* Buttons that read as text. The padding is drawn back in, so the target is big enough to tap
+     without spacing the line out. */
+  .rd-check,
+  .rd-jump {
+    margin: -4px;
+    padding: 4px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: var(--line-strong);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+  :is(.rd-check, .rd-jump):hover {
+    color: var(--ink);
+    text-decoration-color: currentColor;
+  }
+  /* Away from the head, the live dot greys, as the way back to it. */
+  .rd-jump i {
+    background: var(--ink-3);
+  }
+  .rd-check.is-bad {
+    color: var(--bad);
+    font-weight: 600;
+    text-decoration-color: currentColor;
+  }
   /* ---------- widths ---------- */
-  @media (min-width: 1000px) {
-    .rd-keys {
-      display: flex;
-    }
-  }
   @media (min-width: 1200px) {
     .reader.is-full .rd-body {
       grid-template-columns: 260px minmax(0, 1fr) 360px;
@@ -749,8 +866,20 @@
     }
   }
   @media (max-width: 759.98px) {
+    /* The view switch moves from the bar to the tab row, so the header keeps to one row. */
     .rd-panes {
-      display: block;
+      display: flex;
+      gap: 8px;
+    }
+    .rd-panes .seg:first-child {
+      flex: 1;
+    }
+    .rd-panes .rd-view button {
+      flex: none;
+      padding-inline: 9px;
+    }
+    .rd-ctl .rd-view {
+      display: none;
     }
     .rd-body,
     .reader.is-full .rd-body {
@@ -770,31 +899,55 @@
     .reader.is-full .rd-doc {
       padding: 16px 16px 24px;
     }
+    .task-row {
+      grid-template-columns: 28px minmax(0, 1fr) auto 16px;
+      column-gap: 8px;
+    }
     .thread {
       margin-left: 0;
     }
-    .task-meta {
-      grid-column: 1 / 4;
+    /* The footer takes two rows: the timeline with where it is, then the buttons with the
+       status. A status that runs long wraps at its end rather than leaving the screen. */
+    .rd-time {
+      display: grid;
+      grid-template-columns: auto auto auto minmax(0, 1fr) auto;
+      grid-template-areas:
+        'range range range range pos'
+        'back play fwd status status';
+      align-items: center;
+      gap: 2px 4px;
     }
-    .rd-url,
-    .rd-latest,
+    .rd-range {
+      grid-area: range;
+      margin-inline: 2px 10px;
+    }
+    .rd-pos {
+      grid-area: pos;
+      min-width: 0;
+    }
     .rd-pos .of {
       display: none;
     }
-    /* As in the full reader's bar: the link's tier goes, and the controls wrap rather than
-       overflow, since flex overflow at the start edge can't be scrolled back into view. */
-    .rd-tier {
-      display: none;
+    .rd-back {
+      grid-area: back;
     }
-    .rd-bar {
+    .ic-play {
+      grid-area: play;
+    }
+    .rd-fwd {
+      grid-area: fwd;
+    }
+    .rd-status {
+      grid-area: status;
+      justify-self: end;
       flex-wrap: wrap;
-      gap: 6px 8px;
+      justify-content: flex-end;
+      gap: 4px 16px;
+      margin-left: 8px;
+      white-space: normal;
     }
-    .rd-flag {
-      margin-right: auto;
-    }
-    .rd-pos {
-      min-width: 0;
+    .rd-status > * {
+      white-space: nowrap;
     }
   }
 }

@@ -1,6 +1,6 @@
 import { zCreateLinkResult, zCreateWorkspaceResponse } from '@mdplane/contract'
 import type { APIRequestContext, Page } from '@playwright/test'
-import { expect, showPanel, test } from './fixtures.ts'
+import { expect, expectAccessible, showPanel, test } from './fixtures.ts'
 
 type Links = { read: string; append: string; write: string }
 
@@ -51,7 +51,8 @@ async function newLink(request: APIRequestContext, shared: Links, tier: 'r' | 'a
 const task = (request: APIRequestContext, link: string, path: string, body: string) =>
   request.post(`${link}/appends`, { data: { path, type: 'task', author: 'alex', body } })
 
-const badge = (page: Page) => page.locator('.rd-flag')
+// The live stream's status, at the end of the footer.
+const badge = (page: Page) => page.locator('.rd-time .rd-mode')
 
 it('a revoked link stops following and says the link no longer works', async ({
   page,
@@ -100,6 +101,27 @@ it('reconnects after the live socket drops and misses nothing', async ({
     'Added after it came back.',
   ])
   expect(sockets).toHaveLength(2)
+})
+
+it('scrubbed back, Live becomes the way back to live', async ({ page, request, shared, files }) => {
+  const path = named('scrub')
+  await files({ [path]: '# Queue' })
+  await task(request, shared.append, path, 'One.')
+  await task(request, shared.append, path, 'Two.')
+  await page.goto(`${shared.read}#${path}`)
+  await expect(badge(page)).toHaveText('Live')
+
+  await page.getByRole('slider', { name: 'Position in the history' }).fill('1')
+  const back = page.locator('.rd-time').getByRole('button', { name: 'Back to live' })
+  await expect(back).toBeVisible()
+  await expect(badge(page)).toHaveCount(0)
+  // Away from the head, a new entry doesn't pull the reader forward.
+  await task(request, shared.append, path, 'Three.')
+  await expect(page.locator('.lg-count')).toHaveText('1 of 4')
+
+  await back.click()
+  await expect(badge(page)).toHaveText('Live')
+  await expect(page.locator('.lg-count')).toHaveText('4 of 4')
 })
 
 // Offline, nothing is retried, so only coming back online can reconnect.
@@ -253,7 +275,8 @@ it('warns when the history no longer leads to the head it checked before', async
   await files({ [path]: '# Brief' })
   const id = /\/r\/(wk_\w+)\./.exec(shared.read)?.[1] ?? ''
   await page.goto(`${shared.read}#${path}`)
-  await expect(page.getByRole('button', { name: '✓ Verified' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Checked. Show the chain' })).toBeVisible()
+  await expect(page.getByRole('alert')).toHaveCount(0)
   const kept = await page.evaluate((key) => localStorage.getItem(key), `mdplane-head:${id}`)
   expect(JSON.parse(kept ?? 'null')).toEqual({
     seq: expect.any(Number),
@@ -266,5 +289,11 @@ it('warns when the history no longer leads to the head it checked before', async
     [`mdplane-head:${id}`, JSON.stringify({ seq: 1, hash: '0'.repeat(64) })],
   )
   await page.reload()
-  await expect(page.getByRole('button', { name: 'Changed at #1' })).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'History changed at #1. Show the chain' }),
+  ).toBeVisible()
+  await expect(page.getByRole('alert')).toContainText(
+    "History changed at #1. Entry #1 isn't the one this browser checked on an earlier visit",
+  )
+  await expectAccessible(page)
 })
