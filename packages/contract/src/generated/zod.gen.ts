@@ -288,6 +288,7 @@ export const zProblem = z.object({
     code: z.enum([
         'invalid_request',
         'not_found',
+        'method_not_allowed',
         'task_claimed',
         'task_closed',
         'invalid_ref',

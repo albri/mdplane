@@ -1,8 +1,8 @@
 // "Try it with your agent": a real workspace made from the landing page, a prompt that hands its
-// write link to an agent, and the page's reader following the workspace live. The page writes
-// nothing in the workspace: the agent sets the job. Links are never shown in full; the buttons
-// copy them. The dialog keeps the workspace for as long as the page is open, so a link pushed off
-// the clipboard can be copied again.
+// write link to an agent, and the page's reader following the workspace live. The agent sets the
+// job; the page writes in the workspace only if you run its scripted agent instead. Links are
+// never shown in full; the buttons copy them. The dialog keeps the workspace for as long as the
+// page is open, so a link pushed off the clipboard can be copied again.
 import type { CreateWorkspaceResponse } from '@mdplane/contract/core'
 import { html, nothing, render, type TemplateResult } from 'lit-html'
 import { classMap } from 'lit-html/directives/class-map.js'

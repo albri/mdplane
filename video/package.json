@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "studio": "remotion studio",
-    "render": "remotion render mdplane mdplane.mp4 && remotion still poster poster.webp",
+    "render": "remotion render mdplane mdplane.mp4 && remotion still poster poster.webp && pnpm card",
+    "card": "remotion still card ../apps/site/public/card.png --scale=0.625",
     "stills": "node scripts/stills.ts"
   },
   "dependencies": {

@@ -1,5 +1,7 @@
-// The hash chain described on the Entry schema in openapi.yaml. The Worker uses it to seal
-// entries; readers use it to check them. Web Crypto only, so it runs in Workers and browsers.
+// The hash chain described on the Entry schema in openapi.yaml. Readers check it here with Web
+// Crypto, which runs in Workers and browsers. The Worker seals entries by hashing the same
+// `chainInput` synchronously, because an await between authorisation and the sealed entry would
+// let another request in.
 import type { Entry, LogItem } from './generated/types.gen.ts'
 
 export const GENESIS = '0'.repeat(64)
@@ -18,8 +20,13 @@ export function canonical(entry: EntryContent): string {
   return JSON.stringify({ seq, at, path, type, author, ref, body, version, contentHash })
 }
 
+// What an entry's hash is taken over: the hash before it, then its canonical form.
+export function chainInput(prev: string, entry: EntryContent): string {
+  return `${prev}\n${canonical(entry)}`
+}
+
 export function hashEntry(prev: string, entry: EntryContent): Promise<string> {
-  return sha256(`${prev}\n${canonical(entry)}`)
+  return sha256(chainInput(prev, entry))
 }
 
 export type ChainCheck = { ok: true; head: string } | { ok: false; brokenAt: number }

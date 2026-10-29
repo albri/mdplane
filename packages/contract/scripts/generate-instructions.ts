@@ -55,7 +55,7 @@ const KEYED = '/{tier}/{key}'
 function requestLine(path: string, method: Method, op: Operation, link: string, origin = '') {
   const query = parametersOf(spec.paths[path] ?? {}, op)
     .filter((p) => p.in === 'query')
-    .map((p) => p.name)
+    .map((p) => `${p.name}={${p.name}}`)
   const base = path.startsWith(KEYED) ? `${link}${path.slice(KEYED.length)}` : `${origin}${path}`
   const url = `${base}${query.length ? `?${query.join('&')}` : ''}`
   return `- \`${method.toUpperCase()} ${url}\`: ${op.summary}.`

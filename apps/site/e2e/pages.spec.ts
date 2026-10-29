@@ -43,6 +43,7 @@ const policy = (headers: Record<string, string>) => ({
   coop: headers['cross-origin-opener-policy'],
   permissions: headers['permissions-policy'],
   referrer: headers['referrer-policy'],
+  hsts: headers['strict-transport-security'],
 })
 
 test('static pages and Worker pages send the same security headers', async ({ request }) => {
@@ -57,6 +58,7 @@ test('static pages and Worker pages send the same security headers', async ({ re
   ])
   expect(missing.status()).toBe(404)
   expect(policy(demo.headers()).csp).toContain("require-trusted-types-for 'script'")
+  expect(policy(demo.headers()).hsts).toContain('max-age=31536000')
   expect(policy(privacy.headers())).toEqual(policy(demo.headers()))
   expect(policy(landing.headers())).toEqual(policy(demo.headers()))
   expect(policy(missing.headers())).toEqual(policy(demo.headers()))

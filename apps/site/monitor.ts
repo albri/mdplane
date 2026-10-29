@@ -1,6 +1,6 @@
 // Checks a live mdplane from the outside: the pages and their headers, the uniform 404, and one
 // workspace from a task to its response. The "Production check" workflow runs it against
-// mdplane.dev every 6 hours, and a failed run emails Alex.
+// mdplane.dev every 6 hours, and a failed run notifies the repository owner.
 //
 //   node apps/site/monitor.ts https://mdplane.dev
 //

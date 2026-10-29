@@ -435,6 +435,17 @@ describe('invalid requests', () => {
     expect(create.status).toBe(400)
   })
 
+  test('to the create path with another method are told that only POST works', async () => {
+    for (const method of ['GET', 'PUT', 'DELETE']) {
+      // oxlint-disable-next-line no-await-in-loop -- one method after another
+      const response = await call('/workspaces', { method })
+      expect(response.status).toBe(405)
+      expect(response.headers.get('Allow')).toBe('POST')
+      // oxlint-disable-next-line no-await-in-loop -- one method after another
+      expect(zProblem.parse(await json(response)).code).toBe('method_not_allowed')
+    }
+  })
+
   test('get a problem that says what is wrong', async () => {
     const ws = await withQueue()
     const missing = await append(ws.append, { path: 'queue.md', type: 'claim', author: 'a' })

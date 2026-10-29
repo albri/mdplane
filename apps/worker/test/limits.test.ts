@@ -29,8 +29,16 @@ const createFromSubnet = (i: number) =>
     headers: { 'CF-Connecting-IP': `2001:db8:77:1::${i.toString(16)}` },
   })
 
+// The local limiter counts in windows that start on the minute, and a burst that crosses into a
+// new window starts counting again. So each burst starts with time to spare in its window.
+async function earlyInWindow() {
+  const left = 60_000 - (Date.now() % 60_000)
+  if (left < 10_000) await sleep(left + 100)
+}
+
 describe('the limit per address', () => {
-  test('counts every keyed request, whatever secret it makes up', async () => {
+  test('counts every keyed request, whatever secret it makes up', { timeout: 20_000 }, async () => {
+    await earlyInWindow()
     const from = { 'CF-Connecting-IP': '203.0.113.7' }
     const responses = await Promise.all(
       Array.from({ length: 600 }, (_, i) => call(`/r/${madeUpKey(i)}`, { headers: from })),
@@ -53,13 +61,20 @@ describe('the limit per address', () => {
     expect(clientAddress('192.0.2.1')).toBe('192.0.2.1')
   })
 
-  test('applies to creating workspaces, so rotating within a /64 gets nowhere', async () => {
-    for (let i = 1; i <= 10; i++) {
-      // oxlint-disable-next-line no-await-in-loop -- the limit counts requests in order
-      expect((await createFromSubnet(i)).status).toBe(201)
-    }
-    expect((await createFromSubnet(11)).status).toBe(429)
-  })
+  test(
+    'applies to creating workspaces, so rotating within a /64 gets nowhere',
+    {
+      timeout: 20_000,
+    },
+    async () => {
+      await earlyInWindow()
+      for (let i = 1; i <= 10; i++) {
+        // oxlint-disable-next-line no-await-in-loop -- the limit counts requests in order
+        expect((await createFromSubnet(i)).status).toBe(201)
+      }
+      expect((await createFromSubnet(11)).status).toBe(429)
+    },
+  )
 })
 
 describe('creating workspaces', () => {

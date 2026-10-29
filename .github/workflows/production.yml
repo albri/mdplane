@@ -1,8 +1,10 @@
 name: Production check
 
-# Checks mdplane.dev from outside every 6 hours, so a failed run emails Alex before a visitor
-# finds the outage. It does nothing until the repository variable PROD_MONITOR is "true", which
-# is set after the cutover. Each run makes one workspace, of the 100 mdplane.dev makes a day.
+# Checks mdplane.dev from outside every 6 hours, so a failed run notifies the repository owner
+# before a visitor finds the outage. It runs only while the repository variable PROD_MONITOR is
+# "true". Each run makes one workspace, of the 100 mdplane.dev makes a day. GitHub pauses a
+# schedule after 60 days with no activity in the repository, so turn it back on in the Actions tab
+# if the runs stop.
 on:
   schedule:
     - cron: '17 */6 * * *'

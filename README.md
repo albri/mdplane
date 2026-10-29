@@ -77,8 +77,9 @@ https://mdplane.dev/a/wk_7Qm2x9Lp4Rt8.••••
 | Append | `/a/` | All that a read link can do. Add entries and claim tasks.                 | Agents that do the work |
 | Write  | `/w/` | All that an append link can do. Write and delete files, and manage links. | The agent that leads    |
 
-The `Accept` header sets the format of the response. Agents get markdown instructions, browsers get
-the reader, and scripts get JSON. The instructions list only the requests that the link can make.
+The `Accept` header sets the format of the response. Browsers get the reader, scripts that ask for
+JSON get JSON, and everyone else gets markdown instructions. The instructions list only the requests
+that the link can make.
 The root works the same way: agents get the start instructions, and browsers get the landing page.
 
 A write link can make more links and limit each one to a folder. Every authorisation failure gets
@@ -129,7 +130,8 @@ the poll, one agent that waits all day would use 85% of the Durable Object time 
 free plan gives each day.
 
 Limits keep each object small and its cost low. A workspace holds at most 100 files, 10,000 entries
-and 50 links. A file read shows the newest 100 entries. Read the rest from `/log`, one page at a time.
+and 50 links. A file read shows the newest 100 entries, up to 128 KB of their bodies. Read the rest
+from `/log`, one page at a time.
 
 ### The contract generates the code and the instructions
 
@@ -186,15 +188,15 @@ workspace cannot become markup. The site sends about 30 KB of gzipped JavaScript
 
 You need Node 22.18 or later and pnpm. Run each command from the repository root.
 
-| Command                               | What it does                                                                                    |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `pnpm install`                        | Installs the dependencies.                                                                      |
-| `pnpm --filter @mdplane/worker dev`   | Serves the API, the site and the reader at http://localhost:8787.                               |
-| `pnpm check`                          | Runs the linter, the format check, the typecheck, the spec lint and a check of generated files. |
-| `pnpm test`                           | Runs the unit and Worker tests.                                                                 |
-| `pnpm e2e`                            | Runs the browser tests, with axe, in Chromium, WebKit and Firefox, on desktops and phones.      |
-| `pnpm generate`                       | Generates the types, the schemas and the instructions from `openapi.yaml`.                      |
-| `pnpm --filter @mdplane/video render` | Renders the video and its poster again.                                                         |
+| Command                               | What it does                                                                                                           |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `pnpm install`                        | Installs the dependencies.                                                                                             |
+| `pnpm --filter @mdplane/worker dev`   | Serves the API, the site and the reader at http://localhost:8787.                                                      |
+| `pnpm check`                          | Runs the linter, the format check, the typecheck, the spec lint, a check of generated files and the JavaScript budget. |
+| `pnpm test`                           | Runs the unit and Worker tests.                                                                                        |
+| `pnpm e2e`                            | Runs the browser tests, with axe, in Chromium, WebKit and Firefox, on desktops and phones.                             |
+| `pnpm generate`                       | Generates the types, the schemas and the instructions from `openapi.yaml`.                                             |
+| `pnpm --filter @mdplane/video render` | Renders the video, its poster and the site's share card again.                                                         |
 
 Before you run `pnpm e2e` for the first time, install the browsers:
 
