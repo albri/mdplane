@@ -229,7 +229,7 @@ export function Claims() {
   return (
     <>
       <Words
-        text={'Agents claim a task first,\nso two never do the same work.'}
+        text={'Agents claim a task first,\nso only one holds it at a time.'}
         at={0.3}
         exit={17.7}
         style={{ left: X, top: 110 }}
