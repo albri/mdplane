@@ -305,6 +305,7 @@ describe('browsers', () => {
 
 // The config allows comments and trailing commas. Its comments all take whole lines.
 const worker = z.object({
+  name: z.string().optional(),
   observability: z
     .object({
       logs: z.object({ invocation_logs: z.boolean().optional() }).optional(),
@@ -318,15 +319,18 @@ const worker = z.object({
   preview_urls: z.boolean().optional(),
 })
 const deployed = worker
-  .extend({ env: z.object({ production: worker }) })
+  .extend({ env: z.object({ production: worker, open: worker }) })
   .parse(JSON.parse(config.replace(/^\s*\/\/.*$/gm, '').replace(/,(\s*[}\]])/g, '$1')))
 const production = deployed.env.production
+const open = deployed.env.open
 
 describe("Cloudflare's logs", () => {
   test('keep no request URLs, since each one holds a key', () => {
-    // mdplane.dev inherits these settings unless it sets its own. Invocation logs are on unless
-    // they are turned off.
-    const settings = [deployed.observability, production.observability ?? deployed.observability]
+    // Each environment inherits these settings unless it sets its own. Invocation logs are on
+    // unless they are turned off.
+    const settings = [deployed, production, open].map(
+      (target) => target.observability ?? deployed.observability,
+    )
     for (const observability of settings) {
       expect(observability?.logs?.invocation_logs).toBe(false)
       expect(observability?.traces?.enabled ?? false).toBe(false)
@@ -349,5 +353,21 @@ describe('mdplane.dev', () => {
   test('is reached only through its zone, where the rate-limiting rule applies', () => {
     expect(production.workers_dev).toBe(false)
     expect(production.preview_urls).toBe(false)
+  })
+})
+
+// `--env open` deploys the preview on workers.dev for a test session. It replaces the Worker the
+// tests run, so it must be that Worker in every way but its URL.
+describe('the preview, opened for a test', () => {
+  test('is the same Worker, with the same bindings, limits and vars', () => {
+    expect(open.name).toBe(deployed.name)
+    expect(open.vars).toEqual(deployed.vars)
+    expect(open.durable_objects).toEqual(deployed.durable_objects)
+    expect(open.ratelimits).toEqual(deployed.ratelimits)
+  })
+
+  test('answers on workers.dev, without a URL for each version', () => {
+    expect(open.workers_dev).toBe(true)
+    expect(open.preview_urls).toBe(false)
   })
 })

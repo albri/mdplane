@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "deploy:open": "wrangler deploy --env open",
     "types": "wrangler types",
     "check": "wrangler types --check",
     "test": "pnpm --filter @mdplane/site build && vitest run"
