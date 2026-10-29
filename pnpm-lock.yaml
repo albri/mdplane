@@ -4,6 +4,10 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  js-yaml@>=4.0.0 <4.3.2: ^4.3.2
+  zod@>=4.0.0 <4.6.6: ^4.6.7
+
 importers:
 
   .:
@@ -2123,8 +2127,8 @@ packages:
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
 
-  js-yaml@4.2.0:
-    resolution: {integrity: sha512-ePWsvanv0DWuDRsW8dnt+R4jQ31SCRCQ7hhNcPXZPsoBZiemuZNYGf7adZdqX2D86j6rvKp3RpCxVTSb8WQlOw==}
+  js-yaml@4.3.2:
+    resolution: {integrity: sha512-SFNOvSJ+Dgf/9An904Yx+CgSlIPCkIpao4qo51lpee25TIRejdH3rhR4EZMGoNx3/TP3O+wzWuiTFl4sqbltzA==}
     hasBin: true
 
   jsesc@3.1.0:
@@ -2866,9 +2870,6 @@ packages:
   youch@4.1.0-beta.10:
     resolution: {integrity: sha512-rLfVLB4FgQneDr0dv1oddCVZmKjcJ6yX6mS4pU82Mq/Dt9a3cLZQ62pDBL4AUO+uVrCvtWz3ZFUL2HFAFJ/BXQ==}
 
-  zod@4.5.4:
-    resolution: {integrity: sha512-sC95tT5iHHH9gtpj6A81kh+NEaRAUFN+qlUPDUbRfOMvNf5QCBqsb3WgvnpVtK5Y+4UfA6KqufotuTvMGiTlsA==}
-
   zod@4.6.6:
     resolution: {integrity: sha512-4UmzQUF5fxvfcYHlbjBmejU+w+hbDnWFx4aS8kBx7nPBHcO2SqPbpAG8snbdg+Xse4pRefR98hgjFgIMCI/UhA==}
 
@@ -3222,7 +3223,7 @@ snapshots:
     dependencies:
       '@jsdevtools/ono': 7.1.3
       '@types/json-schema': 7.0.15
-      js-yaml: 4.2.0
+      js-yaml: 4.3.2
 
   '@hey-api/openapi-ts@0.99.0(typescript@6.0.3)':
     dependencies:
@@ -3708,7 +3709,7 @@ snapshots:
   '@remotion/elevenlabs@4.0.533':
     dependencies:
       '@remotion/captions': 4.0.533
-      zod: 4.5.4
+      zod: 4.6.7
 
   '@remotion/fonts@4.0.533(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
@@ -3734,12 +3735,12 @@ snapshots:
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
       remotion: 4.0.533(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      zod: 4.5.4
+      zod: 4.6.7
 
   '@remotion/openai-whisper@4.0.533':
     dependencies:
       '@remotion/captions': 4.0.533
-      zod: 4.5.4
+      zod: 4.6.7
 
   '@remotion/paths@4.0.533(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
@@ -3788,7 +3789,7 @@ snapshots:
 
   '@remotion/studio-protocol@4.0.533':
     dependencies:
-      zod: 4.5.4
+      zod: 4.6.7
 
   '@remotion/studio-server@4.0.533(postcss@8.5.32)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@7.0.2)':
     dependencies:
@@ -3807,7 +3808,7 @@ snapshots:
       recast: 0.23.21
       remotion: 4.0.533(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       semver: 7.5.3
-      zod: 4.5.4
+      zod: 4.6.7
     transitivePeerDependencies:
       - '@minify-html/node'
       - '@remotion/video-matting'
@@ -3866,7 +3867,7 @@ snapshots:
       react-dom: 19.3.1(react@19.3.1)
       remotion: 4.0.533(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       semver: 7.5.3
-      zod: 4.5.4
+      zod: 4.6.7
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -4378,7 +4379,7 @@ snapshots:
   cosmiconfig@8.3.6(typescript@7.0.2):
     dependencies:
       import-fresh: 3.3.1
-      js-yaml: 4.2.0
+      js-yaml: 4.3.2
       parse-json: 5.2.0
       path-type: 4.0.0
     optionalDependencies:
@@ -4634,7 +4635,7 @@ snapshots:
 
   js-tokens@4.0.0: {}
 
-  js-yaml@4.2.0:
+  js-yaml@4.3.2:
     dependencies:
       argparse: 2.0.1
 
@@ -5310,8 +5311,6 @@ snapshots:
       '@speed-highlight/core': 1.2.24
       cookie: 1.1.1
       youch-core: 0.3.3
-
-  zod@4.5.4: {}
 
   zod@4.6.6: {}
 
