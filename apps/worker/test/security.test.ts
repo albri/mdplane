@@ -9,6 +9,8 @@ import {
 import { runDurableObjectAlarm } from 'cloudflare:test'
 import { env } from 'cloudflare:workers'
 import { describe, expect, test } from 'vitest'
+import { z } from 'zod'
+import config from '../wrangler.jsonc?raw'
 import { append, call, createWorkspace, json, ORIGIN, writeFile } from './helpers.ts'
 
 const MADE_UP = 'wk_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'
@@ -253,5 +255,22 @@ describe('browsers', () => {
     expect(pages[0]?.status).toBe(404)
     expect(pages[0]?.type).toContain('text/html')
     for (const page of pages) expect(page).toEqual(pages[0])
+  })
+})
+
+// The config allows comments and trailing commas. Its comments all take whole lines.
+const deployed = z
+  .object({
+    observability: z.object({
+      logs: z.object({ invocation_logs: z.boolean().optional() }).optional(),
+      traces: z.object({ enabled: z.boolean().optional() }).optional(),
+    }),
+  })
+  .parse(JSON.parse(config.replace(/^\s*\/\/.*$/gm, '').replace(/,(\s*[}\]])/g, '$1')))
+
+describe("Cloudflare's logs", () => {
+  test('keep no request URLs, since each one holds a key', () => {
+    expect(deployed.observability.logs?.invocation_logs).toBe(false)
+    expect(deployed.observability.traces?.enabled ?? false).toBe(false)
   })
 })

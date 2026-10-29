@@ -18,7 +18,10 @@
     "command": "pnpm --filter @mdplane/site build",
     "watch_dir": "../site/src",
   },
-  "observability": { "enabled": true },
+  // An invocation log records each request's full URL, and the URL holds the link's key, so
+  // those logs are off and only what the Worker logs itself is kept. Traces record the URL too:
+  // never turn them on.
+  "observability": { "enabled": true, "logs": { "invocation_logs": false } },
   "durable_objects": {
     "bindings": [{ "name": "WORKSPACES", "class_name": "Workspace" }],
   },
