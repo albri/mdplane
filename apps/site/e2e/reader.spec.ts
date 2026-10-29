@@ -26,7 +26,7 @@ test('keeps the current entry in view however you move', async ({ page }) => {
 test('steps with the arrow keys and says where it is', async ({ page }) => {
   await page.locator('body').press('ArrowLeft')
   await expect(page.locator('.reader [role="status"]')).toHaveText(
-    'Entry #20, 20 of 21, 09:25: alex cancelled task #18.',
+    'Entry #20, 20 of 21, 09:25: lead@devbox cancelled task #18.',
   )
   await page.locator('body').press('Space')
   await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible()

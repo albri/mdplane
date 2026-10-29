@@ -9,7 +9,7 @@ const clipboard: Record<string, string[]> = {
 }
 test.use({ permissions: async ({ browserName }, use) => use(clipboard[browserName] ?? []) })
 
-test('a scripted agent works through the welcome task, live', async ({ page }) => {
+test('a scripted agent sets a job and works through it, live', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'Try it with your agent' }).first().click()
   const dialog = page.getByRole('dialog', { name: 'Try it with your agent' })
@@ -54,6 +54,41 @@ test('a scripted agent works through the welcome task, live', async ({ page }) =
   await expectAccessible(page)
 })
 
+test('the prompt hands your agent the job, and the page waits for its brief', async ({
+  page,
+  request,
+}) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Try it with your agent' }).first().click()
+  const dialog = page.getByRole('dialog', { name: 'Try it with your agent' })
+  await dialog.getByRole('button', { name: 'Create workspace' }).click()
+  await dialog.getByRole('button', { name: 'Copy prompt' }).click()
+  await expect(dialog.getByRole('status')).toHaveText('Prompt copied.')
+  const prompt = await page.evaluate(() => navigator.clipboard.readText())
+  // The agent leads, so it gets the write link.
+  const write = /^Read (http:\/\/\S+\/w\/wk_\w+\.\w+) and follow the instructions\. Lead /.exec(
+    prompt,
+  )?.[1]
+  expect(write).toBeDefined()
+
+  await dialog.getByRole('button', { name: 'Watch here' }).click()
+  const hero = page.locator('#hero-reader')
+  await expect(page.locator('#stage-text')).toHaveText('Waiting for your agent to write the brief…')
+  await expect(hero).toBeHidden()
+
+  const put = await request.put(`${write}/files/queue.md`, {
+    headers: { 'If-None-Match': '*', 'Content-Type': 'text/markdown' },
+    data: '# Agent-set job\n\nThree small tasks.\n',
+  })
+  expect(put.status()).toBe(201)
+  await expect(hero).toBeVisible()
+  await expect(hero.getByRole('heading', { name: 'Agent-set job' })).toBeVisible()
+  await expect(page.locator('#stage-text')).toHaveText(
+    "Your agent's entries appear here as it works.",
+  )
+  await expectAccessible(page)
+})
+
 // A write link can put anything in a body. The reader has to show it as text.
 test('shows a hostile body as text', async ({ page, request }) => {
   const created = await request.post('/workspaces', { data: {} })
@@ -91,12 +126,12 @@ test('shows the same markdown an agent reads', async ({ page, request }) => {
     data: '# Queue\n\nWork through the tasks below.\n',
   })
   const entries = [
-    { type: 'task', author: 'alex', body: 'Upgrade CI to Node 22.' },
-    { type: 'task', author: 'alex', body: 'Draft the changelog.\nKeep it short.' },
+    { type: 'task', author: 'lead@devbox', body: 'Upgrade CI to Node 22.' },
+    { type: 'task', author: 'lead@devbox', body: 'Draft the changelog.\nKeep it short.' },
     { type: 'claim', author: 'codex@ci', ref: 2, body: 'Taking this.' },
-    { type: 'comment', author: 'alex', body: 'Thanks, everyone.' },
+    { type: 'comment', author: 'lead@devbox', body: 'Thanks, everyone.' },
     { type: 'response', author: 'codex@ci', ref: 2, body: 'CI is green. PR #482.' },
-    { type: 'cancel', author: 'alex', ref: 3, body: 'Not needed.' },
+    { type: 'cancel', author: 'lead@devbox', ref: 3, body: 'Not needed.' },
   ]
   // The response finishes the task with the token from the claim.
   let token: string | undefined

@@ -26,16 +26,16 @@ type Raw = [minutes: number, type: Entry['type'], author: string, ref: number | 
 // Minutes after 09:00 UTC; `ref` is the sequence number of the task an entry is about.
 const RAW: Raw[] = [
   [0, 'write', 'ln_Ne4Jw9Qa2Xt7', null, BODY_V1],
-  [1, 'task', 'alex', null, 'Upgrade CI to Node 22 and fix any jobs that fail.'],
-  [1, 'task', 'alex', null, 'Draft the 2.4 changelog from PRs merged since 2.3.'],
+  [1, 'task', 'lead@devbox', null, 'Upgrade CI to Node 22 and fix any jobs that fail.'],
+  [1, 'task', 'lead@devbox', null, 'Draft the 2.4 changelog from PRs merged since 2.3.'],
   [
     2,
     'task',
-    'alex',
+    'lead@devbox',
     null,
     "Run the Postgres 17 migration on last night's staging snapshot and time it.",
   ],
-  [2, 'task', 'alex', null, 'Update the API reference for the new /exports endpoints.'],
+  [2, 'task', 'lead@devbox', null, 'Update the API reference for the new /exports endpoints.'],
   [4, 'claim', 'codex@ci', 2, 'Taking this. Running the test matrix on Node 22.'],
   [5, 'claim', 'claude@laptop', 3, 'Reading merged PRs since v2.3.0.'],
   [
@@ -78,7 +78,7 @@ const RAW: Raw[] = [
     4,
     'Migration finished in 4 min 12 s. 3 min of that was rebuilding idx_events_created_at. Testing the rollback.',
   ],
-  [24, 'task', 'alex', null, 'Post the release note in #eng once the changelog is merged.'],
+  [24, 'task', 'lead@devbox', null, 'Post the release note in #eng once the changelog is merged.'],
   [
     24,
     'response',
@@ -86,7 +86,13 @@ const RAW: Raw[] = [
     4,
     'Verified on staging: 4 min 12 s, no errors, rollback tested. Notes in ops/pg17.md.',
   ],
-  [25, 'cancel', 'alex', 18, "I'll post this one myself."],
+  [
+    25,
+    'cancel',
+    'lead@devbox',
+    18,
+    'Not needed: the release workflow posts the note in #eng when 2.4 is tagged.',
+  ],
   [
     26,
     'comment',

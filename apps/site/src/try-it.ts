@@ -1,61 +1,44 @@
-// "Try it with your agent": a real workspace made from the landing page, a prompt to hand to an
-// agent, and the page's reader following the workspace live. Links are never shown in full; the
-// buttons copy them. The dialog keeps the workspace for as long as the page is open, so a link
-// pushed off the clipboard can be copied again.
+// "Try it with your agent": a real workspace made from the landing page, a prompt that hands its
+// write link to an agent, and the page's reader following the workspace live. The page writes
+// nothing in the workspace: the agent sets the job. Links are never shown in full; the buttons
+// copy them. The dialog keeps the workspace for as long as the page is open, so a link pushed off
+// the clipboard can be copied again.
 import type { CreateWorkspaceResponse } from '@mdplane/contract/core'
 import { html, nothing, render, type TemplateResult } from 'lit-html'
 import { classMap } from 'lit-html/directives/class-map.js'
-import {
-  ApiError,
-  append,
-  createFile,
-  createWorkspace,
-  isPaused,
-  isRateLimited,
-  parseLink,
-} from './api.ts'
+import { append, createFile, createWorkspace, isPaused, isRateLimited, parseLink } from './api.ts'
 import { $, $as, $$, copyText, dateTime, scrollBehavior } from './dom.ts'
 import { watch, type Watch } from './live.ts'
 import type { Session } from './model.ts'
 import type { Reader } from './reader.ts'
 
-const WELCOME = `# Welcome
-
-This workspace was made for you and deletes itself after 24 hours. Don't put secrets in it.
-`
-const WELCOME_TASK =
-  'Introduce yourself: say which tool, model and machine you are running on. Then post a response to finish this task.'
 const SAMPLE_TITLE = 'One session, start to finish'
 const SAMPLE_TEXT =
-  'alex and four agents work through the 2.4 release checklist. Drag the timeline to see any moment.'
+  'A lead agent and four others work through the 2.4 release checklist. Drag the timeline to see any moment.'
+const WAITING = 'Waiting for your agent to write the brief…'
 
 // What each link can do, in the words of the permissions table on the page.
 const LINKS = [
   { tier: 'read', name: 'Read', can: 'See the files and their history, and watch live.', note: '' },
-  {
-    tier: 'append',
-    name: 'Append',
-    can: 'Also add entries and claim tasks.',
-    note: 'The prompt uses it.',
-  },
+  { tier: 'append', name: 'Append', can: 'Also add entries and claim tasks.', note: '' },
   {
     tier: 'write',
     name: 'Write',
     can: 'Also edit files and manage links.',
-    note: 'Keep it to yourself.',
+    note: 'The prompt gives it to your agent.',
   },
 ] as const
 
 type Phase =
   | { name: 'start'; error?: string }
   | { name: 'creating' }
-  | { name: 'created'; workspace: CreateWorkspaceResponse; task: number }
+  | { name: 'created'; workspace: CreateWorkspaceResponse }
 
-// A workspace made but not finished, so trying again carries on instead of making another.
-type Partial = { workspace: CreateWorkspaceResponse; file: boolean; taskKey: string }
+// The agent picks the job and the file, so the page has nothing to write first.
+const ASK =
+  'Lead a short test job: write a brief, add three small tasks that need nothing outside the workspace, and work through them. Start other agents for the tasks if you can.'
 
-const prompt = (link: string) =>
-  `Read ${link} and follow the instructions. Pick up the open task in welcome.md and post your result.`
+const prompt = (link: string) => `Read ${link} and follow the instructions. ${ASK}`
 
 const until = (workspace: CreateWorkspaceResponse) =>
   workspace.expiresAt ? `until ${dateTime()(workspace.expiresAt)}` : 'until you delete it'
@@ -82,6 +65,7 @@ export function initTryIt(hero: Reader, sample: Session): void {
   const stageTitle = $('#stage-h')
   const stageText = $('#stage-text')
   const stageReader = $as(HTMLAnchorElement, '#stage-reader')
+  const heroFrame = $('#hero-reader')
   const backButton = $as(HTMLButtonElement, '#back-sample')
   const linksButton = $as(HTMLButtonElement, '#open-links')
   let phase: Phase = { name: 'start' }
@@ -90,7 +74,6 @@ export function initTryIt(hero: Reader, sample: Session): void {
   let manual: string | null = null
   let announcement = ''
   let following: Watch | null = null
-  let partial: Partial | null = null
 
   const draw = () => render(template(), body)
   const set = (next: Phase, say = '') => {
@@ -102,28 +85,9 @@ export function initTryIt(hero: Reader, sample: Session): void {
   async function create(): Promise<void> {
     set({ name: 'creating' })
     try {
-      partial ??= {
-        workspace: await createWorkspace('welcome'),
-        file: false,
-        taskKey: crypto.randomUUID(),
-      }
-      const { workspace } = partial
-      if (!partial.file) {
-        // A 412 means an earlier try made the file and only its answer was lost.
-        await createFile(workspace.links.write, 'welcome.md', WELCOME).catch((error: unknown) => {
-          if (!(error instanceof ApiError && error.status === 412)) throw error
-        })
-        partial.file = true
-      }
-      // The same key on every try, so the task is only ever added once.
-      const { entry } = await append(
-        workspace.links.write,
-        { path: 'welcome.md', type: 'task', author: 'mdplane', body: WELCOME_TASK },
-        partial.taskKey,
-      )
-      partial = null
+      const workspace = await createWorkspace('welcome')
       set(
-        { name: 'created', workspace, task: entry.seq },
+        { name: 'created', workspace },
         'Workspace created. Next, copy the prompt for your agent.',
       )
       $('#try-copy-prompt', body).focus()
@@ -134,12 +98,8 @@ export function initTryIt(hero: Reader, sample: Session): void {
         error: isPaused(error)
           ? error.message
           : isRateLimited(error)
-            ? partial
-              ? 'Too many requests. Try again in a minute to finish setting up your workspace.'
-              : 'Too many workspaces from your address. Try again in a minute.'
-            : partial
-              ? "Couldn't finish setting up your workspace. Try again."
-              : "Couldn't create a workspace. Try again.",
+            ? 'Too many workspaces from your address. Try again in a minute.'
+            : "Couldn't create a workspace. Try again.",
       })
     }
   }
@@ -162,17 +122,16 @@ export function initTryIt(hero: Reader, sample: Session): void {
     }
   }
 
-  async function follow(
-    workspace: CreateWorkspaceResponse,
-    task: number,
-    scripted: boolean,
-  ): Promise<void> {
+  async function follow(workspace: CreateWorkspaceResponse, scripted: boolean): Promise<void> {
     const read = parseLink(workspace.links.read)
     if (!read) return
     dialog.close()
     following?.stop()
     following = null
     hero.touched = true
+    const working = scripted
+      ? 'A scripted agent is setting a job and working through it.'
+      : "Your agent's entries appear here as it works."
     // The heading changes before focus moves to the stage, so focus announces the new one.
     stageTitle.textContent = 'Your workspace, live'
     stageText.textContent = 'Connecting to your workspace…'
@@ -183,7 +142,11 @@ export function initTryIt(hero: Reader, sample: Session): void {
     stage.focus({ preventScroll: true })
     try {
       following = await watch(read, hero, {
-        path: 'welcome.md',
+        // Until the agent writes its first file there is nothing to show, not even an empty file.
+        onFiles: () => {
+          heroFrame.hidden = false
+          stageText.textContent = working
+        },
         onStatus: (status) => {
           if (status === 'ended')
             stageText.textContent = 'This workspace has expired or its link was revoked.'
@@ -194,12 +157,12 @@ export function initTryIt(hero: Reader, sample: Session): void {
         "Couldn't connect to your workspace. Check your connection and try again."
       return
     }
-    stageText.textContent = scripted
-      ? 'A scripted agent is working through the welcome task.'
-      : "Your agent's entries appear here as it works."
+    const empty = following.files().length === 0
+    heroFrame.hidden = empty
+    stageText.textContent = empty ? WAITING : working
     stageReader.href = workspace.links.read
     if (scripted) {
-      runScriptedAgent(workspace.links.append, task).catch(() => {
+      runScriptedAgent(workspace.links.write).catch(() => {
         stageText.textContent =
           'The scripted agent stopped: a request failed. Try it again from Your links.'
       })
@@ -253,7 +216,6 @@ export function initTryIt(hero: Reader, sample: Session): void {
 
   function template(): TemplateResult {
     const workspace = phase.name === 'created' ? phase.workspace : null
-    const task = phase.name === 'created' ? phase.task : 0
     const step = (n: number, title: string, content: TemplateResult | typeof nothing) => {
       const done = n === 1 && workspace !== null
       const current = workspace ? n === 2 : n === 1
@@ -269,8 +231,9 @@ export function initTryIt(hero: Reader, sample: Session): void {
         workspace
           ? nothing
           : html`<p class="dlg-lead">
-              Make a real workspace, hand its link to an agent, and watch the work arrive in the
-              reader on this page. It deletes itself after 24 hours, so don't put secrets in it.
+              Make a real workspace and give its write link to your agent. Your agent sets a small
+              job, and you watch the work in the reader on this page. The workspace deletes itself
+              after 24 hours, so don't put secrets in it.
             </p>`
       }
       <ol class="steps">
@@ -307,11 +270,10 @@ export function initTryIt(hero: Reader, sample: Session): void {
           'Give your agent this prompt',
           workspace
             ? html`<blockquote class="prompt">
-                  Read ${masked(workspace.links.append)} and follow the instructions. Pick up the
-                  open task in welcome.md and post your result.
+                  Read ${masked(workspace.links.write)} and follow the instructions. ${ASK}
                 </blockquote>
                 <div class="dlg-actions">
-                  ${copyButton('try-copy-prompt', 'prompt', prompt(workspace.links.append), {
+                  ${copyButton('try-copy-prompt', 'prompt', prompt(workspace.links.write), {
                     primary: true,
                   })}
                 </div>`
@@ -323,20 +285,20 @@ export function initTryIt(hero: Reader, sample: Session): void {
           workspace
             ? html`<p>
                   Its entries appear in the reader on this page. No agent to hand? A scripted one
-                  makes the same requests from your browser.
+                  sets a job and makes the same requests from your browser.
                 </p>
                 <div class="dlg-actions">
                   <button
                     type="button"
                     class="btn btn-quiet btn-sm"
-                    @click=${() => void follow(workspace, task, false)}
+                    @click=${() => void follow(workspace, false)}
                   >
                     Watch here
                   </button>
                   <button
                     type="button"
                     class="btn btn-quiet btn-sm"
-                    @click=${() => void follow(workspace, task, true)}
+                    @click=${() => void follow(workspace, true)}
                   >
                     Run a scripted agent
                   </button>
@@ -369,6 +331,7 @@ export function initTryIt(hero: Reader, sample: Session): void {
     following?.stop()
     following = null
     hero.load(sample)
+    heroFrame.hidden = false
     stageTitle.textContent = SAMPLE_TITLE
     stageText.textContent = SAMPLE_TEXT
     stageReader.href = '/demo'
@@ -380,30 +343,47 @@ export function initTryIt(hero: Reader, sample: Session): void {
   draw()
 }
 
-// Three requests from this browser, the same ones an agent makes: claim, comment, respond.
-async function runScriptedAgent(link: string, task: number): Promise<void> {
-  const steps = [
-    ['claim', 'Claiming the welcome task.'],
-    [
-      'comment',
-      'Read the instructions at the link. I have an append link, so I can read the file and add to its log.',
-    ],
-    [
-      'response',
-      'Hello from a scripted agent in your browser. That took three requests: claim the task, post a comment, post this response.',
-    ],
-  ] as const
+const SCRIPTED_BRIEF = `# A scripted test
+
+A scripted agent in your browser set this job. It makes the same requests as any agent.
+`
+
+// The scripted agent's requests are paced so you can watch each one land.
+const pause = () => new Promise((resolve) => window.setTimeout(resolve, 1800))
+
+// The requests a lead agent makes with its write link, sent from this browser: write the brief and
+// add a task, then claim it, comment and respond.
+async function runScriptedAgent(link: string): Promise<void> {
+  const author = 'scripted-agent@browser'
+  const path = 'welcome.md'
+  await pause()
+  await createFile(link, path, SCRIPTED_BRIEF)
+  await pause()
+  const { entry } = await append(link, {
+    path,
+    type: 'task',
+    author,
+    body: 'Say hello from the browser.',
+  })
+  const ref = entry.seq
+  await pause()
   // The claim's token, which the response needs to finish the task.
-  let token: string | undefined
-  for (const [type, body] of steps) {
-    // oxlint-disable-next-line no-await-in-loop -- the steps are paced so you can watch them land
-    await new Promise((resolve) => window.setTimeout(resolve, 1800))
-    const entry = { path: 'welcome.md', author: 'scripted-agent@browser', ref: task, body }
-    // oxlint-disable-next-line no-await-in-loop -- each step follows the one before
-    const { lease } = await append(
-      link,
-      type === 'response' && token ? { ...entry, type, token } : { ...entry, type },
-    )
-    token ??= lease?.token
-  }
+  const { lease } = await append(link, { path, type: 'claim', author, ref })
+  await pause()
+  await append(link, {
+    path,
+    type: 'comment',
+    author,
+    ref,
+    body: 'Read the instructions at the link. A write link can set the job and do the work.',
+  })
+  await pause()
+  await append(link, {
+    path,
+    type: 'response',
+    author,
+    ref,
+    body: 'Hello from a scripted agent in your browser. That took five requests: write the brief, add a task, claim it, comment and respond.',
+    ...(lease && { token: lease.token }),
+  })
 }

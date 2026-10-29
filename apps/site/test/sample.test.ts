@@ -57,6 +57,7 @@ describe('the sample session', async () => {
     expect(stops.map((s) => s.time)).toEqual(
       [entry, claim, instead, progress, renewal, response].map((e) => hm(need(e, 'entry').at)),
     )
+    expect(stops[0]?.text).toContain(`${entry.author} adds the task`)
     const held = leaseEnd(need(claim, 'claim'))
     expect(stops[1]?.text).toContain(`until ${hm(held)}`)
     expect(stops[2]?.text).toContain(`wait ${(held - Date.parse(instead.at)) / 60_000} minutes`)
@@ -84,6 +85,7 @@ describe('the sample session', async () => {
       hm(need(taken, 'second claim').at),
       hm(need(progress, 'comment').at),
     ])
+    expect(stops[0]?.text).toContain(`${entry.author} adds the task`)
     expect(stops[1]?.text).toContain(`until ${hm(lapse)}`)
     expect(task.status).toBe('claimed')
     expect(stops.at(-1)?.text).toContain('In progress')

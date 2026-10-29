@@ -734,4 +734,9 @@
   .closing .ctas {
     margin-top: 12px;
   }
+  /* The prompt wraps rather than scrolls, so all of it can be read and copied on a phone. */
+  .closing .start-prompt {
+    max-width: 100%;
+    white-space: pre-wrap;
+  }
 }

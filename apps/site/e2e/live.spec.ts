@@ -49,7 +49,7 @@ async function newLink(request: APIRequestContext, shared: Links, tier: 'r' | 'a
 }
 
 const task = (request: APIRequestContext, link: string, path: string, body: string) =>
-  request.post(`${link}/appends`, { data: { path, type: 'task', author: 'alex', body } })
+  request.post(`${link}/appends`, { data: { path, type: 'task', author: 'lead@devbox', body } })
 
 // The live stream's status, at the end of the footer.
 const badge = (page: Page) => page.locator('.rd-time .rd-mode')
