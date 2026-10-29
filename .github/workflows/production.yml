@@ -1,0 +1,34 @@
+name: Production check
+
+# Checks mdplane.dev from outside every 6 hours, so a failed run emails Alex before a visitor
+# finds the outage. It does nothing until the repository variable PROD_MONITOR is "true", which
+# is set after the cutover. Each run makes one workspace, of the 100 mdplane.dev makes a day.
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+
+jobs:
+  check:
+    if: vars.PROD_MONITOR == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @mdplane/site...
+      # The logs are public and every link is a credential, so the check prints statuses only and
+      # masks each link and token it receives.
+      - run: node apps/site/monitor.ts https://mdplane.dev
