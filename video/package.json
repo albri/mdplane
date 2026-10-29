@@ -11,15 +11,15 @@
     "@mdplane/contract": "workspace:*",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "remotion": "4.0.533"
+    "remotion": "4.0.537"
   },
   "devDependencies": {
     "@fontsource-variable/schibsted-grotesk": "^5.3.0",
     "@fontsource/fragment-mono": "^5.3.0",
-    "@remotion/bundler": "4.0.533",
-    "@remotion/cli": "4.0.533",
-    "@remotion/fonts": "4.0.533",
-    "@remotion/renderer": "4.0.533",
+    "@remotion/bundler": "4.0.537",
+    "@remotion/cli": "4.0.537",
+    "@remotion/fonts": "4.0.537",
+    "@remotion/renderer": "4.0.537",
     "@types/node": "^22.19.0",
     "@types/react": "^19.2.0"
   }
