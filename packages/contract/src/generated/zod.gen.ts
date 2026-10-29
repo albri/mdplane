@@ -49,27 +49,27 @@ export const zEntryBody = z.string().min(1).max(16384);
  */
 export const zFileBody = z.string().max(262144);
 
-export const zHead = z.object({
+export const zHead = z.strictObject({
     seq: z.int().gte(0),
     hash: zHash
 });
 
-export const zCreateWorkspaceRequest = z.object({
+export const zCreateWorkspaceRequest = z.strictObject({
     name: z.string().regex(/^[a-z0-9][a-z0-9-]{0,62}$/).optional()
 });
 
-export const zCreateWorkspaceResponse = z.object({
+export const zCreateWorkspaceResponse = z.strictObject({
     id: zWorkspaceId,
     name: z.string().nullable(),
     expiresAt: z.iso.datetime().nullable(),
-    links: z.object({
+    links: z.strictObject({
         read: z.url(),
         append: z.url(),
         write: z.url()
     })
 });
 
-export const zFileSummary = z.object({
+export const zFileSummary = z.strictObject({
     path: zFilePath,
     version: z.int().gte(1),
     contentHash: zHash,
@@ -77,7 +77,7 @@ export const zFileSummary = z.object({
     lastSeq: zSeq
 });
 
-export const zTaskView = z.object({
+export const zTaskView = z.strictObject({
     seq: zSeq,
     author: zAuthor,
     body: z.string(),
@@ -92,14 +92,14 @@ export const zTaskView = z.object({
     leaseExpiresAt: z.iso.datetime().nullable()
 });
 
-export const zTaskAppend = z.object({
+export const zTaskAppend = z.strictObject({
     path: zFilePath,
     type: z.literal('task'),
     author: zAuthor,
     body: zEntryBody
 });
 
-export const zClaimAppend = z.object({
+export const zClaimAppend = z.strictObject({
     path: zFilePath,
     type: z.literal('claim'),
     author: zAuthor,
@@ -108,7 +108,7 @@ export const zClaimAppend = z.object({
     token: zClaimToken.optional()
 });
 
-export const zCommentAppend = z.object({
+export const zCommentAppend = z.strictObject({
     path: zFilePath,
     type: z.literal('comment'),
     author: zAuthor,
@@ -116,7 +116,7 @@ export const zCommentAppend = z.object({
     body: zEntryBody
 });
 
-export const zResponseAppend = z.object({
+export const zResponseAppend = z.strictObject({
     path: zFilePath,
     type: z.literal('response'),
     author: zAuthor,
@@ -125,7 +125,7 @@ export const zResponseAppend = z.object({
     token: zClaimToken.optional()
 });
 
-export const zCancelAppend = z.object({
+export const zCancelAppend = z.strictObject({
     path: zFilePath,
     type: z.literal('cancel'),
     author: zAuthor,
@@ -141,7 +141,7 @@ export const zAppendRequest = z.discriminatedUnion('type', [
     zCancelAppend
 ]);
 
-export const zLease = z.object({
+export const zLease = z.strictObject({
     holder: zAuthor,
     expiresAt: z.iso.datetime(),
     token: zClaimToken
@@ -169,7 +169,7 @@ export const zEntryType = z.enum([
  * `JSON.stringify` does. The first entry's `prev` is 64 zeros.
  *
  */
-export const zEntry = z.object({
+export const zEntry = z.strictObject({
     seq: zSeq,
     at: z.iso.datetime(),
     path: zFilePath,
@@ -183,7 +183,7 @@ export const zEntry = z.object({
     hash: zHash
 });
 
-export const zFileView = z.object({
+export const zFileView = z.strictObject({
     path: zFilePath,
     at: z.int().gte(0),
     head: zHead,
@@ -193,17 +193,17 @@ export const zFileView = z.object({
     since: z.int().gte(0),
     tasks: z.array(zTaskView).max(100),
     entries: z.array(zEntry).max(100),
-    omitted: z.object({
+    omitted: z.strictObject({
         tasks: z.int().gte(0),
         entries: z.int().gte(0)
     })
 });
 
-export const zWriteResult = z.object({
+export const zWriteResult = z.strictObject({
     entry: zEntry
 });
 
-export const zAppendResult = z.object({
+export const zAppendResult = z.strictObject({
     entry: zEntry,
     lease: zLease.nullable()
 });
@@ -211,7 +211,7 @@ export const zAppendResult = z.object({
 /**
  * An entry outside the link's folder. Its hash still links the chain.
  */
-export const zRedactedEntry = z.object({
+export const zRedactedEntry = z.strictObject({
     seq: zSeq,
     prev: zHash,
     hash: zHash,
@@ -223,28 +223,28 @@ export const zLogItem = z.union([
     zRedactedEntry
 ]);
 
-export const zLogPage = z.object({
+export const zLogPage = z.strictObject({
     entries: z.array(zLogItem),
     cursor: z.int().gte(0),
     head: zHead
 });
 
-export const zSearchResults = z.object({
-    results: z.array(z.object({
+export const zSearchResults = z.strictObject({
+    results: z.array(z.strictObject({
         path: zFilePath,
         seq: zSeq.nullable(),
         snippet: z.string()
     }))
 });
 
-export const zLink = z.object({
+export const zLink = z.strictObject({
     id: zLinkId,
     tier: zTier,
     folder: zFolder.nullable(),
     createdAt: z.iso.datetime()
 });
 
-export const zWorkspace = z.object({
+export const zWorkspace = z.strictObject({
     id: zWorkspaceId,
     name: z.string().nullable(),
     expiresAt: z.iso.datetime().nullable(),
@@ -253,16 +253,16 @@ export const zWorkspace = z.object({
     files: z.array(zFileSummary)
 });
 
-export const zLinkList = z.object({
+export const zLinkList = z.strictObject({
     links: z.array(zLink)
 });
 
-export const zCreateLinkRequest = z.object({
+export const zCreateLinkRequest = z.strictObject({
     tier: zTier,
     folder: zFolder.optional()
 });
 
-export const zCreateLinkResult = z.object({
+export const zCreateLinkResult = z.strictObject({
     link: zLink,
     url: z.url()
 });

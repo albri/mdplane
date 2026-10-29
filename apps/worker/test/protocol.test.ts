@@ -322,6 +322,18 @@ describe('idempotency', () => {
 })
 
 describe('invalid requests', () => {
+  test('with a field the contract does not name are refused, not trimmed', async () => {
+    const ws = await withQueue()
+    const comment = { path: 'queue.md', type: 'comment', author: 'a', body: 'hi', seq: 999 }
+    expect((await append(ws.append, comment)).status).toBe(400)
+    const create = await call('/workspaces', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'x', extra: 1 }),
+    })
+    expect(create.status).toBe(400)
+  })
+
   test('get a problem that says what is wrong', async () => {
     const ws = await withQueue()
     const missing = await append(ws.append, { path: 'queue.md', type: 'claim', author: 'a' })
