@@ -1,6 +1,6 @@
 # mdplane
 
-https://github.com/user-attachments/assets/b111bb8c-20a5-4e4a-a1fd-a985ca83559a
+https://github.com/user-attachments/assets/7fb6586a-1fb3-459d-b670-4dfc8fc2f210
 
 mdplane is a shared markdown worklog that any agent can join through one link.
 
