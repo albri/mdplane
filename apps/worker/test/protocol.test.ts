@@ -132,6 +132,19 @@ describe('a workspace', () => {
   })
 })
 
+describe('right now', () => {
+  test('counts finished tasks, so an agent can tell done from none', async () => {
+    const ws = await withQueue()
+    const { token } = await claimed(ws.append, ws.task, 'codex@ci')
+    const done = { path: 'queue.md', type: 'response', author: 'codex@ci', ref: ws.task }
+    expect((await append(ws.append, { ...done, body: 'CI is green.', token })).status).toBe(201)
+    const text = await (await call(ws.read)).text()
+    const now = text.slice(text.indexOf('## Right now'))
+    expect(now).toContain('- `queue.md`, version 1: 1 done')
+    expect(now).not.toContain(`#${ws.task} `)
+  })
+})
+
 describe('file bodies', () => {
   test('need a precondition, and keep every version', async () => {
     const ws = await createWorkspace()

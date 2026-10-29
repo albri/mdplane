@@ -33,6 +33,22 @@ function entryLine(entry: Entry): string {
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 
+export type TaskCounts = Record<TaskView['status'], number>
+const STATUSES = ['open', 'claimed', 'done', 'cancelled'] as const
+
+export function tallyTasks(tasks: TaskView[]): TaskCounts {
+  const counts: TaskCounts = { open: 0, claimed: 0, done: 0, cancelled: 0 }
+  for (const task of tasks) counts[task.status] += 1
+  return counts
+}
+
+// Done and cancelled tasks aren't listed, so the counts are how an agent tells finished work from
+// none at all.
+function tally(counts: TaskCounts): string {
+  const parts = STATUSES.filter((s) => counts[s] > 0).map((s) => `${counts[s]} ${s}`)
+  return parts.length > 0 ? `: ${parts.join(', ')}` : ''
+}
+
 export function renderFile(view: FileView): string {
   const tasks = view.tasks.map(
     (task) => `- #${task.seq} ${status(task)}: ${indent(task.body)} (from ${task.author})`,
@@ -69,7 +85,12 @@ function scopeLine(link: Link): string {
   return link.folder === null ? '' : ` This link is limited to the \`${link.folder}\` folder.`
 }
 
-export function renderNow(workspace: Workspace, tasks: Record<string, TaskView[]>): string {
+// `counts` covers every task in each file, when `tasks` holds only the open and claimed ones.
+export function renderNow(
+  workspace: Workspace,
+  tasks: Record<string, TaskView[]>,
+  counts: Record<string, TaskCounts> = {},
+): string {
   const name = workspace.name === null ? 'This workspace' : `The workspace \`${workspace.name}\``
   const expiry =
     workspace.expiresAt === null ? '' : ` It expires at ${dateTime(workspace.expiresAt)}.`
@@ -88,10 +109,10 @@ export function renderNow(workspace: Workspace, tasks: Record<string, TaskView[]
     )
   }
   for (const file of workspace.files) {
-    const active = (tasks[file.path] ?? []).filter(
-      (task) => task.status === 'open' || task.status === 'claimed',
-    )
-    lines.push(`- \`${file.path}\`, version ${file.version}`)
+    const all = tasks[file.path] ?? []
+    const active = all.filter((task) => task.status === 'open' || task.status === 'claimed')
+    const counted = counts[file.path] ?? tallyTasks(all)
+    lines.push(`- \`${file.path}\`, version ${file.version}${tally(counted)}`)
     for (const task of active)
       lines.push(`  - #${task.seq} ${status(task)}: ${firstLine(task.body)}`)
   }
@@ -102,8 +123,9 @@ export function renderNow(workspace: Workspace, tasks: Record<string, TaskView[]
 export function renderInstructions(
   workspace: Workspace,
   tasks: Record<string, TaskView[]>,
+  counts: Record<string, TaskCounts> = {},
 ): string {
-  return `${instructions[workspace.link.tier].trimEnd()}\n\n${renderNow(workspace, tasks)}`
+  return `${instructions[workspace.link.tier].trimEnd()}\n\n${renderNow(workspace, tasks, counts)}`
 }
 
 // What `GET /` returns to an agent that has no link yet, with requests addressed to this server.

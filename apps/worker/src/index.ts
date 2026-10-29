@@ -241,7 +241,7 @@ app.get(
   '/:tier/:key',
   keyed(ALL, async (c, { stub, auth }) => {
     const result = await stub.overview(auth)
-    return respond(result, ({ workspace, tasks }) => {
+    return respond(result, ({ workspace, tasks, counts }) => {
       const headers = { ETag: `"${workspace.head.hash}"`, Vary: 'Accept' }
       const type = negotiate(c.req.header('Accept'), [
         'text/markdown',
@@ -251,7 +251,7 @@ app.get(
       if (type === 'application/json') return c.json(workspace, 200, headers)
       // The reader is the same page for every link; it reads the key from its own URL.
       if (type === 'text/html') return htmlPage(c, '/reader', 200)
-      const text = renderInstructions(workspace, tasks)
+      const text = renderInstructions(workspace, tasks, counts)
       return c.body(text, 200, { ...headers, 'Content-Type': 'text/markdown; charset=utf-8' })
     })
   }),

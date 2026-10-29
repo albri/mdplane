@@ -19,9 +19,11 @@ import {
   type LogPage,
   type Problem,
   type SearchResults,
+  type TaskCounts,
   type TaskView,
   type Tier,
   pickTasks,
+  tallyTasks,
   type Workspace as WorkspaceView,
   type WriteResult,
   type zAppendRequest,
@@ -38,7 +40,12 @@ export type Result<T> =
 
 export type NewLink = { id: string; tier: Tier; folder: string | null; secretHash: string }
 // Each file's open and claimed tasks, with only as much of each body as the summary shows.
-export type Overview = { workspace: WorkspaceView; tasks: Record<string, TaskView[]> }
+// `tasks` holds each file's open and claimed tasks, and `counts` tallies all of them.
+export type Overview = {
+  workspace: WorkspaceView
+  tasks: Record<string, TaskView[]>
+  counts: Record<string, TaskCounts>
+}
 
 // `polls` is how many long polls may wait at once, and `sockets` how many live connections.
 export const LIMITS = { files: 100, entries: 10_000, links: 50, polls: 20, sockets: 100 }
@@ -378,18 +385,15 @@ export class Workspace extends DurableObject<Env> {
     const head = this.head()
     const files = this.liveFiles().filter((file) => inScope(link.folder, file.path))
     const tasks: Record<string, TaskView[]> = {}
+    const counts: Record<string, TaskCounts> = {}
     for (const file of files) {
       const state = this.fileState(file.path, head.seq)
       if (!state) continue
-      tasks[file.path] = this.tasks(
-        file.path,
-        state.since,
-        head.seq,
-        Date.now(),
-        SUMMARY_CHARS,
-      ).filter((task) => task.status === 'open' || task.status === 'claimed')
+      const all = this.tasks(file.path, state.since, head.seq, Date.now(), SUMMARY_CHARS)
+      counts[file.path] = tallyTasks(all)
+      tasks[file.path] = all.filter((task) => task.status === 'open' || task.status === 'claimed')
     }
-    return ok({ workspace: { ...meta, link, head, files }, tasks })
+    return ok({ workspace: { ...meta, link, head, files }, tasks, counts })
   }
 
   readFile(auth: Auth, path: string, at?: number): Result<FileView> {

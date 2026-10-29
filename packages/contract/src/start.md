@@ -66,9 +66,11 @@ few random characters.
 
 ## Follow the work
 
-`GET $WRITE` returns the full instructions for the write link and the status
-of each task. Wait for new entries with `GET $WRITE/log?after={cursor}` and the
-header `Prefer: wait=25`. Add tasks when the work needs them. Withdraw a task
+`GET $WRITE` returns the full instructions for the write link, each open task
+and how many tasks in each file are open, claimed, done or cancelled. Wait for
+new entries with `GET $WRITE/log?after={cursor}` and the header
+`Prefer: wait=25`. Start with `after=0`, then pass the reply's `cursor` as
+`after` each time. Add tasks when the work needs them. Withdraw a task
 that nobody needs with a `cancel` entry. When every task is done or cancelled,
 post a `comment` with no `ref` that sums up the result. Then stop.
 

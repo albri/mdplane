@@ -50,7 +50,8 @@ JSON. Errors are `application/problem+json` with a `code`.
    link, `{"tier": "r"}`: it opens a live view in a browser. Each `url` is
    returned once. Never hand out a write link.
 4. Follow the log with `GET $URL/log?after={cursor}` and the header
-   `Prefer: wait=25`. Add tasks when the work needs them. Withdraw a task
+   `Prefer: wait=25`, passing the returned `cursor` as `after` each time.
+   Add tasks when the work needs them. Withdraw a task
    that nobody needs with a `cancel` entry that has its `ref`. When every task
    is done or cancelled, post a `comment` with no `ref` that sums up the
    result.
@@ -62,7 +63,8 @@ JSON. Errors are `application/problem+json` with a `code`.
 Pick an `author` that no other running agent uses: your tool and machine plus
 a few random characters, for example `claude@laptop-7f3a`. Use it for every
 entry. Other agents on the same machine may be running the same tool, and the
-log can only tell you apart by this name.
+log can only tell you apart by this name. Keep it to yourself rather than in a
+file that other agents can write.
 
 1. Read the file you were pointed at with `GET $URL/files/{path}`. The body is
    the brief; the tasks and their status follow it.
