@@ -33,8 +33,10 @@ const EDGE = 12
 const DOC = { top: 20, bottom: 32, x: 26, w: 806 }
 const PROSE = { w: 586.875, line: 23.25, gap: 10 }
 const TASKS_HEAD = 41.15
-const TASK_ROW = 68.25
-const THREAD = { top: 4, bottom: 16, left: 42, gap: 10, meta: 19.5, line: 21 }
+// A task's row: the title beside its number, then the status line. The number's line box reaches
+// lower than one line of the title, so a one-line title is as tall as the number.
+const TASK = { pad: 23, num: 22.3, line: 21.75, gap: 4, status: 20.8, w: DOC.w - 32 - 16 - 20 }
+const THREAD = { top: 4, bottom: 16, left: 42, gap: 10, meta: 19.5, lease: 18, line: 21 }
 const ENT_W = DOC.w - THREAD.left - 1 - 14
 // The reader's slide, scroll and arrival, in seconds.
 const FLIP = 0.32
@@ -109,6 +111,14 @@ const renews = (kids: Entry[], i: number) => {
 const hereOf = (entry: Entry | undefined) =>
   entry?.type === 'task' ? entry.seq : (entry?.ref ?? null)
 
+// A closed task shows two lines of its title at most, and an open one all of them.
+function taskRow({ task }: Thread, open: boolean, measure: Measure) {
+  const weight = task.status === 'cancelled' ? 500 : 600
+  const lines = measure(task.body, `${weight} 15px ${font.sans}`, TASK.w)
+  const title = Math.max(TASK.num, (open ? lines : Math.min(2, lines)) * TASK.line)
+  return TASK.pad + title + TASK.gap + TASK.status
+}
+
 type Frame = {
   state: State
   pos: number
@@ -128,7 +138,8 @@ function frameAt(session: Session, step: Step, measure: Measure): Frame {
   const body = state.body ?? ''
   let y = DOC.top
   const bodyTop = y
-  y += 16.8 + 10
+  // The body's header is set like an entry's.
+  y += THREAD.meta + 10
   for (const block of body.trim().split('\n\n')) {
     if (block.startsWith('# ')) y += 27.5 + 8
     else if (block.startsWith('- ')) y += block.split('\n').length * PROSE.line + PROSE.gap
@@ -143,13 +154,15 @@ function frameAt(session: Session, step: Step, measure: Measure): Frame {
   const tops = new Map<number, number>()
   state.threads.forEach((thread, i) => {
     const top = y
+    const open = thread.entry.seq === here
     tops.set(thread.entry.seq, top)
-    y += (i === 0 ? 0 : 1) + TASK_ROW
-    if (thread.entry.seq === here) {
+    y += (i === 0 ? 0 : 1) + taskRow(thread, open, measure)
+    if (open) {
       let ent = y + THREAD.top
       for (const [j, e] of [thread.entry, ...thread.kids].entries()) {
         const lines = j === 0 || !e.body ? 0 : measure(e.body, `400 14px ${font.sans}`, ENT_W)
-        const h = THREAD.meta + lines * THREAD.line
+        const lease = e.type === 'claim' ? THREAD.lease : 0
+        const h = THREAD.meta + lease + lines * THREAD.line
         if (e.seq === entry?.seq) target = { start: ent, end: ent + h, from: top }
         ent += h + THREAD.gap
       }
@@ -356,6 +369,25 @@ const underline: CSSProperties = {
   textUnderlineOffset: 3,
 }
 
+// A task's status: a dot and a word in its colour, with no fill behind them. The dot is filled
+// rather than drawn as the site's border, which a 1x render rounds down to whole pixels.
+const status = (k: keyof typeof STATUS) => (
+  <span style={{ marginRight: '0.5em', whiteSpace: 'nowrap', fontWeight: 500, color: CHIP[k] }}>
+    <span
+      style={{
+        display: 'inline-block',
+        width: '0.55em',
+        height: '0.55em',
+        marginRight: '0.5em',
+        borderRadius: '50%',
+        background: 'currentColor',
+        verticalAlign: '0.08em',
+      }}
+    />
+    {STATUS[k]}
+  </span>
+)
+
 // The live dot, green at the head and grey on the way back to it.
 const dot = (colour: string) => (
   <i
@@ -411,6 +443,43 @@ const Ty = ({
   <span style={{ fontFamily: font.mono, fontSize: size, color: TYPE[type] }}>{label ?? type}</span>
 )
 
+// What, who and when on one line. The author gives way and the time keeps to the right edge, so
+// nothing wraps.
+const Meta = ({
+  type,
+  label,
+  author,
+  at,
+  style,
+}: {
+  type: Entry['type']
+  label?: string
+  author: string
+  at: string
+  style?: CSSProperties
+}) => (
+  <p
+    style={{
+      display: 'flex',
+      alignItems: 'baseline',
+      gap: 8,
+      margin: 0,
+      fontFamily: font.mono,
+      fontSize: 12,
+      lineHeight: 1.5,
+      color: c.ink3,
+      whiteSpace: 'nowrap',
+      ...style,
+    }}
+  >
+    <Ty type={type} size={13} label={label} />
+    <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', color: c.ink2 }}>
+      {author}
+    </span>
+    <span style={{ marginLeft: 'auto' }}>{time(at)}</span>
+  </p>
+)
+
 function Doc({
   frame,
   top,
@@ -427,17 +496,15 @@ function Doc({
   return (
     <div style={{ position: 'absolute', left: DOC.x, top: 0, width: DOC.w }}>
       <div style={{ position: 'absolute', top: DOC.top, width: DOC.w }}>
-        <p
-          style={{
-            margin: '0 0 10px',
-            fontFamily: font.mono,
-            fontSize: 12,
-            lineHeight: 1.4,
-            color: c.ink3,
-          }}
-        >
-          Body · version {write?.version ?? 1} · {write?.author} at {write ? time(write.at) : ''}
-        </p>
+        {write ? (
+          <Meta
+            type="write"
+            label={`Body version ${write.version ?? 1}`}
+            author={write.author}
+            at={write.at}
+            style={{ marginBottom: 10 }}
+          />
+        ) : null}
         <div style={{ color: c.ink2 }}>
           {blocks.map((block, i) =>
             block.startsWith('# ') ? (
@@ -520,18 +587,19 @@ function Task({
 }) {
   const { task, entry, kids, lapsed } = thread
   const closer = kids.findLast((k) => k.type === 'response' || k.type === 'cancel')
-  let meta = `Added by ${entry.author} at ${time(entry.at)}`
+  // A non-breaking space keeps each time with the word before it, as the reader does.
+  let meta = `${entry.author} added it at\u00a0${time(entry.at)}`
   if (task.status === 'claimed' && task.holder && task.leaseExpiresAt) {
     const until = Date.parse(task.leaseExpiresAt)
-    meta = `${task.holder} holds it until ${time(until)}, ${minutesLeft(until, state.now)}`
+    meta = `${task.holder} holds it until\u00a0${time(until)}, ${minutesLeft(until, state.now)}`
   } else if (lapsed) {
-    meta = `${lapsed.author}'s lease ran out at ${time(leaseEnd(lapsed))}`
+    meta = `${lapsed.author}'s lease ran out at\u00a0${time(leaseEnd(lapsed))}`
   } else if (closer) {
-    meta = `${task.status === 'done' ? 'Done' : 'Cancelled'} by ${closer.author} at ${time(closer.at)}`
+    const did = task.status === 'done' ? 'finished' : 'withdrew'
+    meta = `${closer.author} ${did} it at\u00a0${time(closer.at)}`
   }
   const done = task.status === 'done'
   const cancelled = task.status === 'cancelled'
-  const chip = CHIP[task.status]
   return (
     <div
       style={{
@@ -545,9 +613,9 @@ function Task({
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '32px minmax(0, 1fr) auto 16px',
+          gridTemplateColumns: '32px minmax(0, 1fr) 16px',
           columnGap: 10,
-          rowGap: 2,
+          rowGap: TASK.gap,
           alignItems: 'baseline',
           width: DOC.w + 20,
           boxSizing: 'border-box',
@@ -569,10 +637,11 @@ function Task({
         </span>
         <span
           style={{
+            display: '-webkit-box',
+            WebkitBoxOrient: 'vertical',
+            WebkitLineClamp: open ? 'none' : 2,
             minWidth: 0,
             overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: open ? 'normal' : 'nowrap',
             fontWeight: cancelled ? 500 : 600,
             color: cancelled ? c.ink3 : done ? c.ink2 : c.ink,
             textDecoration: cancelled ? 'line-through' : 'none',
@@ -580,31 +649,12 @@ function Task({
         >
           {task.body}
         </span>
-        <span
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '2px 9px',
-            border: '1px solid transparent',
-            borderRadius: 999,
-            whiteSpace: 'nowrap',
-            fontSize: 12,
-            fontWeight: 500,
-            lineHeight: 1.4,
-            color: chip,
-            background: `color-mix(in srgb, ${chip} 10%, ${c.page})`,
-          }}
-        >
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor' }} />
-          {STATUS[task.status]}
-        </span>
         <svg
           viewBox="0 0 16 16"
           width={16}
           height={16}
           style={{
-            gridArea: '1 / 4',
+            gridArea: '1 / 3',
             alignSelf: 'start',
             marginTop: 3,
             color: c.ink3,
@@ -617,14 +667,12 @@ function Task({
           style={{
             gridArea: '2 / 2 / auto / -1',
             minWidth: 0,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
             fontSize: 13,
+            lineHeight: 1.6,
             color: c.ink3,
           }}
         >
-          {meta}
+          {status(task.status)} {meta}
         </span>
       </div>
       {open ? (
@@ -653,23 +701,20 @@ function Task({
                   }}
                 />
               ) : null}
-              <p
-                style={{
-                  margin: 0,
-                  fontFamily: font.mono,
-                  fontSize: 12,
-                  lineHeight: 1.5,
-                  color: c.ink3,
-                }}
-              >
-                <Ty
-                  type={e.type}
-                  size={13}
-                  label={renews(kids, j - 1) ? 'claim · renewed' : undefined}
-                />{' '}
-                {e.author} · {time(e.at)}
-                {e.type === 'claim' ? ` · lease until ${time(leaseEnd(e))}` : ''}
-              </p>
+              <Meta type={e.type} author={e.author} at={e.at} />
+              {e.type === 'claim' ? (
+                <p
+                  style={{
+                    margin: 0,
+                    fontFamily: font.mono,
+                    fontSize: 12,
+                    lineHeight: 1.5,
+                    color: c.ink3,
+                  }}
+                >
+                  {renews(kids, j - 1) ? 'Lease renewed until' : 'Lease until'} {time(leaseEnd(e))}
+                </p>
+              ) : null}
               {j > 0 && e.body ? (
                 <p style={{ margin: 0, color: e.type === 'response' ? c.ink : c.ink2 }}>{e.body}</p>
               ) : null}
@@ -885,9 +930,11 @@ function Footer({ frame, thumb }: { frame: Frame; thumb: number }) {
       <p
         style={{
           flex: 'none',
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: '1.5ch',
           minWidth: '17ch',
           margin: 0,
-          textAlign: 'right',
           whiteSpace: 'nowrap',
           fontFamily: font.mono,
           fontSize: 12,
@@ -895,7 +942,10 @@ function Footer({ frame, thumb }: { frame: Frame; thumb: number }) {
           color: c.ink2,
         }}
       >
-        #{entry?.seq} of {head} · {entry ? time(entry.at) : ''}
+        <span>
+          #{entry?.seq} of {head}
+        </span>
+        <span style={{ color: c.ink3 }}>{entry ? time(entry.at) : ''}</span>
       </p>
       <p
         style={{
