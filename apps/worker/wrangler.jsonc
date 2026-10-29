@@ -55,4 +55,51 @@
     // New workspaces a day across the service, counted in UTC. 0 means no limit.
     "CREATE_DAILY_LIMIT": "100",
   },
+  // mdplane.dev, as the Worker "mdplane-production". Only CI deploys it, from main, after a
+  // reviewer approves the GitHub production environment. A plain `wrangler deploy` makes the
+  // Worker above, which is the preview on workers.dev and what a self-hoster gets.
+  "env": {
+    "production": {
+      // A route, not a custom domain, so the zone's DNS record stays as it was. Removing the route
+      // hands mdplane.dev back to that record at once. A custom domain would replace the record,
+      // and wrangler does that without asking when it runs in CI.
+      "routes": [{ "pattern": "mdplane.dev/*", "zone_name": "mdplane.dev" }],
+      // Every request comes through the zone, where the rate-limiting rule applies and NEL is
+      // off. workers.dev would be a way round both.
+      "workers_dev": false,
+      "preview_urls": false,
+      // An environment inherits no bindings or vars, so these repeat the ones above. The limiters
+      // have their own namespaces, so the preview's traffic doesn't count against mdplane.dev.
+      "durable_objects": {
+        "bindings": [
+          { "name": "WORKSPACES", "class_name": "Workspace" },
+          { "name": "QUOTA", "class_name": "Quota" },
+        ],
+      },
+      "ratelimits": [
+        {
+          "name": "CREATE_LIMITER",
+          "namespace_id": "2001",
+          "simple": { "limit": 10, "period": 60 },
+        },
+        {
+          "name": "LINK_LIMITER",
+          "namespace_id": "2002",
+          "simple": { "limit": 300, "period": 60 },
+        },
+        {
+          "name": "ADDRESS_LIMITER",
+          "namespace_id": "2003",
+          "simple": { "limit": 600, "period": 60 },
+        },
+      ],
+      "vars": {
+        "WORKSPACE_TTL_HOURS": "24",
+        "LEASE_SECONDS": "600",
+        "WORKSPACE_MAX_BYTES": "8388608",
+        "CREATE_ENABLED": "true",
+        "CREATE_DAILY_LIMIT": "100",
+      },
+    },
+  },
 }

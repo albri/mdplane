@@ -299,18 +299,50 @@ describe('browsers', () => {
 })
 
 // The config allows comments and trailing commas. Its comments all take whole lines.
-const deployed = z
-  .object({
-    observability: z.object({
+const worker = z.object({
+  observability: z
+    .object({
       logs: z.object({ invocation_logs: z.boolean().optional() }).optional(),
       traces: z.object({ enabled: z.boolean().optional() }).optional(),
-    }),
-  })
+    })
+    .optional(),
+  durable_objects: z.unknown(),
+  ratelimits: z.array(z.object({ namespace_id: z.string() }).loose()),
+  vars: z.record(z.string(), z.string()),
+  workers_dev: z.boolean().optional(),
+  preview_urls: z.boolean().optional(),
+})
+const deployed = worker
+  .extend({ env: z.object({ production: worker }) })
   .parse(JSON.parse(config.replace(/^\s*\/\/.*$/gm, '').replace(/,(\s*[}\]])/g, '$1')))
+const production = deployed.env.production
 
 describe("Cloudflare's logs", () => {
   test('keep no request URLs, since each one holds a key', () => {
-    expect(deployed.observability.logs?.invocation_logs).toBe(false)
-    expect(deployed.observability.traces?.enabled ?? false).toBe(false)
+    // mdplane.dev inherits these settings unless it sets its own. Invocation logs are on unless
+    // they are turned off.
+    const settings = [deployed.observability, production.observability ?? deployed.observability]
+    for (const observability of settings) {
+      expect(observability?.logs?.invocation_logs).toBe(false)
+      expect(observability?.traces?.enabled ?? false).toBe(false)
+    }
+  })
+})
+
+// mdplane.dev is a wrangler environment, which inherits no bindings or vars, so it repeats them
+// and could drift from the Worker these tests run.
+describe('mdplane.dev', () => {
+  test('runs with the bindings and vars that the tests run with', () => {
+    // Each Worker counts in its own namespaces.
+    const limits = (target: typeof production) =>
+      target.ratelimits.map((limit) => ({ ...limit, namespace_id: undefined }))
+    expect(production.vars).toEqual(deployed.vars)
+    expect(production.durable_objects).toEqual(deployed.durable_objects)
+    expect(limits(production)).toEqual(limits(deployed))
+  })
+
+  test('is reached only through its zone, where the rate-limiting rule applies', () => {
+    expect(production.workers_dev).toBe(false)
+    expect(production.preview_urls).toBe(false)
   })
 })

@@ -44,6 +44,10 @@ Run from the repository root, with Node 22.18 or later and pnpm.
 - `pnpm format` formats the code.
 - `pnpm build` builds the site. The Worker's `dev` and `deploy` build it first.
 - `pnpm --filter @mdplane/worker dev` runs the Worker and the site locally.
+- `pnpm --filter @mdplane/worker run deploy` deploys the preview Worker to
+  workers.dev. mdplane.dev is the `production` environment in `wrangler.jsonc`.
+  Only CI deploys it, after a reviewer approves, so never pass
+  `--env production` yourself.
 
 ## Changing the API
 

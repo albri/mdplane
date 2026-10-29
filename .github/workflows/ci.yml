@@ -40,7 +40,9 @@ jobs:
       - run: pnpm --filter @mdplane/site exec playwright install --with-deps chromium
       - run: pnpm e2e
 
-  # Deploys main to Cloudflare. Needs the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets.
+  # Deploys main to mdplane.dev once a reviewer approves the production environment. The first
+  # approved deploy adds the mdplane.dev route, so it is the cutover. Needs the
+  # CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets in that environment.
   deploy:
     needs: [check, e2e]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -55,7 +57,7 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @mdplane/worker run deploy
+      - run: pnpm --filter @mdplane/worker exec wrangler deploy --env production
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
