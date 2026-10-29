@@ -1,6 +1,7 @@
 import {
   verifyChain,
   zAppendResult,
+  zCreateLinkResult,
   zFileView,
   zLogPage,
   zProblem,
@@ -38,6 +39,8 @@ async function claimed(link: string, ref: number, author: string) {
   if (!lease) throw new Error('A claim returns a lease')
   return lease
 }
+
+const seqOf = async (response: Response) => zAppendResult.parse(await json(response)).entry.seq
 
 async function problemCode(response: Response) {
   return zProblem.parse(await json(response)).code
@@ -151,6 +154,24 @@ describe('the log', () => {
     const page = zLogPage.parse(await json(response))
     expect(page.entries).toMatchObject([{ seq: 3, body: 'Hello' }])
     expect(Date.now() - started).toBeLessThan(5000)
+  })
+
+  test('a long poll checks its link again after waiting', async () => {
+    const ws = await withQueue()
+    const created = await call(`${ws.write}/links`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tier: 'r' }),
+    })
+    const { link, url } = zCreateLinkResult.parse(await json(created))
+    const waiting = call(`${new URL(url).pathname}/log?after=2`, { headers: { Prefer: 'wait=5' } })
+    await sleep(50)
+    await call(`${ws.write}/links/${link.id}`, { method: 'DELETE' })
+    // The new entry wakes the request, which by then belongs to a revoked link.
+    await append(ws.append, { path: 'queue.md', type: 'comment', author: 'a', body: 'After' })
+    const response = await waiting
+    expect(response.status).toBe(404)
+    expect(await response.text()).not.toContain('After')
   })
 
   test('a long poll with nothing new returns an empty page when the wait is up', async () => {
@@ -270,6 +291,21 @@ describe('idempotency', () => {
     expect(await json(second)).toEqual(await json(first))
     const page = zLogPage.parse(await json(await call(`${ws.read}/log`)))
     expect(page.head.seq).toBe(3)
+  })
+
+  test('keys belong to the link that sent them', async () => {
+    const ws = await withQueue()
+    const other = await call(`${ws.write}/links`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tier: 'a' }),
+    })
+    const second = new URL(zCreateLinkResult.parse(await json(other)).url).pathname
+    const entry = { path: 'queue.md', type: 'comment', author: 'a', body: 'Same words' }
+    const first = await append(ws.append, entry, 'shared-key')
+    const again = await append(second, entry, 'shared-key')
+    expect(again.headers.get('Idempotent-Replayed')).toBeNull()
+    expect(await seqOf(again)).toBe((await seqOf(first)) + 1)
   })
 
   test('reusing a key for a different request is refused', async () => {

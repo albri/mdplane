@@ -6,7 +6,7 @@ import {
   zProblem,
   zWorkspace,
 } from '@mdplane/contract'
-import { runDurableObjectAlarm } from 'cloudflare:test'
+import { runDurableObjectAlarm, runInDurableObject } from 'cloudflare:test'
 import { env } from 'cloudflare:workers'
 import { describe, expect, test } from 'vitest'
 import { z } from 'zod'
@@ -120,6 +120,22 @@ describe('folder links', () => {
     expect(workspace.files.map((f) => f.path)).toEqual(['release/queue.md'])
   })
 
+  test('stop at the folder, not at names that start with it', async () => {
+    const ws = await scoped()
+    for (const path of ['release-notes/x.md', 'releases.md']) {
+      // oxlint-disable-next-line no-await-in-loop -- files are made in order
+      await writeFile(ws.write, path, 'Sibling plan\n')
+      // oxlint-disable-next-line no-await-in-loop -- one path at a time keeps the failure readable
+      const { status } = await call(`${ws.release}/files/${path}`)
+      expect({ path, status }).toEqual({ path, status: 404 })
+    }
+    expect(await json(await call(`${ws.release}/search?q=sibling`))).toEqual({ results: [] })
+    const workspace = zWorkspace.parse(
+      await json(await call(ws.release, { headers: { Accept: 'application/json' } })),
+    )
+    expect(workspace.files.map((f) => f.path)).toEqual(['release/queue.md'])
+  })
+
   test('see other entries redacted, with the chain still checkable', async () => {
     const ws = await scoped()
     const page = zLogPage.parse(await json(await call(`${ws.release}/log`)))
@@ -200,6 +216,21 @@ describe('paths', () => {
 })
 
 describe('expiry', () => {
+  test('ends a workspace when it is due, even before the alarm runs', async () => {
+    const ws = await createWorkspace()
+    await writeFile(ws.write, 'queue.md', 'Brief\n')
+    await runInDurableObject(env.WORKSPACES.getByName(ws.id), (_, state) => {
+      state.storage.sql.exec(
+        `UPDATE meta SET expires_at = ?`,
+        new Date(Date.now() - 1).toISOString(),
+      )
+    })
+    expect((await call(ws.read)).status).toBe(404)
+    expect((await call(`${ws.read}/files/queue.md`)).status).toBe(404)
+    const comment = { path: 'queue.md', type: 'comment', author: 'a', body: 'late' }
+    expect((await append(ws.append, comment)).status).toBe(404)
+  })
+
   test('the alarm deletes the workspace', async () => {
     const ws = await createWorkspace()
     await writeFile(ws.write, 'queue.md', 'Brief\n')
