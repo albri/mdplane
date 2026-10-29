@@ -126,8 +126,10 @@ export class Reader {
     flip: Map<string, number> | null
     focusRow: boolean
   } = { reveal: null, flip: null, focusRow: false }
-  // Measured from a drawn row. Every row is three single lines, so they're all this tall.
-  private rowHeight = 66
+  // The history rows' height, which CSS sets: this at the default text size, and measured from a
+  // drawn row in case the text size is different. Only which rows to draw depends on it.
+  private rowHeight = 76
+  private rowsFitted = false
   private rowsDrawn = new Set<number>()
   private docDepth = DOC_DEPTH
   private arrived = new Set<number>()
@@ -417,14 +419,16 @@ export class Reader {
     this.fitRows()
   }
 
-  // Rows are placed by arithmetic, so their height has to be known. It changes only with fonts.
+  // Which rows are on screen is worked out from their height, so it's measured once there's a
+  // row to measure.
   private fitRows(): void {
-    const row = this.log.value?.querySelector('.lg-row')
+    if (this.rowsFitted) return
+    const row = this.log.value?.querySelector('.lg-list > li')
     const height = row instanceof HTMLElement ? row.offsetHeight : 0
-    if (height > 0 && height !== this.rowHeight) {
+    if (height === 0) return
+    this.rowsFitted = true
+    if (height !== this.rowHeight) {
       this.rowHeight = height
-      // Every row below the first has moved, the current one with them.
-      this.pending.reveal ??= 'instant'
       this.draw()
     }
   }
@@ -629,7 +633,7 @@ export class Reader {
           </div>
           <ol
             class="lg-list"
-            ${cssProps({ '--rows': String(this.head), '--row-h': `${this.rowHeight}px` })}
+            ${cssProps({ '--rows': String(this.head) })}
             @click=${this.onRowClick}
             @keydown=${this.onRowKey}
           >
