@@ -10,9 +10,12 @@ export const EDITED = 15
 const EDIT = ['Node 22', 'Node 20'] as const
 
 export type FilmSession = {
+  workspaceId: string
   entries: Entry[]
   // The first version of the file's body: the brief.
   brief: string
+  // Every version of the body by its content hash, as the reader looks them up.
+  bodies: Record<string, string>
   // What the hashes from the edited entry onward would have to be after the edit.
   rehashed: Record<number, string>
 }
@@ -40,7 +43,13 @@ export async function filmSession(): Promise<FilmSession> {
   const rehashed: Record<number, string> = {}
   for (const e of edited) if (e.seq >= EDITED) rehashed[e.seq] = e.hash
   const brief = sample.bodies.get(entries[0]?.contentHash ?? '') ?? ''
-  return { entries, brief, rehashed }
+  return {
+    workspaceId: sample.workspaceId,
+    entries,
+    brief,
+    bodies: Object.fromEntries(sample.bodies),
+    rehashed,
+  }
 }
 
 export const editOf = (body: string) => {

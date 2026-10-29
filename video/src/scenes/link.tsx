@@ -38,7 +38,7 @@ export function Link() {
         style={{ left: X, top: 110 }}
       />
       <Words
-        text={"Paste it into any agent.\nThere's nothing to install."}
+        text={"Your agent hands it to the others.\nThere's nothing to install."}
         at={12.3}
         exit={20.2}
         style={{ left: X, top: 110 }}

@@ -1,6 +1,6 @@
 # The mdplane film
 
-A 2:15 film for the top of the README: what mdplane is, how it works and why it exists. It is made
+A 2:16 film for the top of the README: what mdplane is, how it works and why it exists. It is made
 with [Remotion](https://www.remotion.dev) from the landing page's tokens and fonts, and it replays
 the landing page's sample session. The keys in it are made up and masked.
 

@@ -5,10 +5,10 @@ import { arrive, mix, ramp, travel, useT } from './motion.tsx'
 import { c, font, X } from './theme.ts'
 
 export const STEPS = [
-  'Write the job',
-  'Hand out the link',
+  'Your agent sets the job',
+  'It hands out links',
   'Agents claim and report',
-  'Watch and check',
+  'You watch and check',
 ]
 
 const COL = 410
@@ -18,7 +18,7 @@ const LABEL = 31
 
 // Where the route sits drawn in full, and docked in the footer at half size.
 const BIG = { x: X, y: 470, s: 1 }
-const DOCK = { x: 1000, y: 972, s: 0.5 }
+const DOCK = { x: 990, y: 972, s: 0.5 }
 
 export function Route({
   drawAt,

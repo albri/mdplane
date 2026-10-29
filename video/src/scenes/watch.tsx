@@ -1,338 +1,27 @@
-import { deriveTasks, type Entry, type TaskView } from '@mdplane/contract/core'
+import type { Entry } from '@mdplane/contract/core'
 import { interpolate, interpolateColors } from 'remotion'
-import { arrive, fade, lift, mix, ramp, travel, useT, Words } from '../motion.tsx'
+import { fade, lift, mix, ramp, travel, useT, Words } from '../motion.tsx'
 import { EDITED, editOf, type FilmSession } from '../session.ts'
 import { c, font, WIDTH, X } from '../theme.ts'
-import { Chip } from './claims.tsx'
 import { TYPE_COLOUR } from './job.tsx'
-import { KEY } from './link.tsx'
+import { Reader, type Step } from './reader.tsx'
 
-const time = (iso: string) => iso.slice(11, 16)
-
-const STATUS: Record<TaskView['status'], [string, string]> = {
-  open: ['Open', c.ink2],
-  claimed: ['In progress', c.warn],
-  done: ['Done', c.ok],
-  cancelled: ['Cancelled', c.ink3],
-}
-
-// Where the reader's timeline is, as a fractional entry number: it plays live from #13, holds at the
-// head, then is dragged back to #12 and holds there.
-const LIVE_FROM = 3.1
-const FIRST = 13
-const STEP = 0.55
-const SCRUB = [9.6, 11] as const
-function position(t: number, last: number) {
-  const live = Math.min(last, FIRST + Math.max(0, (t - LIVE_FROM) / STEP))
-  const whole = Math.floor(live)
-  const glide = whole + arrive(live - whole)
-  return mix(glide, 12, ramp(t, SCRUB[0], SCRUB[1] - SCRUB[0], travel))
-}
-
-function Reader({ entries, t }: { entries: Entry[]; t: number }) {
-  const pos = position(t, entries.length)
-  const n = Math.round(pos)
-  const seen = entries.slice(0, n)
-  const head = seen.at(-1)
-  const tasks = head ? deriveTasks(seen, Date.parse(head.at)) : []
-  const live = 1 - ramp(t, SCRUB[0] - 0.2, 0.3)
-  const history = seen.slice(-6)
-  const TRACK = { x: 104, w: 1080 }
-  const at = (seq: number) => TRACK.x + ((seq - 1) / (entries.length - 1)) * TRACK.w
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        left: X,
-        top: 240,
-        width: WIDTH,
-        height: 652,
-        border: `1px solid ${c.lineStrong}`,
-        borderRadius: 14,
-        background: c.page,
-        overflow: 'hidden',
-        display: 'grid',
-        gridTemplateRows: '68px 1fr 80px',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 16,
-          padding: '0 24px',
-          borderBottom: `1px solid ${c.line}`,
-        }}
-      >
-        <span
-          style={{
-            padding: '3px 12px',
-            borderRadius: 6,
-            background: c.sunk2,
-            fontFamily: font.sans,
-            fontWeight: 600,
-            fontSize: 20,
-            color: c.ink2,
-          }}
-        >
-          Read
-        </span>
-        <span style={{ fontFamily: font.mono, fontSize: 22, color: c.ink3 }}>
-          mdplane.dev/r/<span style={{ color: c.ink }}>{KEY}</span>
-        </span>
-        <span style={{ marginLeft: 'auto', position: 'relative', width: 120, height: 34 }}>
-          <span style={{ position: 'absolute', right: 0, opacity: live }}>
-            <Chip colour={c.ok}>Live</Chip>
-          </span>
-          <span
-            style={{
-              position: 'absolute',
-              right: 0,
-              opacity: 1 - live,
-              padding: '1px 14px',
-              border: `1.5px dashed ${c.lineStrong}`,
-              borderRadius: 999,
-              fontFamily: font.sans,
-              fontWeight: 500,
-              fontSize: 21,
-              color: c.ink2,
-            }}
-          >
-            Replay
-          </span>
-        </span>
-        <span
-          style={{
-            padding: '2px 14px',
-            border: `1.5px solid ${c.ok}`,
-            borderRadius: 8,
-            fontFamily: font.sans,
-            fontWeight: 500,
-            fontSize: 21,
-            color: c.ok,
-          }}
-        >
-          ✓ Verified
-        </span>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 560px', minHeight: 0 }}>
-        <div style={{ padding: '16px 28px', minWidth: 0 }}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              fontFamily: font.sans,
-              fontSize: 21,
-              marginBottom: 6,
-            }}
-          >
-            <b style={{ fontWeight: 600, color: c.ink }}>Tasks</b>
-            <span style={{ color: c.ink3 }}>
-              {tasks.length} tasks · {tasks.filter((x) => x.status === 'done').length} done
-            </span>
-          </div>
-          {tasks.map((task) => {
-            const [label, colour] = STATUS[task.status]
-            return (
-              <div
-                key={task.seq}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '54px 1fr auto',
-                  alignItems: 'baseline',
-                  padding: '14px 0 13px',
-                  borderTop: `1px solid ${c.line}`,
-                }}
-              >
-                <span style={{ fontFamily: font.mono, fontSize: 21, color: c.ink3 }}>
-                  #{task.seq}
-                </span>
-                <div style={{ minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontFamily: font.sans,
-                      fontWeight: 600,
-                      fontSize: 24,
-                      color: c.ink,
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {task.body}
-                  </div>
-                  <div style={{ marginTop: 3, fontFamily: font.sans, fontSize: 19, color: c.ink3 }}>
-                    {task.author} · {time(task.createdAt)}
-                    {task.holder && task.leaseExpiresAt
-                      ? ` · ${task.holder} holds it until ${time(task.leaseExpiresAt)}`
-                      : ''}
-                  </div>
-                </div>
-                <Chip colour={colour}>{label}</Chip>
-              </div>
-            )
-          })}
-        </div>
-        <div
-          style={{
-            borderLeft: `1px solid ${c.line}`,
-            background: c.page,
-            minWidth: 0,
-            overflow: 'hidden',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              padding: '16px 24px 10px',
-              fontFamily: font.sans,
-              fontSize: 21,
-            }}
-          >
-            <b style={{ fontWeight: 600, color: c.ink }}>History</b>
-            <span style={{ fontFamily: font.mono, fontSize: 19, color: c.ink3 }}>
-              {n} of {entries.length}
-            </span>
-          </div>
-          {history.map((e) => {
-            const isHead = e.seq === n
-            return (
-              <div
-                key={e.seq}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '50px 1fr auto',
-                  columnGap: 6,
-                  padding: '9px 24px 10px',
-                  borderTop: `1px solid ${c.line}`,
-                  background: isHead ? c.actionTint : c.page,
-                  fontFamily: font.sans,
-                  fontSize: 19,
-                }}
-              >
-                <span style={{ fontFamily: font.mono, color: isHead ? c.action : c.ink3 }}>
-                  #{e.seq}
-                </span>
-                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>
-                  <span style={{ fontFamily: font.mono, color: TYPE_COLOUR[e.type] }}>
-                    {e.type}
-                  </span>{' '}
-                  <span style={{ color: c.ink }}>{e.author}</span>
-                  {e.ref === null ? '' : <span style={{ color: c.ink3 }}> → #{e.ref}</span>}
-                </span>
-                <span style={{ fontFamily: font.mono, color: c.ink3 }}>{time(e.at)}</span>
-                <span
-                  style={{
-                    gridColumn: '2 / 4',
-                    color: c.ink2,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {e.type === 'write' ? `Body version ${e.version ?? 1}` : e.body}
-                </span>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      <div style={{ position: 'relative', borderTop: `1px solid ${c.line}` }}>
-        <div
-          style={{
-            position: 'absolute',
-            left: 24,
-            top: 18,
-            width: 44,
-            height: 44,
-            borderRadius: 10,
-            background: c.ink,
-            display: 'grid',
-            placeItems: 'center',
-          }}
-        >
-          <div
-            style={{
-              width: 0,
-              height: 0,
-              borderTop: '9px solid transparent',
-              borderBottom: '9px solid transparent',
-              borderLeft: `14px solid ${c.page}`,
-              marginLeft: 4,
-            }}
-          />
-        </div>
-        <div
-          style={{
-            position: 'absolute',
-            left: TRACK.x,
-            top: 39,
-            width: TRACK.w,
-            height: 2,
-            background: c.line,
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            left: TRACK.x,
-            top: 38,
-            width: at(pos) - TRACK.x,
-            height: 4,
-            background: c.action,
-          }}
-        />
-        {entries.map((e) => (
-          <div
-            key={e.seq}
-            style={{
-              position: 'absolute',
-              left: at(e.seq) - 1,
-              top: 31,
-              width: 2,
-              height: 18,
-              background: e.seq <= pos ? c.ink : c.lineStrong,
-            }}
-          />
-        ))}
-        <div
-          style={{
-            position: 'absolute',
-            left: at(pos) - 13,
-            top: 27,
-            width: 26,
-            height: 26,
-            boxSizing: 'border-box',
-            borderRadius: '50%',
-            border: `4px solid ${c.action}`,
-            background: c.page,
-          }}
-        />
-        <span
-          style={{
-            position: 'absolute',
-            right: 28,
-            top: 26,
-            fontFamily: font.mono,
-            fontSize: 21,
-            color: c.ink2,
-          }}
-        >
-          #{n} of {entries.length} · {head ? time(head.at) : ''}
-        </span>
-      </div>
-    </div>
-  )
-}
+// Where the reader is. It opens at #17 on a live session, takes the next four entries as they
+// arrive, then is dragged back to #12.
+const STEPS: Step[] = [
+  { at: 0, pos: 17, head: 17 },
+  { at: 3.1, pos: 18, head: 18, live: true },
+  { at: 4.7, pos: 19, head: 19, live: true },
+  { at: 6.3, pos: 20, head: 20, live: true },
+  { at: 7.9, pos: 21, head: 21, live: true },
+  { at: 11, pos: 12, head: 21, glide: 0.8 },
+]
 
 const CHAIN = [13, 14, 15, 16, 17]
 const BLOCK = 272
 const GUTTER = (WIDTH - CHAIN.length * BLOCK) / (CHAIN.length - 1)
-const EDIT_AT = 18
-const CHECK_AT = (i: number) => 19.5 + i * 0.7
+const EDIT_AT = 19.2
+const CHECK_AT = (i: number) => 20.7 + i * 0.7
 
 function Chain({
   entries,
@@ -363,7 +52,7 @@ function Chain({
                   left: left - GUTTER,
                   top: 214,
                   width: GUTTER,
-                  opacity: fade(t, 15.4 + i * 0.12),
+                  opacity: fade(t, 16.6 + i * 0.12),
                 }}
               >
                 <div
@@ -403,7 +92,7 @@ function Chain({
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 8,
-                ...lift(t, 15.3 + i * 0.12, 16),
+                ...lift(t, 16.5 + i * 0.12, 16),
               }}
             >
               <div style={{ fontFamily: font.mono, fontSize: 24 }}>
@@ -524,28 +213,28 @@ function Chain({
   )
 }
 
-// 0–29.8s. The reader fills live and is dragged back; then an edit to #15 breaks the chain.
+// 0–31s. The reader fills live and is dragged back; then an edit to #15 breaks the chain.
 export function Watch({ session }: { session: FilmSession }) {
   const t = useT()
-  const reader = fade(t, 1.5, 13.4)
+  const reader = fade(t, 1.5, 14.6)
   return (
     <>
       <Words
         text="Watch the work arrive, and replay any moment."
         at={0.3}
-        exit={13.4}
+        exit={14.6}
         style={{ left: X, top: 110 }}
       />
       <Words
         text={'Edit an old entry, and every\nfingerprint after it breaks.'}
-        at={14}
-        exit={24.4}
+        at={15.2}
+        exit={25.6}
         style={{ left: X, top: 110 }}
       />
       <Words
         text={'Anyone who kept a later\nfingerprint can tell.'}
-        at={24.8}
-        exit={29.3}
+        at={26}
+        exit={30.5}
         style={{ left: X, top: 110 }}
       />
       <div
@@ -556,9 +245,11 @@ export function Watch({ session }: { session: FilmSession }) {
           transform: `translateY(${interpolate(reader, [0, 1], [18, 0])}px)`,
         }}
       >
-        <Reader entries={session.entries} t={t} />
+        <div style={{ position: 'absolute', left: X, top: 226 }}>
+          <Reader film={session} steps={STEPS} t={t} />
+        </div>
       </div>
-      <div style={{ position: 'absolute', inset: 0, opacity: 1 - ramp(t, 29.3, 0.4, travel) }}>
+      <div style={{ position: 'absolute', inset: 0, opacity: 1 - ramp(t, 30.5, 0.4, travel) }}>
         <Chain entries={session.entries} rehashed={session.rehashed} t={t} />
       </div>
     </>

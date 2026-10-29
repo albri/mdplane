@@ -7,7 +7,8 @@ import { inlineFonts } from '../webpack.ts'
 
 // A frame from each beat, once it has settled.
 const BEATS = [
-  0, 6, 12.5, 18, 25, 33, 42.5, 54, 63, 76.5, 82, 90, 96, 104.5, 110, 117.5, 122, 126, 133,
+  0, 6, 12.5, 18, 25, 33, 42.5, 54, 63, 76.5, 82, 90, 96, 100.4, 107.4, 110.4, 118.7, 123.2, 127.2,
+  134.2,
 ]
 const times = process.argv.length > 2 ? process.argv.slice(2).map(Number) : BEATS
 

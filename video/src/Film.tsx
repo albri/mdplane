@@ -21,9 +21,9 @@ export const AT = {
   link: 44.8,
   claims: 65.6,
   watch: 98.2,
-  close: 128,
+  close: 129.2,
 }
-export const DURATION = 135.2
+export const DURATION = 136.4
 // Each shot starts this much before the last one ends, so one leaves as the next arrives.
 const LEAD = 0.3
 

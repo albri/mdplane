@@ -3,7 +3,9 @@ import { AT, DURATION, Film, type FilmProps } from './Film.tsx'
 import { filmSession } from './session.ts'
 import { c, font, FPS, H, W, X } from './theme.ts'
 
-const defaultProps: FilmProps = { session: { entries: [], brief: '', rehashed: {} } }
+const defaultProps: FilmProps = {
+  session: { workspaceId: '', entries: [], brief: '', bodies: {}, rehashed: {} },
+}
 const calculateMetadata = async () => ({ props: { session: await filmSession() } })
 
 const LENGTH = `${Math.floor(DURATION / 60)}:${String(Math.floor(DURATION % 60)).padStart(2, '0')}`

@@ -64,7 +64,7 @@ export function LogRow({ entry, style }: { entry: Entry; style?: CSSProperties }
 }
 
 const BODY_AT = 2.2
-// Alex's four tasks arrive together, then the two claims.
+// The lead agent's four tasks arrive together, then the two claims.
 const LOG_AT = [9.9, 10.45, 11, 11.55, 12.4, 13.1]
 const SHOWN = [2, 3, 4, 5, 6, 7]
 
@@ -77,7 +77,7 @@ export function Job({ entries, body }: { entries: Entry[]; body: string }) {
   return (
     <>
       <Words
-        text="Write the job at the top of a markdown file."
+        text="Your agent sets the job at the top of a markdown file."
         at={0.3}
         exit={7.6}
         style={{ left: X, top: 110 }}
