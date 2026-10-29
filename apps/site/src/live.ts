@@ -39,16 +39,29 @@ function filesIn(log: LogItem[]): Set<string> {
 
 const sorted = (files: Set<string>) => [...files].toSorted()
 
+// The file a reader opens on: the one asked for if it exists, or else the first by name.
+const opening = (files: Set<string>, path?: string) =>
+  path && files.has(path) ? path : sorted(files)[0]
+
 export async function watch(
   link: LinkInfo,
   reader: Reader,
   { path, onFiles, onStatus }: Options = {},
 ): Promise<Watch> {
-  const workspace = await getWorkspace(link.base)
-  const log: LogItem[] = await readLog(link.base)
-  // From the log rather than `workspace.files`, so a file made between the two requests is here.
-  const files = filesIn(log)
   const bodies = new Bodies(link.base, () => reader.bodiesChanged())
+  // The workspace, its log and the body the reader opens on are fetched together, since the log
+  // is what takes longest.
+  const asked = getWorkspace(link.base)
+  const latest = asked.then(
+    (found) => {
+      const first = opening(new Set(found.files.map((file) => file.path)), path)
+      return first ? bodies.latest(first) : undefined
+    },
+    () => undefined,
+  )
+  const [workspace, log] = await Promise.all([asked, readLog(link.base)])
+  // From the log rather than `workspace.files`, which may describe an earlier or later moment.
+  const files = filesIn(log)
   let session: Session | null = null
   let stopped = false
 
@@ -125,7 +138,8 @@ export async function watch(
   }
 
   reader.connection('connecting')
-  const first = path && files.has(path) ? path : sorted(files)[0]
+  const first = opening(files, path)
+  await atMost(BODY_WAIT, latest)
   if (first) await show(first)
   const stopFollowing = follow(link.base, log.at(-1)?.seq ?? 0, {
     onItem: (item) => {

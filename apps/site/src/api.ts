@@ -61,18 +61,45 @@ const MORE_BACKLOG = 4000
 
 export const getWorkspace = (base: string) => send<Workspace>(base, { headers: JSON_ACCEPT })
 
-// A page can stop short of its limit to keep its size down, so the cursor reaching the head is
-// what says the log has been read.
+const LOG_PAGE = 500
+
+// Reads the log up to the head its first page reports. Later entries are the live stream's to
+// deliver, from the last one read.
 export async function readLog(base: string, after = 0): Promise<LogItem[]> {
-  const items: LogItem[] = []
-  let cursor = after
-  for (;;) {
-    // oxlint-disable-next-line no-await-in-loop -- each page starts where the last one ended
-    const page = await send<LogPage>(`${base}/log?after=${cursor}&limit=500`)
-    items.push(...page.entries)
-    if (page.cursor >= page.head.seq || page.entries.length === 0) return items
-    cursor = page.cursor
+  const read = (from: number, limit = LOG_PAGE) =>
+    send<LogPage>(`${base}/log?after=${from}&limit=${limit}`)
+  // Reads up to `to`, carrying on from a page already fetched. A page can stop short of its
+  // limit to keep its size down, so its cursor says where the next one starts.
+  const span = async (page: LogPage, to: number): Promise<LogItem[]> => {
+    const items = [...page.entries]
+    let { cursor } = page
+    while (cursor < to && page.entries.length > 0) {
+      // oxlint-disable-next-line no-await-in-loop -- each page starts where the last one ended
+      page = await read(cursor, Math.min(LOG_PAGE, to - cursor))
+      items.push(...page.entries)
+      cursor = page.cursor
+    }
+    return items
   }
+  const first = await read(after)
+  const head = first.head.seq
+  // Sequence numbers run without gaps and a link sees every one of them, so the log splits into
+  // spans of 500 that are all read at once. On a slow connection a long log then takes the time
+  // its bytes do, rather than a round trip for every page.
+  const starts: number[] = []
+  for (let from = after + LOG_PAGE; from < head; from += LOG_PAGE) starts.push(from)
+  const ends = [...starts, head]
+  const spans = await Promise.all([
+    span(first, ends[0] ?? head),
+    ...starts.map(async (from, i) => {
+      const to = ends[i + 1] ?? head
+      return span(await read(from, Math.min(LOG_PAGE, to - from)), to)
+    }),
+  ])
+  const items = spans.flat()
+  if (items.every((item, i) => item.seq === after + i + 1)) return items
+  // Should the spans not join up, the log is read again in order.
+  return span(first, head)
 }
 
 export const readFile = (base: string, path: string, at?: number) =>
@@ -122,6 +149,17 @@ export class Bodies implements BodySource {
       ...this.queue.filter((p) => p.write.contentHash !== hash),
     ].slice(0, BODY_QUEUE)
     this.pump()
+  }
+
+  // Fetches a file's current body before its write entry is known, for the file a reader opens
+  // on. If it fails, the write's own request tries again later.
+  async latest(path: string): Promise<void> {
+    try {
+      const view = await readFile(this.base, path)
+      if (view.contentHash) this.cache.set(view.contentHash, view.body)
+    } catch {
+      // Nothing to keep.
+    }
   }
 
   // Resolves once the body is here or has failed, so a caller can wait for it without failing.
