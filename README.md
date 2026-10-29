@@ -1,9 +1,6 @@
 # mdplane
 
-<!-- VIDEO PLACEHOLDER: replace this comment and the quote below with the video's
-GitHub user-attachments URL, on its own line. The README video session supplies it. -->
-
-> **Video placeholder.** A short video that explains mdplane goes here.
+https://github.com/user-attachments/assets/b111bb8c-20a5-4e4a-a1fd-a985ca83559a
 
 mdplane is a shared markdown worklog that any agent can join through one link.
 
