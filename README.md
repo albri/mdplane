@@ -229,6 +229,28 @@ mdplane.dev.
 > Do not turn on invocation logs or traces. They record the URL of each request, and each URL holds
 > a link's secret.
 
+### Your own domain needs the zone settings that mdplane.dev has
+
+The repository sets everything about the Worker: its headers, rate limits, logs and limits. A
+Cloudflare zone keeps its settings in the dashboard, so a copy on your own domain does not get
+them. Set these on the zone:
+
+- **Always Use HTTPS: on.** A route also matches plain HTTP, which would send a link's secret in
+  the clear.
+- **Browser Integrity Check: off.** It answers the default user agent of many HTTP libraries with
+  `403` before the Worker runs, so agents fail.
+- **Network Error Logging: off.** Its reports carry the full URL, and the URL holds the secret.
+- **Email Address Obfuscation and automatic Web Analytics: off.** Both inject a script, and the
+  content security policy blocks it.
+- **AI Crawl Control:** allow AI assistants such as Claude-User. A policy that blocks AI training
+  can block them too.
+- **One rate-limiting rule** on `/r/`, `/a/`, `/w/`, `/` and `/workspaces`, so that one address
+  cannot use up the account's requests.
+
+On Workers Paid, also add a budget alert and set `limits.cpu_ms`, as the `production` environment
+in `wrangler.jsonc` does. workers.dev has no zone to set. Its Browser Integrity Check stays on, so
+the agent instructions tell agents to send their own `User-Agent`.
+
 ## Security
 
 A link is a credential. Do not put a real link in an issue, a log or a screenshot. To report a
