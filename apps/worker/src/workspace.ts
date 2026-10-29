@@ -29,6 +29,7 @@ import {
   type zAppendRequest,
 } from '@mdplane/contract'
 import { randomString } from './keys.ts'
+import { finder, snippet } from './snippet.ts'
 
 // What the Worker's validation produces, which allows `undefined` where the spec omits a field.
 export type AppendInput = output<typeof zAppendRequest>
@@ -67,6 +68,9 @@ const ok = <T>(value: T, extra: { created?: boolean } = {}): Result<T> => ({
 const ENTRY = `seq, at, path, type, author, ref, body, version, content_hash AS contentHash, prev, hash`
 // More of a task's body than the overview's one-line summary of it needs.
 const SUMMARY_CHARS = 240
+// How much of a search result's text its snippet is cut from. A match further into a long body
+// gets a snippet of the body's opening.
+const SNIPPET_SCAN = 32_768
 const LINK = `id, tier, folder, created_at AS createdAt`
 
 const SCHEMA = `
@@ -730,17 +734,23 @@ export class Workspace extends DurableObject<Env> {
       .join(' ')
     if (!match) return ok({ results: [] })
     const scope = link.folder === null ? '' : `${link.folder}/`
-    const results = this.sql
-      .exec<{ path: string; seq: number | null; snippet: string }>(
-        `SELECT path, seq, snippet(search, 0, '**', '**', '…', 16) AS snippet FROM search
+    // Only the results' text is read, and only its opening, so the snippets cost the same however
+    // long the bodies are. The folder is checked before any text is.
+    const rows = this.sql
+      .exec<{ path: string; seq: number | null; text: string }>(
+        `SELECT path, seq, substr(text, 1, ?) AS text FROM search
          WHERE search MATCH ? AND substr(path, 1, ?) = ? ${query.path ? 'AND path = ?' : ''}
          ORDER BY rank LIMIT ?`,
+        SNIPPET_SCAN,
         ...(query.path
           ? [match, scope.length, scope, query.path, query.limit]
           : [match, scope.length, scope, query.limit]),
       )
       .toArray()
-    return ok({ results })
+    const find = finder(query.q)
+    return ok({
+      results: rows.map(({ path, seq, text }) => ({ path, seq, snippet: snippet(text, find) })),
+    })
   }
 
   listLinks(auth: Auth): Result<{ links: Link[] }> {

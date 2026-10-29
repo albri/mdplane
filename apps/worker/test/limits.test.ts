@@ -1,4 +1,4 @@
-import { zCreateLinkResult, zFileView, zProblem } from '@mdplane/contract'
+import { zCreateLinkResult, zFileView, zProblem, zSearchResults } from '@mdplane/contract'
 import { runInDurableObject } from 'cloudflare:test'
 import { env } from 'cloudflare:workers'
 import { describe, expect, test } from 'vitest'
@@ -228,6 +228,29 @@ describe('reading a busy file', () => {
     const tasks = result.value.tasks['queue.md'] ?? []
     expect(tasks.map((task) => [task.seq, task.status])).toEqual([[2, 'open']])
     expect(tasks[0]?.body.length).toBeLessThanOrEqual(240)
+  })
+})
+
+describe('search', () => {
+  // FTS5's snippet() took over a second for each of these bodies, and the workspace answered
+  // nothing else meanwhile. Ranking and cutting the snippet take a few milliseconds.
+  test('stays quick over the longest bodies', async () => {
+    const ws = await createWorkspace()
+    const words = ['owl', 'merge', 'device', 'lantern', 'sync', 'note', 'launch']
+    const body = (seed: number) =>
+      Array.from({ length: 45_000 }, (_, i) => words[(i * 3 + seed) % words.length])
+        .join(' ')
+        .slice(0, 262_144)
+    for (const i of [1, 2]) {
+      // oxlint-disable-next-line no-await-in-loop -- one write at a time
+      expect((await writeFile(ws.write, `long-${i}.md`, body(i))).status).toBe(201)
+    }
+    const started = Date.now()
+    const response = await call(`${ws.read}/search?q=owl%20merge%20device&limit=50`)
+    const took = Date.now() - started
+    const { results } = zSearchResults.parse(await json(response))
+    expect(results.map((r) => r.path).toSorted()).toEqual(['long-1.md', 'long-2.md'])
+    expect(took).toBeLessThan(250)
   })
 })
 
