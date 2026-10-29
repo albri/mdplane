@@ -18,6 +18,10 @@ updates:
       # done by hand.
       - dependency-name: typescript
         update-types: [version-update:semver-major]
+      # Scripts and tests run on Node 22 (.nvmrc), so its types move to a new major with the
+      # runtime, by hand.
+      - dependency-name: '@types/node'
+        update-types: [version-update:semver-major]
 
   # The workflows pin each action to a commit, with its version in a comment. Dependabot moves
   # both.
