@@ -214,6 +214,9 @@ pnpm --filter @mdplane/worker exec wrangler login
 pnpm --filter @mdplane/worker run deploy
 ```
 
+That Worker has no public URL. `pnpm --filter @mdplane/worker run deploy:open` puts it on
+workers.dev, or add a route on your own zone.
+
 These variables in `apps/worker/wrangler.jsonc` set the behaviour. The defaults are the values on
 mdplane.dev.
 

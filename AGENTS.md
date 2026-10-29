@@ -47,10 +47,9 @@ Run from the repository root, with Node 22.18 or later and pnpm.
 - `pnpm format` formats the code.
 - `pnpm build` builds the site. The Worker's `dev` and `deploy` build it first.
 - `pnpm --filter @mdplane/worker dev` runs the Worker and the site locally.
-- `pnpm --filter @mdplane/worker run deploy` deploys the preview Worker. It
-  answers on workers.dev until the cutover. After that `workers_dev` is false,
-  because the preview shares the account's daily limits with mdplane.dev and
-  workers.dev is outside the zone's rate-limiting rule.
+- `pnpm --filter @mdplane/worker run deploy` deploys the preview Worker with no
+  public URL, because it shares the account with mdplane.dev and workers.dev is
+  outside the zone's rate-limiting rule.
 - `pnpm --filter @mdplane/worker run deploy:open` deploys the same Worker with
   its workers.dev URL on, for a test. Run `deploy` when the test is done, to
   take the URL off again.

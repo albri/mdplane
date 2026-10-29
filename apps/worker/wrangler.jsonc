@@ -20,10 +20,10 @@
     "command": "pnpm --filter @mdplane/site build",
     "watch_dir": "../site/src",
   },
-  // The preview answers on workers.dev until the cutover, while sessions test on it. Then this
-  // turns false: the preview shares the account's daily limits with mdplane.dev, and workers.dev
-  // is outside the zone's rate-limiting rule. `--env open` below turns it on for a test.
-  "workers_dev": true,
+  // The preview has no public URL. It shares the account with mdplane.dev, and workers.dev is
+  // outside the zone's rate-limiting rule. `--env open` below turns it on for a test.
+  "workers_dev": false,
+  "preview_urls": false,
   // An invocation log records each request's full URL, and the URL holds the link's key, so
   // those logs are off and only what the Worker logs itself is kept. Traces record the URL too:
   // never turn them on.

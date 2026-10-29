@@ -378,4 +378,9 @@ describe('the preview, opened for a test', () => {
     expect(open.workers_dev).toBe(true)
     expect(open.preview_urls).toBe(false)
   })
+
+  test('has no public URL until a test opens it', () => {
+    expect(deployed.workers_dev).toBe(false)
+    expect(deployed.preview_urls).toBe(false)
+  })
 })
