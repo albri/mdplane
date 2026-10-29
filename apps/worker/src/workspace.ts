@@ -42,6 +42,7 @@ export type Result<T> =
   | { ok: false; problem: Failure }
 
 export type NewLink = { id: string; tier: Tier; folder: string | null; secretHash: string }
+export type LogQuery = { path?: string | undefined; after: number; limit: number }
 // Each file's open and claimed tasks, with only as much of each body as the summary shows.
 // `tasks` holds each file's open and claimed tasks, and `counts` tallies all of them.
 export type Overview = {
@@ -65,7 +66,6 @@ export const LIMITS = {
 // The close code that tells a live connection there is more backlog than one connection sends.
 export const MORE_BACKLOG = 4000
 const IDEMPOTENCY_MS = 24 * 60 * 60 * 1000
-const MAX_WAIT_SECONDS = 25
 const ALL: readonly Tier[] = ['r', 'a', 'w']
 
 const NOT_FOUND: Failure = { code: 'not_found', status: 404 }
@@ -147,14 +147,21 @@ function etagMatches(header: string, hash: string): boolean {
     .some((tag) => tag === '*' || tag === hash)
 }
 
-type SocketState = { linkId: string; folder: string | null }
+// A socket either follows the log for a reader or holds one long poll for the Worker. A poll's
+// socket keeps what the poll asked for, because hibernation drops everything held in memory.
+// `until` is when the Worker will have closed it.
+type Poll = { after: number; path: string | null; until: number }
+type SocketState = { linkId: string; folder: string | null; poll?: Poll }
+type SocketKind = 'live' | 'poll'
+type Waiting = { socket: WebSocket; folder: string | null; poll: Poll }
+
+// Time for the Worker to close a poll's socket after its wait is up.
+const POLL_GRACE_MS = 2000
 
 // One workspace. Every method that changes state runs synchronously from authorisation to the
 // sealed entry, so requests never interleave and the log needs no locks.
 export class Workspace extends DurableObject<Env> {
   private readonly sql = this.ctx.storage.sql
-  private readonly waiters = new Set<() => void>()
-  private polls = 0
   private exists = false
 
   private get leaseMs(): number {
@@ -214,7 +221,6 @@ export class Workspace extends DurableObject<Env> {
     for (const socket of this.ctx.getWebSockets()) socket.close(1008, 'Workspace expired')
     await this.ctx.storage.deleteAll()
     this.exists = false
-    this.wake()
   }
 
   private meta() {
@@ -286,37 +292,49 @@ export class Workspace extends DurableObject<Env> {
     }
   }
 
-  // Sockets with the same folder get the same message, so each folder's is serialised once.
+  // Live sockets with the same folder get the same message, so each folder's is serialised once.
   private broadcast(entry: Entry): void {
-    this.wake()
     const messages = new Map<string | null, string>()
-    for (const socket of this.ctx.getWebSockets()) {
-      // A socket closed here, after its backlog or a revoke, stays listed until the client
-      // answers, and sending to it would throw after the entry is sealed.
-      if (socket.readyState !== WebSocket.OPEN) continue
+    for (const socket of this.open('live')) {
       const { folder }: SocketState = socket.deserializeAttachment()
       const message = messages.get(folder) ?? JSON.stringify(visible(entry, folder))
       messages.set(folder, message)
       socket.send(message)
     }
+    for (const waiting of this.waiting()) this.answer(waiting, entry)
   }
 
-  // Each waiter deletes itself, which a Set allows while it is being iterated.
-  private wake(): void {
-    for (const wake of this.waiters) wake()
+  // Each poll gets the page it would read now: the entry if it is one the poll waits for, or else
+  // no entries and the new head. The Worker answers with the first page that has an entry, or
+  // the last one when the wait is up.
+  private answer({ socket, folder, poll }: Waiting, entry: Entry): void {
+    const wanted = entry.seq > poll.after && (poll.path === null || entry.path === poll.path)
+    const page: LogPage = {
+      entries: wanted ? [visible(entry, folder)] : [],
+      cursor: Math.max(poll.after, entry.seq),
+      head: { seq: entry.seq, hash: entry.hash },
+    }
+    socket.send(JSON.stringify(page))
+    if (wanted) socket.close(1000, 'Answered')
   }
 
-  // A waiter removes itself whether an entry or the timeout comes first.
-  private nextEntry(timeoutMs: number): Promise<void> {
-    return new Promise((resolve) => {
-      const done = () => {
-        clearTimeout(timer)
-        this.waiters.delete(done)
-        resolve()
-      }
-      const timer = setTimeout(done, timeoutMs)
-      this.waiters.add(done)
-    })
+  // A socket closed here, after its backlog, a revoke or an answer, stays listed until the other
+  // end answers, and sending to it would throw after the entry is sealed.
+  private open(kind: SocketKind): WebSocket[] {
+    return this.ctx.getWebSockets(kind).filter((socket) => socket.readyState === WebSocket.OPEN)
+  }
+
+  // A poll's socket still open after its wait belongs to a request the Worker lost, say to a
+  // client that went away. Closing it here stops it holding a place for good.
+  private waiting(): Waiting[] {
+    const now = Date.now()
+    const polls: Waiting[] = []
+    for (const socket of this.open('poll')) {
+      const { folder, poll }: SocketState = socket.deserializeAttachment()
+      if (poll && now < poll.until) polls.push({ socket, folder, poll })
+      else socket.close(1000, 'Wait is up')
+    }
+    return polls
   }
 
   private logFull(): boolean {
@@ -741,47 +759,12 @@ export class Workspace extends DurableObject<Env> {
     return { entries: rows.map((row) => visible(row, folder)), cursor, head }
   }
 
-  async readLog(
-    auth: Auth,
-    query: { path?: string | undefined; after: number; limit: number },
-    waitSeconds: number,
-  ): Promise<Result<{ page: LogPage; waited: number | null }>> {
-    let link = this.authorize(auth)
+  readLog(auth: Auth, query: LogQuery): Result<LogPage> {
+    const link = this.authorize(auth)
     if (!link || (query.path && !inScope(link.folder, query.path))) {
       return { ok: false, problem: NOT_FOUND }
     }
-    let page = this.page(link.folder, query.path, query.after, query.limit)
-    const wait = Math.min(waitSeconds, MAX_WAIT_SECONDS)
-    if (page.entries.length > 0 || wait <= 0) return ok({ page, waited: null })
-    // Each waiting request holds memory in the object, and a socket to /live serves any number of
-    // readers for less.
-    if (this.polls >= LIMITS.polls) {
-      return {
-        ok: false,
-        problem: {
-          status: 429,
-          code: 'rate_limited',
-          detail: `At most ${LIMITS.polls} requests can wait on a workspace at once. Try again shortly, or follow it over /live.`,
-          retryAfterMs: 5000,
-        },
-      }
-    }
-
-    this.polls += 1
-    try {
-      const deadline = Date.now() + wait * 1000
-      while (page.entries.length === 0 && Date.now() < deadline) {
-        // oxlint-disable-next-line no-await-in-loop -- each wait depends on what the last one found
-        await this.nextEntry(deadline - Date.now())
-        // The link may have been revoked, or the workspace expired, while this request waited.
-        link = this.authorize(auth)
-        if (!link) return { ok: false, problem: NOT_FOUND }
-        page = this.page(link.folder, query.path, query.after, query.limit)
-      }
-    } finally {
-      this.polls -= 1
-    }
-    return ok({ page, waited: wait })
+    return ok(this.page(link.folder, query.path, query.after, query.limit))
   }
 
   search(
@@ -861,21 +844,26 @@ export class Workspace extends DurableObject<Env> {
     return ok(null)
   }
 
-  // The Worker forwards WebSocket upgrades here with the link already parsed into headers.
+  // The Worker forwards WebSocket upgrades here with the link already parsed into headers, and
+  // the query it validated in the URL.
   override fetch(request: Request): Response {
     const tier = ALL.find((t) => t === request.headers.get('x-mdplane-tier'))
     const secretHash = request.headers.get('x-mdplane-secret-hash')
     const link = tier && secretHash ? this.authorize({ tier, secretHash }) : null
     if (!link) return new Response(null, { status: 404 })
-    if (this.ctx.getWebSockets().length >= LIMITS.sockets)
-      return new Response(null, { status: 429 })
-    const after = Number(new URL(request.url).searchParams.get('after') ?? 0)
+    const url = new URL(request.url)
+    const after = Number(url.searchParams.get('after') ?? 0)
+    if (url.pathname === '/wait') {
+      return this.wait(link, {
+        after,
+        path: url.searchParams.get('path'),
+        limit: Number(url.searchParams.get('limit')),
+        until: Date.now() + Number(url.searchParams.get('wait')) * 1000 + POLL_GRACE_MS,
+      })
+    }
 
-    const [client, server] = Object.values(new WebSocketPair())
-    if (!client || !server) throw new Error('WebSocketPair is empty')
-    this.ctx.acceptWebSocket(server)
-    const state: SocketState = { linkId: link.id, folder: link.folder }
-    server.serializeAttachment(state)
+    if (this.open('live').length >= LIMITS.sockets) return new Response(null, { status: 429 })
+    const { client, server } = this.accept('live', { linkId: link.id, folder: link.folder })
     // Sent before any new entry can be sealed, so the backlog and the live stream don't overlap.
     // A connection gets at most one page of the log. When there is more, it closes after that
     // page, and the client reconnects from the last entry it has, as after any drop.
@@ -885,6 +873,31 @@ export class Workspace extends DurableObject<Env> {
       server.close(MORE_BACKLOG, 'More to send: reconnect with after set to the last entry')
     }
     return new Response(null, { status: 101, webSocket: client })
+  }
+
+  // A long poll. A page with entries is the answer. Otherwise the poll waits on a hibernatable
+  // socket while the Worker holds the request, so the object can sleep until an entry arrives.
+  // An object that held the request itself would be billed for every second of the wait.
+  private wait(link: Link, { limit, ...poll }: Poll & { limit: number }): Response {
+    if (poll.path !== null && !inScope(link.folder, poll.path)) {
+      return new Response(null, { status: 404 })
+    }
+    const page = this.page(link.folder, poll.path ?? undefined, poll.after, limit)
+    if (page.entries.length > 0) return Response.json(page)
+    // Each waiting poll is a socket, and a socket to /live serves any number of readers for less.
+    if (this.waiting().length >= LIMITS.polls) return new Response(null, { status: 429 })
+    const { client, server } = this.accept('poll', { linkId: link.id, folder: link.folder, poll })
+    // The page as it stands, which is the answer if nothing arrives.
+    server.send(JSON.stringify(page))
+    return new Response(null, { status: 101, webSocket: client })
+  }
+
+  private accept(kind: SocketKind, state: SocketState): { client: WebSocket; server: WebSocket } {
+    const [client, server] = Object.values(new WebSocketPair())
+    if (!client || !server) throw new Error('WebSocketPair is empty')
+    this.ctx.acceptWebSocket(server, [kind])
+    server.serializeAttachment(state)
+    return { client, server }
   }
 
   override webSocketMessage(): void {

@@ -1,4 +1,5 @@
 import {
+  type LogPage,
   renderFile,
   renderInstructions,
   renderStart,
@@ -48,6 +49,7 @@ const WRITE: readonly Tier[] = ['w']
 const FILE_LIMIT = 262_144
 const JSON_LIMIT = 65_536
 const ENTRY_BODY_LIMIT = 16_384
+const MAX_WAIT_SECONDS = 25
 
 const app = new Hono<App>()
 
@@ -331,19 +333,81 @@ app.post(
   }),
 )
 
+// Asks the workspace for a WebSocket, with the link already checked and parsed into headers.
+function upgrade(link: Keyed, path: string, params: Record<string, string>): Promise<Response> {
+  return link.stub.fetch(
+    new Request(`https://workspace${path}?${new URLSearchParams(params).toString()}`, {
+      headers: {
+        Upgrade: 'websocket',
+        'x-mdplane-tier': link.auth.tier,
+        'x-mdplane-secret-hash': link.auth.secretHash,
+      },
+    }),
+  )
+}
+
+// The workspace sends the page as it stands, then a page for each new entry. The first page with
+// an entry is the answer, or else the last page when the wait is up. Null means the workspace
+// closed the socket without one: the link was revoked, the workspace expired or the object
+// restarted.
+function nextPage(socket: WebSocket, ms: number): Promise<LogPage | null> {
+  return new Promise((resolve) => {
+    let latest: LogPage | null = null
+    const finish = (page: LogPage | null) => {
+      clearTimeout(timer)
+      if (socket.readyState === WebSocket.OPEN) socket.close(1000, 'Done')
+      resolve(page)
+    }
+    const timer = setTimeout(() => finish(latest), ms)
+    socket.addEventListener('message', (event) => {
+      const page: LogPage = JSON.parse(String(event.data))
+      latest = page
+      if (page.entries.length > 0) finish(page)
+    })
+    socket.addEventListener('close', () => finish(null))
+    socket.addEventListener('error', () => finish(null))
+    socket.accept()
+  })
+}
+
 app.get(
   '/:tier/:key/log',
-  keyed(ALL, async (c, { stub, auth }) => {
+  keyed(ALL, async (c, link) => {
     const q = zReadLogQuery.safeParse(query(c))
     if (!q.success) return invalidFrom(q.error)
     // RFC 7240: a preference that can't be read is ignored, not rejected.
-    const wait = Number(/(?:^|[;,]\s*)wait=(\d+)/i.exec(c.req.header('Prefer') ?? '')?.[1] ?? 0)
-    const result = await stub.readLog(auth, q.data, wait)
-    return respond(result, ({ page, waited }) => {
-      const headers: Record<string, string> = { ETag: `"${page.head.hash}"` }
-      if (waited !== null) headers['Preference-Applied'] = `wait=${waited}`
-      return c.json(page, 200, headers)
+    const asked = Number(/(?:^|[;,]\s*)wait=(\d+)/i.exec(c.req.header('Prefer') ?? '')?.[1] ?? 0)
+    const wait = Math.min(asked, MAX_WAIT_SECONDS)
+    const send = (page: LogPage, waited: boolean) =>
+      c.json(page, 200, {
+        ETag: `"${page.head.hash}"`,
+        ...(waited ? { 'Preference-Applied': `wait=${wait}` } : {}),
+      })
+    if (wait <= 0) return respond(await link.stub.readLog(link.auth, q.data), (p) => send(p, false))
+
+    const { after, limit, path } = q.data
+    const opened = await upgrade(link, '/wait', {
+      after: String(after),
+      limit: String(limit),
+      wait: String(wait),
+      ...(path ? { path } : {}),
     })
+    if (opened.status === 200) return send(await opened.json<LogPage>(), false)
+    if (opened.status === 429) {
+      return problem(
+        {
+          status: 429,
+          code: 'rate_limited',
+          detail: `At most ${LIMITS.polls} requests can wait on a workspace at once. Try again shortly, or follow it over /live.`,
+        },
+        { 'Retry-After': '5' },
+      )
+    }
+    if (opened.status !== 101 || !opened.webSocket) return notFound()
+    const page = await nextPage(opened.webSocket, wait * 1000)
+    if (page) return send(page, true)
+    // Asking again checks the link again, so a revoked link or an expired workspace gets the 404.
+    return respond(await link.stub.readLog(link.auth, q.data), (p) => send(p, true))
   }),
 )
 
@@ -359,7 +423,7 @@ app.get(
 
 app.get(
   '/:tier/:key/live',
-  keyed(ALL, async (c, { stub, auth }) => {
+  keyed(ALL, async (c, link) => {
     if (c.req.header('Upgrade')?.toLowerCase() !== 'websocket') {
       return problem({
         status: 426,
@@ -369,15 +433,7 @@ app.get(
     }
     const q = zLiveQuery.safeParse(query(c))
     if (!q.success) return invalidFrom(q.error)
-    const response = await stub.fetch(
-      new Request(`https://workspace/live?after=${q.data.after}`, {
-        headers: {
-          Upgrade: 'websocket',
-          'x-mdplane-tier': auth.tier,
-          'x-mdplane-secret-hash': auth.secretHash,
-        },
-      }),
-    )
+    const response = await upgrade(link, '/live', { after: String(q.data.after) })
     if (response.status === 101) return response
     if (response.status !== 429) return notFound()
     return problem(

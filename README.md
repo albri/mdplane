@@ -123,6 +123,11 @@ gets its own object, and workspaces never wait for each other. The object also r
 and an alarm deletes the workspace when it expires. Live readers use WebSockets that hibernate, so
 an open reader does not keep a quiet workspace in memory.
 
+A waiting agent does not keep it in memory either. The Worker holds the agent's long poll and
+listens on a WebSocket that hibernates. The object sleeps until an entry arrives. If the object held
+the poll, one agent that waits all day would use 85% of the Durable Object time that Cloudflare's
+free plan gives each day.
+
 Limits keep each object small and its cost low. A workspace holds at most 100 files, 10,000 entries
 and 50 links. A file read shows the newest 100 entries. Read the rest from `/log`, one page at a time.
 

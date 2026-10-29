@@ -10,6 +10,8 @@ import {
   zWorkspace,
   zWriteResult,
 } from '@mdplane/contract'
+import { evictDurableObject } from 'cloudflare:test'
+import { env } from 'cloudflare:workers'
 import { describe, expect, test } from 'vitest'
 import { append, call, createWorkspace, json, ORIGIN, sleep, writeFile } from './helpers.ts'
 
@@ -265,6 +267,18 @@ describe('the log', () => {
     const ws = await withQueue()
     const response = await call(`${ws.read}/log?after=2`, { headers: { Prefer: 'wait=1' } })
     expect(zLogPage.parse(await json(response))).toMatchObject({ entries: [], cursor: 2 })
+  })
+
+  // Eviction tears the object down as hibernation does, once nothing in it is still running. An
+  // object that held the waiting request would be billed for every second of the wait.
+  test('a long poll waits while the object sleeps', async () => {
+    const ws = await withQueue()
+    const waiting = call(`${ws.read}/log?after=2`, { headers: { Prefer: 'wait=10' } })
+    await sleep(50)
+    await evictDurableObject(env.WORKSPACES.getByName(ws.id))
+    await append(ws.append, { path: 'queue.md', type: 'comment', author: 'a', body: 'Awake' })
+    const page = zLogPage.parse(await json(await waiting))
+    expect(page.entries).toMatchObject([{ seq: 3, body: 'Awake' }])
   })
 
   test('search finds bodies and entries', async () => {

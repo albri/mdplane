@@ -16,7 +16,7 @@ import { describe, expect, test } from 'vitest'
 import { clientAddress } from '../src/http.ts'
 import { hashSecret } from '../src/keys.ts'
 import { LIMITS } from '../src/workspace.ts'
-import { append, call, createWorkspace, json, withVars, writeFile } from './helpers.ts'
+import { append, call, createWorkspace, json, sleep, withVars, writeFile } from './helpers.ts'
 
 const problemOf = async (response: Response) => zProblem.parse(await json(response))
 
@@ -178,6 +178,27 @@ describe('waiting on a workspace', () => {
     // Each one that answered has stopped waiting, so another can.
     const next = await call(`${ws.read}/log?after=1`, { headers: { Prefer: 'wait=1' } })
     expect(next.status).toBe(200)
+  })
+
+  test('a poll the Worker lost gives up its place when its wait is up', async () => {
+    const ws = await createWorkspace()
+    const headers = {
+      Upgrade: 'websocket',
+      'x-mdplane-tier': 'r',
+      'x-mdplane-secret-hash': await hashSecret(ws.read.split('.')[1] ?? ''),
+    }
+    // Polls asked for the way the Worker asks, but never closed, as if their requests were lost.
+    const stub = env.WORKSPACES.getByName(ws.id)
+    const lost = await Promise.all(
+      Array.from({ length: LIMITS.polls }, () =>
+        stub.fetch('https://workspace/wait?after=0&limit=100&wait=0', { headers }),
+      ),
+    )
+    for (const response of lost) response.webSocket?.accept()
+    const poll = () => call(`${ws.read}/log?after=0`, { headers: { Prefer: 'wait=1' } })
+    expect((await poll()).status).toBe(429)
+    await sleep(2500)
+    expect((await poll()).status).toBe(200)
   })
 
   test(`takes at most ${LIMITS.sockets} live connections at once`, async () => {
