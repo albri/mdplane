@@ -15,9 +15,13 @@ export function deriveTasks(
   leaseMs = LEASE_MS,
 ): TaskView[] {
   const tasks = new Map<number, TaskView>()
+  // Lease ends as times, formatted only for the leases still running at the end. The reader runs
+  // this for every step through a long file, where most claims are long finished.
+  const leases = new Map<TaskView, number>()
   for (const entry of entries) {
     if (entry.type === 'delete') {
       tasks.clear()
+      leases.clear()
       continue
     }
     if (entry.type === 'task') {
@@ -37,18 +41,19 @@ export function deriveTasks(
     if (entry.type === 'claim') {
       task.status = 'claimed'
       task.holder = entry.author
-      task.leaseExpiresAt = new Date(Date.parse(entry.at) + leaseMs).toISOString()
+      leases.set(task, Date.parse(entry.at) + leaseMs)
     } else if (entry.type === 'response' || entry.type === 'cancel') {
       task.status = entry.type === 'response' ? 'done' : 'cancelled'
       task.holder = null
-      task.leaseExpiresAt = null
+      leases.delete(task)
     }
   }
-  for (const task of tasks.values()) {
-    if (task.leaseExpiresAt && Date.parse(task.leaseExpiresAt) <= asOf) {
+  for (const [task, until] of leases) {
+    if (until <= asOf) {
       task.status = 'open'
       task.holder = null
-      task.leaseExpiresAt = null
+    } else {
+      task.leaseExpiresAt = new Date(until).toISOString()
     }
   }
   return [...tasks.values()]

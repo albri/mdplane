@@ -116,6 +116,7 @@ export class Reader {
   private readonly level: number
   private readonly bar: HTMLElement | null
   private time = clock()
+  private date = dateTime()
   private view: 'rendered' | 'source' = 'rendered'
   private pane: 'doc' | 'log' = 'doc'
   private timer: number | null = null
@@ -205,6 +206,7 @@ export class Reader {
     this.pause()
     this.session = session
     this.time = clock(session.timeZone)
+    this.date = dateTime(session.timeZone)
     this.pos = Math.max(1, Math.min(session.entries.length, pos ?? session.entries.length))
     this.arrived = new Set()
     this.verification = { state: 'idle' }
@@ -1180,7 +1182,7 @@ export class Reader {
           session.expiresAt
             ? html`<div>
                 <dt>Deletes itself</dt>
-                <dd>${dateTime(session.timeZone)(session.expiresAt)}</dd>
+                <dd>${this.date(session.expiresAt)}</dd>
               </div>`
             : nothing
         }

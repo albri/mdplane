@@ -76,15 +76,19 @@ export function stateAt(session: Session, pos: number, live = false): State {
   const life = list.slice(deleted + 1)
   const write = life.findLast((e) => e.type === 'write') ?? null
   const deletion = write ? null : (list[deleted] ?? null)
+  const tasks = new Map(deriveTasks(life, now, LEASE_MS).map((task) => [task.seq, task]))
+  // A task's entries come after its own, so one pass in order gathers every thread.
   const byTask = new Map<number, Thread>()
-  const tasks = deriveTasks(life, now, LEASE_MS)
-  const entries = new Map(life.map((e) => [e.seq, e]))
-  for (const task of tasks) {
-    const entry = entries.get(task.seq)
-    if (entry) byTask.set(task.seq, { task, entry, kids: [], lapsed: null })
-  }
+  const notes: Entry[] = []
   for (const e of life) {
-    if (e.ref !== null && e.type !== 'task') byTask.get(e.ref)?.kids.push(e)
+    if (e.type === 'task') {
+      const task = tasks.get(e.seq)
+      if (task) byTask.set(e.seq, { task, entry: e, kids: [], lapsed: null })
+    } else if (e.ref !== null) {
+      byTask.get(e.ref)?.kids.push(e)
+    } else if (e.type === 'comment') {
+      notes.push(e)
+    }
   }
   for (const thread of byTask.values()) {
     if (thread.task.status !== 'open') continue
@@ -100,7 +104,7 @@ export function stateAt(session: Session, pos: number, live = false): State {
     body: write?.contentHash ? (session.bodies.get(write.contentHash) ?? null) : null,
     deletion,
     threads: [...byTask.values()],
-    notes: life.filter((e) => e.type === 'comment' && e.ref === null),
+    notes,
   }
 }
 
