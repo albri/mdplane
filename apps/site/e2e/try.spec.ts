@@ -1,4 +1,4 @@
-import { zCreateWorkspaceResponse } from '@mdplane/contract'
+import { zAppendResult, zCreateWorkspaceResponse } from '@mdplane/contract'
 import { expect, expectAccessible, test } from './fixtures.ts'
 
 test.use({ permissions: ['clipboard-read', 'clipboard-write'] })
@@ -92,9 +92,15 @@ test('shows the same markdown an agent reads', async ({ page, request }) => {
     { type: 'response', author: 'codex@ci', ref: 2, body: 'CI is green. PR #482.' },
     { type: 'cancel', author: 'alex', ref: 3, body: 'Not needed.' },
   ]
+  // The response finishes the task with the token from the claim.
+  let token: string | undefined
   for (const entry of entries) {
+    const data = { path: 'queue.md', ...entry, ...(entry.type === 'response' && { token }) }
     // oxlint-disable-next-line no-await-in-loop -- the log keeps the order they're sent in
-    await request.post(`${links.append}/appends`, { data: { path: 'queue.md', ...entry } })
+    const sent = await request.post(`${links.append}/appends`, { data })
+    expect(sent.status()).toBe(201)
+    // oxlint-disable-next-line no-await-in-loop -- read as each one lands
+    token ??= zAppendResult.parse(await sent.json()).lease?.token
   }
   const agentReads = async (at?: number) => {
     const query = at === undefined ? '' : `?at=${at}`

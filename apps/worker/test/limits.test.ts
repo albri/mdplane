@@ -134,10 +134,11 @@ describe('the text budget', () => {
     await withVars({ WORKSPACE_MAX_BYTES: String(BUDGET) }, async () => {
       const ws = await createWorkspace()
       await writeFile(ws.write, 'brief.md', 'x'.repeat(30_000))
-      // Takes the workspace back to the schema it had before the budget.
+      // Takes the workspace back to the schema it had before any migration.
       const stub = env.WORKSPACES.getByName(ws.id)
       await runInDurableObject(stub, (instance, state) => {
         state.storage.sql.exec(`DROP TABLE schema_version`)
+        state.storage.sql.exec(`DROP TABLE leases`)
         state.storage.sql.exec(`ALTER TABLE meta DROP COLUMN bytes`)
         Reflect.set(instance, 'exists', false)
       })

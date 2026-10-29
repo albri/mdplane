@@ -15,8 +15,9 @@ export default defineConfig({
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
     { name: 'phone', use: { ...devices['Pixel 7'] } },
   ],
+  // The tests make more workspaces than a day allows, run after run.
   webServer: {
-    command: `pnpm --filter @mdplane/worker exec wrangler dev --port ${PORT}`,
+    command: `pnpm --filter @mdplane/worker exec wrangler dev --port ${PORT} --var CREATE_DAILY_LIMIT:0`,
     url: `http://localhost:${PORT}/demo`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

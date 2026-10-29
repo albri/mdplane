@@ -31,9 +31,14 @@ export type Hash = string;
 export type Seq = number;
 
 /**
- * Who wrote the entry, for example `claude@laptop`. A label, not an identity.
+ * Who wrote the entry, for example `claude@laptop-7f3a`. A label, not an identity.
  */
 export type Author = string;
+
+/**
+ * Proves a claim is yours. Only the lease's holder gets it.
+ */
+export type ClaimToken = string;
 
 export type EntryBody = string;
 
@@ -168,6 +173,10 @@ export type ClaimAppend = {
     author: Author;
     ref: Seq;
     body?: EntryBody;
+    /**
+     * The token from your claim, to renew the lease you hold.
+     */
+    token?: ClaimToken;
 };
 
 export type CommentAppend = {
@@ -184,6 +193,10 @@ export type ResponseAppend = {
     author: Author;
     ref: Seq;
     body: EntryBody;
+    /**
+     * The token from your claim, needed while the task is claimed.
+     */
+    token?: ClaimToken;
 };
 
 export type CancelAppend = {
@@ -205,6 +218,7 @@ export type AppendResult = {
 export type Lease = {
     holder: Author;
     expiresAt: string;
+    token: ClaimToken;
 };
 
 export type EntryType = 'write' | 'delete' | 'task' | 'claim' | 'comment' | 'response' | 'cancel';

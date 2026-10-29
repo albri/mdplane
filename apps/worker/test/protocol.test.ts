@@ -29,8 +29,14 @@ async function withQueue() {
   return { ...ws, task: task.entry.seq }
 }
 
-async function claim(link: string, ref: number, author: string) {
-  return append(link, { path: 'queue.md', type: 'claim', author, ref })
+async function claim(link: string, ref: number, author: string, token?: string) {
+  return append(link, { path: 'queue.md', type: 'claim', author, ref, ...(token && { token }) })
+}
+
+async function claimed(link: string, ref: number, author: string) {
+  const { lease } = zAppendResult.parse(await json(await claim(link, ref, author)))
+  if (!lease) throw new Error('A claim returns a lease')
+  return lease
 }
 
 async function problemCode(response: Response) {
@@ -179,11 +185,24 @@ describe('claims and leases', () => {
     expect(loser.retryAfterMs).toBeGreaterThan(0)
   })
 
-  test('the holder renews; anyone can claim once the lease lapses', async () => {
+  test('two agents with the same name still cannot both win', async () => {
     const ws = await withQueue()
-    const first = zAppendResult.parse(await json(await claim(ws.append, ws.task, 'codex@ci')))
-    expect(first.lease?.holder).toBe('codex@ci')
-    expect((await claim(ws.append, ws.task, 'codex@ci')).status).toBe(201)
+    const responses = await Promise.all([
+      claim(ws.append, ws.task, 'claude@laptop'),
+      claim(ws.append, ws.task, 'claude@laptop'),
+    ])
+    expect(responses.map((r) => r.status).toSorted((x, y) => x - y)).toEqual([201, 409])
+  })
+
+  test('the holder renews with its token; anyone can claim once the lease lapses', async () => {
+    const ws = await withQueue()
+    const first = await claimed(ws.append, ws.task, 'codex@ci')
+    expect(first.holder).toBe('codex@ci')
+    expect(await problemCode(await claim(ws.append, ws.task, 'codex@ci'))).toBe('task_claimed')
+    const renewed = zAppendResult.parse(
+      await json(await claim(ws.append, ws.task, 'codex@ci', first.token)),
+    )
+    expect(renewed.lease?.token).toBe(first.token)
     expect((await claim(ws.append, ws.task, 'claude@laptop')).status).toBe(409)
 
     await sleep(400)
@@ -193,16 +212,28 @@ describe('claims and leases', () => {
       ),
     )
     expect(view.tasks[0]).toMatchObject({ status: 'open', holder: null })
-    expect((await claim(ws.append, ws.task, 'claude@laptop')).status).toBe(201)
+    const next = await claimed(ws.append, ws.task, 'claude@laptop')
+    expect(next.token).not.toBe(first.token)
+    // The lapsed lease's token is no use once someone else holds the task.
+    expect((await claim(ws.append, ws.task, 'codex@ci', first.token)).status).toBe(409)
   })
 
   test('a response completes the task, and only the holder can send it', async () => {
     const ws = await withQueue()
-    await claim(ws.append, ws.task, 'codex@ci')
-    const respond = (author: string) =>
-      append(ws.append, { path: 'queue.md', type: 'response', author, ref: ws.task, body: 'Done' })
+    const lease = await claimed(ws.append, ws.task, 'codex@ci')
+    const respond = (author: string, token?: string) =>
+      append(ws.append, {
+        path: 'queue.md',
+        type: 'response',
+        author,
+        ref: ws.task,
+        body: 'Done',
+        ...(token && { token }),
+      })
     expect(await problemCode(await respond('claude@laptop'))).toBe('task_claimed')
-    expect((await respond('codex@ci')).status).toBe(201)
+    // The holder's own name isn't enough without the token.
+    expect(await problemCode(await respond('codex@ci'))).toBe('task_claimed')
+    expect((await respond('codex@ci', lease.token)).status).toBe(201)
     expect(await problemCode(await claim(ws.append, ws.task, 'claude@laptop'))).toBe('task_closed')
     const cancel = append(ws.append, {
       path: 'queue.md',

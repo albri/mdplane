@@ -393,16 +393,17 @@ async function runScriptedAgent(link: string, task: number): Promise<void> {
       'Hello from a scripted agent in your browser. That took three requests: claim the task, post a comment, post this response.',
     ],
   ] as const
+  // The claim's token, which the response needs to finish the task.
+  let token: string | undefined
   for (const [type, body] of steps) {
     // oxlint-disable-next-line no-await-in-loop -- the steps are paced so you can watch them land
     await new Promise((resolve) => window.setTimeout(resolve, 1800))
+    const entry = { path: 'welcome.md', author: 'scripted-agent@browser', ref: task, body }
     // oxlint-disable-next-line no-await-in-loop -- each step follows the one before
-    await append(link, {
-      path: 'welcome.md',
-      type,
-      author: 'scripted-agent@browser',
-      ref: task,
-      body,
-    })
+    const { lease } = await append(
+      link,
+      type === 'response' && token ? { ...entry, type, token } : { ...entry, type },
+    )
+    token ??= lease?.token
   }
 }

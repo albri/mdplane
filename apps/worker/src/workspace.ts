@@ -26,6 +26,7 @@ import {
   type WriteResult,
   type zAppendRequest,
 } from '@mdplane/contract'
+import { randomString } from './keys.ts'
 
 // What the Worker's validation produces, which allows `undefined` where the spec omits a field.
 export type AppendInput = output<typeof zAppendRequest>
@@ -90,9 +91,14 @@ const MIGRATIONS = [
    UPDATE meta SET bytes =
      (SELECT COALESCE(SUM(length(CAST(body AS BLOB))), 0) FROM entries) +
      (SELECT COALESCE(SUM(length(CAST(body AS BLOB))), 0) FROM bodies);`,
+  // 2: the token of the newest claim on each task. A token isn't a credential, since an append
+  // link can cancel any task anyway; it stops two agents from both holding one task, so it is
+  // kept as it is.
+  `CREATE TABLE leases (task INTEGER PRIMARY KEY, token TEXT NOT NULL);`,
 ]
 
 const sha256 = (text: string) => createHash('sha256').update(text).digest('hex')
+const newClaimToken = () => randomString(20)
 const utf8Bytes = (text: string) => Buffer.byteLength(text, 'utf8')
 
 // A folder-limited link sees paths under its folder; a link without one sees everything.
@@ -553,6 +559,8 @@ export class Workspace extends DurableObject<Env> {
     const file = this.fileState(request.path, this.head().seq)
     if (!file) return { ok: false, problem: NOT_FOUND }
     const ref = request.type === 'task' ? null : (request.ref ?? null)
+    // The token of the lease that a claim with it renews.
+    let renewing: string | null = null
     if (ref !== null) {
       const task = this.tasks(request.path, file.since, Number.MAX_SAFE_INTEGER, now, 0).find(
         (t) => t.seq === ref,
@@ -564,19 +572,25 @@ export class Workspace extends DurableObject<Env> {
       if (closed && request.type !== 'comment') {
         return fail(409, 'task_closed', `Task ${ref} is ${task.status}.`)
       }
-      const heldByOther = task.status === 'claimed' && task.holder !== request.author
-      if (heldByOther && (request.type === 'claim' || request.type === 'response')) {
-        const until = Date.parse(task.leaseExpiresAt ?? '')
-        return {
-          ok: false,
-          problem: {
-            status: 409,
-            code: 'task_claimed',
-            detail: `${task.holder} holds task ${ref} until ${task.leaseExpiresAt?.slice(11, 16)} UTC.`,
-            holder: task.holder ?? '',
-            retryAfterMs: Math.max(0, until - now),
-          },
+      // Only the token proves who holds a lease. Authors are labels, and two agents can share one.
+      const guarded = request.type === 'claim' || request.type === 'response'
+      if (task.status === 'claimed' && guarded) {
+        const held = this.leaseToken(ref)
+        const offered = 'token' in request ? request.token : undefined
+        if (held === null || offered !== held) {
+          const until = Date.parse(task.leaseExpiresAt ?? '')
+          return {
+            ok: false,
+            problem: {
+              status: 409,
+              code: 'task_claimed',
+              detail: `${task.holder} holds task ${ref} until ${task.leaseExpiresAt?.slice(11, 16)} UTC. Its holder renews or finishes it with the token from its claim.`,
+              holder: task.holder ?? '',
+              retryAfterMs: Math.max(0, until - now),
+            },
+          }
         }
+        renewing = held
       }
     }
     if (this.logFull()) return this.full()
@@ -597,13 +611,19 @@ export class Workspace extends DurableObject<Env> {
       },
       null,
     )
-    const lease: Lease | null =
-      request.type === 'claim'
-        ? {
-            holder: request.author,
-            expiresAt: new Date(Date.parse(entry.at) + this.leaseMs).toISOString(),
-          }
-        : null
+    let lease: Lease | null = null
+    if (request.type === 'claim' && ref !== null) {
+      // A renewal keeps its token, so the holder never has to swap one for another.
+      const token = renewing ?? newClaimToken()
+      if (renewing === null) {
+        this.sql.exec(`INSERT OR REPLACE INTO leases VALUES (?, ?)`, ref, token)
+      }
+      lease = {
+        holder: request.author,
+        expiresAt: new Date(Date.parse(entry.at) + this.leaseMs).toISOString(),
+        token,
+      }
+    }
     const value: AppendResult = { entry, lease }
     if (key) {
       this.sql.exec(
@@ -615,6 +635,13 @@ export class Workspace extends DurableObject<Env> {
       )
     }
     return ok(value, { created: true })
+  }
+
+  private leaseToken(task: number): string | null {
+    const [row] = this.sql
+      .exec<{ token: string }>(`SELECT token FROM leases WHERE task = ?`, task)
+      .toArray()
+    return row?.token ?? null
   }
 
   private page(folder: string | null, path: string | undefined, after: number, limit: number) {

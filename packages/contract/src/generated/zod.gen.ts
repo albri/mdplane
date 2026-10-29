@@ -33,9 +33,14 @@ export const zHash = z.string().regex(/^[0-9a-f]{64}$/);
 export const zSeq = z.int().gte(1);
 
 /**
- * Who wrote the entry, for example `claude@laptop`. A label, not an identity.
+ * Who wrote the entry, for example `claude@laptop-7f3a`. A label, not an identity.
  */
 export const zAuthor = z.string().min(1).max(64).regex(/^[A-Za-z0-9][A-Za-z0-9@._:\/+-]*$/);
+
+/**
+ * Proves a claim is yours. Only the lease's holder gets it.
+ */
+export const zClaimToken = z.string().regex(/^[A-Za-z0-9]{20}$/);
 
 export const zEntryBody = z.string().min(1).max(16384);
 
@@ -99,7 +104,8 @@ export const zClaimAppend = z.object({
     type: z.literal('claim'),
     author: zAuthor,
     ref: zSeq,
-    body: zEntryBody.optional()
+    body: zEntryBody.optional(),
+    token: zClaimToken.optional()
 });
 
 export const zCommentAppend = z.object({
@@ -115,7 +121,8 @@ export const zResponseAppend = z.object({
     type: z.literal('response'),
     author: zAuthor,
     ref: zSeq,
-    body: zEntryBody
+    body: zEntryBody,
+    token: zClaimToken.optional()
 });
 
 export const zCancelAppend = z.object({
@@ -136,7 +143,8 @@ export const zAppendRequest = z.discriminatedUnion('type', [
 
 export const zLease = z.object({
     holder: zAuthor,
-    expiresAt: z.iso.datetime()
+    expiresAt: z.iso.datetime(),
+    token: zClaimToken
 });
 
 export const zEntryType = z.enum([

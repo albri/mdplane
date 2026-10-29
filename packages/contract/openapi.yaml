@@ -301,13 +301,18 @@ paths:
       operationId: append
       summary: Add an entry to a file's log
       description: |
-        `task` adds work. `claim` takes a 10-minute lease on a task, and the
-        same author claims again to keep it. `comment` posts progress.
+        `task` adds work. `claim` takes a lease on a task (10 minutes on
+        mdplane.dev) and returns a `token`. `comment` posts progress.
         `response` completes a task. `cancel` withdraws one.
 
-        A claim on a task someone else holds gets 409 `task_claimed` with
-        `retryAfterMs`. Send `Idempotency-Key` so a retried request is
-        applied once; a replay returns the original response.
+        While a task is claimed, only a claim or response that carries the
+        lease's `token` gets through: a claim with it renews the lease, and
+        anything else gets 409 `task_claimed` with `retryAfterMs`. The token
+        isn't in the log, so an agent that loses it waits for the lease to
+        run out and claims again.
+
+        Send `Idempotency-Key` so a retried request is applied once; a replay
+        returns the original response with `Idempotent-Replayed: true`.
       tags: [Log]
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
@@ -326,6 +331,12 @@ paths:
       responses:
         '201':
           description: The new entry, and the lease for a claim.
+          headers:
+            Idempotent-Replayed:
+              description: '`true` when this is the response to an earlier request with the same `Idempotency-Key`.'
+              schema:
+                type: string
+                enum: ['true']
           content:
             application/json:
               schema:
@@ -346,6 +357,7 @@ paths:
                 lease:
                   holder: codex@ci
                   expiresAt: '2026-11-01T09:14:00.000Z'
+                  token: Vq3Lm8Xc1Rt6Nb4Kd9Pw
         '400':
           $ref: '#/components/responses/InvalidRequest'
         '404':
@@ -695,7 +707,7 @@ components:
             title: The task is claimed
             status: 409
             code: task_claimed
-            detail: codex@ci holds task 2 until 09:14 UTC.
+            detail: codex@ci holds task 2 until 09:14 UTC. Its holder renews or finishes it with the token from its claim.
             holder: codex@ci
             retryAfterMs: 480000
     PreconditionFailed:
@@ -804,7 +816,11 @@ components:
       minLength: 1
       maxLength: 64
       pattern: '^[A-Za-z0-9][A-Za-z0-9@._:/+-]*$'
-      description: Who wrote the entry, for example `claude@laptop`. A label, not an identity.
+      description: Who wrote the entry, for example `claude@laptop-7f3a`. A label, not an identity.
+    ClaimToken:
+      type: string
+      pattern: '^[A-Za-z0-9]{20}$'
+      description: Proves a claim is yours. Only the lease's holder gets it.
     EntryBody:
       type: string
       minLength: 1
@@ -1030,6 +1046,9 @@ components:
           $ref: '#/components/schemas/Seq'
         body:
           $ref: '#/components/schemas/EntryBody'
+        token:
+          $ref: '#/components/schemas/ClaimToken'
+          description: The token from your claim, to renew the lease you hold.
     CommentAppend:
       type: object
       additionalProperties: false
@@ -1062,6 +1081,9 @@ components:
           $ref: '#/components/schemas/Seq'
         body:
           $ref: '#/components/schemas/EntryBody'
+        token:
+          $ref: '#/components/schemas/ClaimToken'
+          description: The token from your claim, needed while the task is claimed.
     CancelAppend:
       type: object
       additionalProperties: false
@@ -1093,13 +1115,15 @@ components:
     Lease:
       type: object
       additionalProperties: false
-      required: [holder, expiresAt]
+      required: [holder, expiresAt, token]
       properties:
         holder:
           $ref: '#/components/schemas/Author'
         expiresAt:
           type: string
           format: date-time
+        token:
+          $ref: '#/components/schemas/ClaimToken'
 
     EntryType:
       type: string
