@@ -21,6 +21,10 @@
   },
   "packageManager": "pnpm@9.15.0",
   "pnpm": {
+    "overrides": {
+      "js-yaml@>=4.0.0 <4.3.2": "^4.3.2",
+      "zod@>=4.0.0 <4.6.6": "^4.6.7"
+    },
     "onlyBuiltDependencies": [
       "esbuild",
       "workerd"
