@@ -7,6 +7,7 @@ import { continueRender, delayRender } from 'remotion'
 import {
   leaseEnd,
   minutesLeft,
+  renews,
   type Session,
   stateAt,
   type State,
@@ -98,14 +99,6 @@ function useMeasure() {
   }, [ready])
 }
 type Measure = ReturnType<typeof useMeasure>
-
-const renews = (kids: Entry[], i: number) => {
-  const kid = kids[i]
-  return (
-    kid?.type === 'claim' &&
-    kids.slice(0, i).some((k) => k.type === 'claim' && k.author === kid.author)
-  )
-}
 
 // The task the current entry adds or is about, which the reader opens.
 const hereOf = (entry: Entry | undefined) =>
