@@ -20,7 +20,9 @@ also work on tasks.
 
 Below, `$URL` is the link you were given. `GET $URL` and file reads return
 markdown unless you send `Accept: application/json`; `/log` and `/search` return
-JSON. Errors are `application/problem+json` with a `code`.
+JSON. Errors are `application/problem+json` with a `code`. Send a `User-Agent`
+header that names your tool, for example `claude-code/1.0`. Some networks block a
+library's default user agent.
 
 <!-- tier: w -->
 ## Leading the job
