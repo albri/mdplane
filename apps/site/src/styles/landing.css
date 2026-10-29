@@ -1,0 +1,742 @@
+/* The landing page. It tells one story: a route of four steps, the sample session replaying,
+   then a chapter for each step, what's under the hood, and the way in again. Lines carry the
+   structure; the route's stops and rails are borders so they survive forced colours. */
+@layer pages {
+  .hero {
+    padding-block: clamp(48px, 7vw, 104px) clamp(28px, 3.5vw, 44px);
+  }
+  .hero h1 {
+    font-size: var(--text-display);
+    font-weight: 650;
+    letter-spacing: -0.034em;
+    line-height: 1.02;
+    max-width: 16ch;
+  }
+  .hero .lead {
+    margin-top: 26px;
+    max-width: 52ch;
+    font-size: var(--text-lead);
+    line-height: 1.5;
+    color: var(--ink-2);
+  }
+  .ctas {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-top: 34px;
+  }
+  .fine {
+    margin-top: 16px;
+    font-size: var(--text-small);
+    color: var(--ink-3);
+  }
+
+  /* ---------- the route: four numbered stops on one line ---------- */
+  .how {
+    padding-block: 8px clamp(40px, 5vw, 64px);
+    scroll-margin-top: var(--head-h);
+  }
+  .how h2 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .step-no {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--action);
+    border-radius: 50%;
+    background: var(--page);
+    color: var(--action-ink);
+    font: 650 0.875rem/1 var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+  }
+  .route-h {
+    list-style: none;
+    padding: 0;
+    margin-top: 20px;
+    display: grid;
+  }
+  .route-h li {
+    position: relative;
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr);
+    column-gap: 16px;
+    row-gap: 4px;
+    padding-bottom: 22px;
+  }
+  .route-h li:last-child {
+    padding-bottom: 0;
+  }
+  .route-h .step-no {
+    grid-row: 1 / span 2;
+  }
+  .route-h li:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 14.5px;
+    top: 32px;
+    bottom: 0;
+    border-left: 3px solid var(--action);
+  }
+  .route-h a {
+    align-self: center;
+    width: fit-content;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    color: var(--ink);
+    text-decoration-color: var(--link-line);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.2em;
+  }
+  .route-h a:hover {
+    color: var(--action-ink);
+  }
+  .route-h p {
+    grid-column: 2;
+    color: var(--ink-2);
+    font-size: var(--text-small);
+  }
+  @media (min-width: 760px) {
+    .route-h {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      column-gap: 28px;
+    }
+    .route-h li {
+      grid-template-columns: none;
+      align-content: start;
+      row-gap: 8px;
+      padding-bottom: 0;
+    }
+    .route-h .step-no {
+      grid-row: auto;
+      margin-bottom: 6px;
+    }
+    .route-h li:not(:last-child)::before {
+      left: 32px;
+      right: -28px;
+      top: 14.5px;
+      bottom: auto;
+      border-left: 0;
+      border-top: 3px solid var(--action);
+    }
+    .route-h p {
+      grid-column: auto;
+    }
+  }
+
+  /* ---------- the sample session ---------- */
+  .stage {
+    background: var(--sunk);
+    border-block: 1px solid var(--line);
+    padding-block: clamp(20px, 3.5vw, 44px);
+    scroll-margin-top: var(--head-h);
+  }
+  .stage-cap {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: end;
+    gap: 8px 28px;
+    margin-bottom: 16px;
+    font-size: var(--text-small);
+    color: var(--ink-2);
+  }
+  .stage-cap h2 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .stage-cap p {
+    max-width: 70ch;
+  }
+  .stage-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 20px;
+  }
+
+  /* ---------- chapters ---------- */
+  .section {
+    padding-block: clamp(64px, 9vw, 128px);
+    border-top: 1px solid var(--line);
+    scroll-margin-top: var(--head-h);
+  }
+  .section.alt {
+    background: var(--sunk);
+  }
+  .stage + .section {
+    border-top: 0;
+  }
+  .sec-head {
+    display: grid;
+    gap: 16px;
+    max-width: 780px;
+    margin-bottom: clamp(32px, 4.5vw, 56px);
+  }
+  .sec-head h2,
+  .closing h2 {
+    font-size: var(--text-title);
+    font-weight: 650;
+    letter-spacing: -0.03em;
+    line-height: 1.06;
+  }
+  .intro {
+    font-size: var(--text-lead);
+    line-height: 1.5;
+    color: var(--ink-2);
+    max-width: 62ch;
+  }
+  .split {
+    display: grid;
+    gap: clamp(32px, 5vw, 72px);
+    align-items: start;
+  }
+  .split > * {
+    min-width: 0;
+  }
+  @media (min-width: 1000px) {
+    .split {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    }
+  }
+  .body-copy {
+    color: var(--ink-2);
+  }
+  /* The protocol detail, kept out of the story but one line away. */
+  .dev {
+    margin-top: 28px;
+    max-width: 72ch;
+    color: var(--ink-2);
+    font-size: var(--text-small);
+  }
+  .chapter-copy {
+    display: grid;
+    gap: 20px;
+  }
+  .chapter-copy > .dev {
+    margin-top: 4px;
+  }
+  .dev b {
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  /* append type list */
+  .types {
+    border-top: 1px solid var(--line);
+  }
+  .types div {
+    display: grid;
+    grid-template-columns: 104px minmax(0, 1fr);
+    gap: 16px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .types dd {
+    color: var(--ink-2);
+    font-size: var(--text-small);
+  }
+  .types .ty::before {
+    content: '';
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    margin-right: 9px;
+    vertical-align: 1px;
+  }
+
+  /* source figure */
+  .srcfig {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--page);
+    overflow: hidden;
+  }
+  .srcfig-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 2px 12px;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--sunk);
+    font: 400 0.75rem/1.4 var(--font-mono);
+    color: var(--ink-3);
+  }
+  .srcfig-head span {
+    white-space: nowrap;
+  }
+  .srcfig-head span:first-child {
+    color: var(--ink);
+  }
+  .srcfig-body {
+    max-height: 600px;
+    overflow: auto;
+    padding: 18px 16px;
+    /* Set in the code's own font, so a container query can count its columns. */
+    container-type: inline-size;
+    font: 400 0.75rem/1.7 var(--font-mono);
+  }
+  .srcfig .src {
+    font: inherit;
+  }
+
+  /* The instructions are an 80-column file. Where 80 columns fit, only the odd longer line wraps;
+     where they don't, lines scroll rather than rewrap into a ragged column. */
+  #inst-text {
+    white-space: pre;
+    overflow-wrap: normal;
+  }
+  @container (min-width: 80ch) {
+    #inst-text {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+  }
+  .srcfig-foot {
+    padding: 12px 20px 14px;
+    border-top: 1px solid var(--line);
+    color: var(--ink-3);
+    font-size: var(--text-caption);
+  }
+  @media (max-width: 759.98px) {
+    .srcfig-body {
+      max-height: 360px;
+    }
+  }
+
+  /* links and what they allow */
+  .tablewrap {
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--page);
+  }
+  .perm {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-small);
+  }
+  .perm th,
+  .perm td {
+    padding: 13px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+  }
+  .perm tbody tr:last-child th,
+  .perm tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  .perm thead th {
+    font-weight: 600;
+    font-size: var(--text-caption);
+    color: var(--ink-2);
+  }
+  .perm tbody th {
+    font-weight: 500;
+  }
+  .perm td.yes {
+    color: var(--ok);
+    font-weight: 500;
+  }
+  .perm td.no {
+    color: var(--ink-3);
+  }
+  /* Each link's path sits under its name, so the headers stay two tidy lines. */
+  @media (max-width: 759.98px) {
+    .perm th,
+    .perm td {
+      padding: 11px 12px;
+    }
+  }
+  .perm thead code {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--action-ink);
+  }
+
+  /* ---------- a task's route: one stop per event ---------- */
+  .routes {
+    display: grid;
+    gap: 20px;
+  }
+  @media (min-width: 900px) {
+    .routes {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  .route-card {
+    padding: 22px 24px 24px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--page);
+  }
+  .route-card h3 {
+    margin-bottom: 18px;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .route {
+    --time: 3rem;
+    list-style: none;
+    padding: 0;
+  }
+  .route li {
+    position: relative;
+    display: grid;
+    grid-template-columns: var(--time) 14px minmax(0, 1fr);
+    column-gap: 12px;
+    padding-bottom: 16px;
+  }
+  .route li:last-child {
+    padding-bottom: 0;
+  }
+  .route time {
+    grid-column: 1;
+    font: 400 0.8125rem/1.6 var(--font-mono);
+    color: var(--ink-3);
+  }
+  .route li::before {
+    content: '';
+    position: relative;
+    z-index: 1;
+    grid-column: 2;
+    grid-row: 1;
+    width: 14px;
+    height: 14px;
+    margin-top: 4px;
+    box-sizing: border-box;
+    border: 7px solid var(--action);
+    border-radius: 50%;
+    background: var(--page);
+  }
+  .route li:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: calc(var(--time) + 12px + 5.5px);
+    top: 11px;
+    bottom: -11px;
+    border-left: 3px solid var(--action);
+  }
+  .route li.is-off::before {
+    border: 2px dashed var(--ink-3);
+  }
+  .route p {
+    grid-column: 3;
+    color: var(--ink-2);
+    font-size: var(--text-small);
+    line-height: 1.5;
+  }
+  .route b {
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .route .chip {
+    margin-left: 4px;
+    vertical-align: 1px;
+  }
+  .route-key {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+    margin-top: 16px;
+    color: var(--ink-2);
+    font-size: var(--text-caption);
+  }
+  .route-key li {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .key-stop {
+    width: 12px;
+    height: 12px;
+    box-sizing: border-box;
+    border: 6px solid var(--action);
+    border-radius: 50%;
+  }
+  .key-stop.is-off {
+    border: 2px dashed var(--ink-3);
+  }
+
+  /* figures */
+  .fig {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--page);
+    overflow: hidden;
+  }
+  .fig-scroll {
+    overflow-x: auto;
+    padding: 22px 20px 12px;
+  }
+  .fig svg {
+    display: block;
+    width: 100%;
+    min-width: 720px;
+    height: auto;
+  }
+  .fig figcaption {
+    padding: 12px 20px 16px;
+    color: var(--ink-3);
+    font-size: var(--text-caption);
+    border-top: 1px solid var(--line);
+  }
+  .f-t {
+    fill: var(--ink-2);
+    font: 400 13px var(--font-mono);
+  }
+  .f-t3 {
+    fill: var(--ink-3);
+    font: 400 12px var(--font-mono);
+  }
+  .f-h {
+    fill: var(--ink);
+    font: 600 15px var(--font-sans);
+  }
+  .f-box {
+    fill: var(--sunk);
+    stroke: var(--line-strong);
+    stroke-width: 1;
+  }
+  .f-box-page {
+    fill: var(--page);
+    stroke: var(--line-strong);
+    stroke-width: 1;
+  }
+  .f-sep {
+    stroke: var(--line);
+    stroke-width: 1;
+  }
+  .f-line {
+    fill: none;
+    stroke: var(--ink-3);
+    stroke-width: 1.25;
+  }
+  .f-flow {
+    fill: none;
+    stroke: var(--action);
+    stroke-width: 2;
+  }
+  .f-arrow {
+    fill: var(--ink-3);
+  }
+  .f-arrow-a {
+    fill: var(--action);
+  }
+
+  /* chain demo */
+  .chain {
+    display: flex;
+    align-items: stretch;
+    overflow-x: auto;
+    padding: 4px 2px 12px;
+  }
+  /* The blocks share the width, and scroll only once they reach their smallest. */
+  .blk {
+    flex: 1 0 184px;
+    display: grid;
+    gap: 8px;
+    align-content: start;
+    padding: 14px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-md);
+    background: var(--page);
+    transition:
+      border-color var(--t-move) var(--ease),
+      background-color var(--t-move) var(--ease);
+  }
+  .link {
+    flex: 0 0 34px;
+    align-self: center;
+    position: relative;
+    height: 1px;
+    background: var(--line-strong);
+  }
+  .link::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: -4px;
+    border: 4.5px solid transparent;
+    border-left: 6px solid var(--line-strong);
+    border-right: 0;
+  }
+  .blk-top {
+    font-size: 0.8125rem;
+    color: var(--ink-3);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    align-items: baseline;
+  }
+  .blk-top .mono {
+    color: var(--ink);
+  }
+  /* The author always gets its own line, so every block's text starts at the same height. */
+  .blk-top > :last-child {
+    flex-basis: 100%;
+  }
+  .blk-body {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--ink-2);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 3.9em;
+  }
+  .blk-body del {
+    color: var(--bad);
+  }
+  .blk-body ins {
+    color: var(--ok);
+    text-decoration: none;
+    background: color-mix(in srgb, var(--ok) 12%, transparent);
+  }
+  .blk-h {
+    font: 400 0.75rem/1.4 var(--font-mono);
+    color: var(--ink-3);
+  }
+  .blk-h b {
+    font-weight: 400;
+    color: var(--ink);
+  }
+  .blk-status {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    min-height: 1.4em;
+  }
+  .blk.is-ok {
+    border-color: var(--ok);
+  }
+  .blk.is-ok .blk-status {
+    color: var(--ok);
+  }
+  .blk.is-bad {
+    border-color: var(--bad);
+    background: color-mix(in srgb, var(--bad) 7%, var(--page));
+  }
+  .blk.is-bad .blk-status {
+    color: var(--bad);
+  }
+  .blk.is-after {
+    border-style: dashed;
+  }
+  .blk.is-after .blk-status {
+    color: var(--ink-3);
+  }
+  .blk.is-ok,
+  .blk.is-bad,
+  .blk.is-after {
+    animation: settle var(--t-move) var(--ease) both;
+    animation-delay: calc(var(--i) * 90ms);
+  }
+  @keyframes settle {
+    from {
+      transform: translateY(5px);
+      opacity: 0.55;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
+  .chain-ctl {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .chain-out {
+    margin-top: 16px;
+    font-size: var(--text-small);
+    color: var(--ink-2);
+    max-width: 72ch;
+    min-height: 3.2em;
+  }
+  .chain-out.is-ok {
+    color: var(--ok);
+  }
+  .chain-out.is-bad {
+    color: var(--bad);
+  }
+
+  /* ---------- under the hood ---------- */
+  /* Name and value rows, ruled: the reference part of the page. */
+  .summary {
+    margin-top: clamp(40px, 5vw, 64px);
+    border-top: 1px solid var(--line);
+  }
+  .summary div {
+    display: grid;
+    gap: 4px 24px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  @media (min-width: 760px) {
+    .summary div {
+      grid-template-columns: 10rem minmax(0, 1fr);
+    }
+  }
+  .summary dt {
+    font-weight: 600;
+  }
+  .summary dd {
+    max-width: 72ch;
+    color: var(--ink-2);
+  }
+  /* Worked examples, one ruled row each, open on request. */
+  .more {
+    border-bottom: 1px solid var(--line);
+  }
+  .more summary {
+    width: fit-content;
+    padding-block: 14px;
+    font-weight: 600;
+  }
+  .more summary:hover {
+    color: var(--action-ink);
+  }
+  .more p {
+    max-width: 72ch;
+    margin-bottom: 14px;
+    color: var(--ink-2);
+    font-size: var(--text-small);
+  }
+  .more .code {
+    margin-bottom: 20px;
+  }
+
+  /* ---------- the way in, again ---------- */
+  .closing .wrap {
+    display: grid;
+    gap: 16px;
+    justify-items: start;
+  }
+  .closing h2 {
+    max-width: 20ch;
+  }
+  .closing .ctas {
+    margin-top: 12px;
+  }
+  /* The prompt wraps rather than scrolls, so all of it can be read and copied on a phone. */
+  .closing .start-prompt {
+    max-width: 100%;
+    white-space: pre-wrap;
+  }
+}

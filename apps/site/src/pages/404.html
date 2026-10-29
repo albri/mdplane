@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    {{> head}}
+    <meta name="robots" content="noindex" />
+    <title>Not found · mdplane</title>
+    <script type="module" src="{{page.js}}"></script>
+  </head>
+  <body>
+    {{> header}}
+    <main id="main" class="wrap missing">
+      <h1>This link doesn't work</h1>
+      <p>
+        It may be mistyped or revoked, or its workspace may have expired. Workspaces on mdplane.dev
+        delete themselves after 72 hours.
+      </p>
+      <p><a class="btn btn-quiet btn-sm" href="/">Go to mdplane</a></p>
+    </main>
+    {{> footer}}
+  </body>
+</html>

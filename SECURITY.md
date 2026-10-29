@@ -2,14 +2,15 @@
 
 ## Reporting
 
-mdplane does not currently maintain a dedicated security email inbox.
+Report a vulnerability privately through GitHub:
+[open a private report](https://github.com/albri/mdplane/security/advisories/new), or go to
+the repository's **Security** tab and select **Report a vulnerability**. Please don't open a public
+issue.
 
-If you discover a vulnerability:
+A link is a credential, so don't put a link to a workspace you use in a report. If the report needs
+a link, make a new workspace for it. mdplane.dev deletes it 72 hours later.
 
-1. Use GitHub private vulnerability reporting for this repository if available.
-2. If private reporting is not available, open a GitHub issue with sensitive details redacted and ask for a private follow-up channel.
-
-Do not publish exploit details publicly before a fix is available.
+Do not publish exploit details before a fix is available.
 
 ## Supported Versions
 

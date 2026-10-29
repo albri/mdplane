@@ -1,0 +1,136 @@
+/* The reader as an app (/demo and capability links): one screen, a slim bar on top, and panels
+   that scroll on their own. Also the 404 page. */
+@layer pages {
+  .app {
+    height: 100dvh;
+    display: grid;
+    /* The column can't grow to fit its content, so a long file path shrinks instead of widening
+       the page. */
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow: hidden;
+  }
+  .app-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    min-height: 52px;
+    padding: 8px 12px 8px var(--gutter);
+    border-bottom: 1px solid var(--line);
+  }
+  .app-title {
+    flex: 1 1 6rem;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+  .app-title > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .app-title .sep {
+    flex: none;
+    color: var(--ink-3);
+    font-weight: 400;
+  }
+  .app-title .file {
+    font: 400 0.875rem var(--font-mono);
+  }
+  .app-file {
+    field-sizing: content;
+    min-width: 0;
+    max-width: 100%;
+    text-overflow: ellipsis;
+    /* WebKit lets a select's text overflow it, and on Linux even clipped text widens the page.
+       Paint containment keeps a long path inside the select. */
+    contain: paint;
+    height: 30px;
+    padding: 0 6px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    background: var(--page);
+    font: 400 0.875rem var(--font-mono);
+  }
+  .app-tools {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+  }
+  .app-main {
+    min-height: 0;
+    display: grid;
+  }
+  .app-status {
+    align-self: start;
+    max-width: 70ch;
+    margin: 24px var(--gutter);
+    padding: 14px 16px;
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--radius-md);
+    color: var(--ink-2);
+  }
+  @media (max-width: 1099.98px) {
+    .app-bar .brand-name,
+    .app-bar #theme-label {
+      display: none;
+    }
+  }
+  /* On a phone the bar keeps to one row: what you're reading, Details and the theme button. The
+     view switch moves down into the reader's tab row. */
+  @media (max-width: 759.98px) {
+    .app-bar {
+      padding-inline: 12px;
+    }
+  }
+
+  /* 404 */
+  .missing {
+    display: grid;
+    gap: 14px;
+    align-content: start;
+    justify-items: start;
+    padding-block: clamp(48px, 9vw, 120px);
+  }
+  .missing h1,
+  .note h1 {
+    font-size: clamp(1.75rem, 1.3rem + 1.6vw, 2.5rem);
+    font-weight: 650;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+  }
+  .missing p {
+    color: var(--ink-2);
+    max-width: 62ch;
+  }
+
+  /* A page of plain text, such as the privacy note. */
+  .note {
+    display: grid;
+    gap: 28px;
+    align-content: start;
+    justify-items: start;
+    padding-block: clamp(48px, 9vw, 120px);
+  }
+  .note section {
+    display: grid;
+    gap: 10px;
+  }
+  .note h2 {
+    font-size: 1.25rem;
+    font-weight: 650;
+    letter-spacing: -0.015em;
+    line-height: 1.25;
+  }
+  .note p {
+    color: var(--ink-2);
+    max-width: 62ch;
+  }
+}

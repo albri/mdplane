@@ -1,0 +1,32 @@
+version: 2
+updates:
+  # The pnpm workspace: the root finds every package through pnpm-workspace.yaml. Minor and patch
+  # updates come together once a week; each major comes on its own.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    # A release that turns out to be malicious is usually pulled within days. Security updates
+    # don't wait.
+    cooldown:
+      default-days: 7
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # packages/contract keeps TypeScript 6 for the code generator, so TypeScript majors are
+      # done by hand.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+
+  # The workflows pin each action to a commit, with its version in a comment. Dependabot moves
+  # both.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]

@@ -1,0 +1,111 @@
+/* The site header and footer on the landing and 404 pages. */
+@layer components {
+  .site-head {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 30;
+    background: var(--page);
+    border-bottom: 1px solid var(--line);
+  }
+  .site-head .wrap {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    height: 60px;
+  }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    font-weight: 650;
+    font-size: 1.1875rem;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+  }
+  .brand:hover {
+    color: var(--ink);
+  }
+  .brand svg {
+    width: 22px;
+    height: 22px;
+    display: block;
+  }
+  .mk-body {
+    fill: var(--ink);
+  }
+  .mk-log {
+    fill: var(--action);
+  }
+  .mk-log2 {
+    fill: var(--action);
+    opacity: 0.5;
+  }
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    margin-left: auto;
+    font-size: var(--text-small);
+  }
+  .nav a {
+    text-decoration: none;
+    color: var(--ink-2);
+  }
+  .nav a:hover {
+    color: var(--ink);
+  }
+  .theme-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--ink-2);
+    font-size: 0.8125rem;
+    cursor: pointer;
+  }
+  .theme-btn:hover {
+    color: var(--ink);
+    background: var(--sunk);
+  }
+  @media (max-width: 640px) {
+    .nav .hide-sm {
+      display: none;
+    }
+    .nav {
+      gap: 16px;
+    }
+  }
+  /* On a short page the footer still sits at the bottom of the screen. */
+  body:has(> .site-foot) {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+  }
+  /* Full width, since a flex item with auto margins otherwise shrinks to its content. */
+  body:has(> .site-foot) > main {
+    flex: 1;
+    width: 100%;
+  }
+  .site-foot {
+    border-top: 1px solid var(--line);
+    background: var(--page);
+  }
+  .foot {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 10px 32px;
+    padding-block: 36px;
+    font-size: var(--text-small);
+    color: var(--ink-2);
+  }
+  .foot strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+}

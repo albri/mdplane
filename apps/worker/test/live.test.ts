@@ -1,0 +1,147 @@
+import {
+  type LiveClose,
+  type LogItem,
+  verifyChain,
+  zCreateLinkResult,
+  zLiveClose,
+  zLogItem,
+  zProblem,
+} from '@mdplane/contract'
+import { describe, expect, test } from 'vitest'
+import { MORE_BACKLOG } from '../src/workspace.ts'
+import { append, call, createWorkspace, json, writeFile } from './helpers.ts'
+
+async function connect(link: string, after = 0) {
+  const response = await call(`${link}/live?after=${after}`, { headers: { Upgrade: 'websocket' } })
+  const socket = response.webSocket
+  if (response.status !== 101 || !socket) throw new Error(`live returned ${response.status}`)
+  const items: LogItem[] = []
+  let notice: LiveClose['close'] | null = null
+  const waiting: Array<{ count: number; resolve: () => void }> = []
+  socket.addEventListener('message', (event) => {
+    const message: unknown = JSON.parse(String(event.data))
+    const close = zLiveClose.safeParse(message)
+    if (close.success) notice = close.data.close
+    else items.push(zLogItem.parse(message))
+    for (const waiter of waiting.filter((w) => items.length >= w.count)) waiter.resolve()
+  })
+  // The code the socket closed with, and the notice that came before it.
+  const closed = new Promise<{ code: number; notice: LiveClose['close'] | null }>((resolve) =>
+    socket.addEventListener('close', (event) => resolve({ code: event.code, notice })),
+  )
+  socket.accept()
+  const until = (count: number) =>
+    items.length >= count
+      ? Promise.resolve()
+      : new Promise<void>((resolve) => waiting.push({ count, resolve }))
+  return { socket, items, until, closed }
+}
+
+describe('the live stream', () => {
+  test('sends the backlog, then each new entry, with nothing missed or repeated', async () => {
+    const ws = await createWorkspace()
+    await writeFile(ws.write, 'queue.md', 'Brief\n')
+    await append(ws.append, { path: 'queue.md', type: 'task', author: 'lead@devbox', body: 'One' })
+
+    const live = await connect(ws.read, 1)
+    await live.until(1)
+    await append(ws.append, {
+      path: 'queue.md',
+      type: 'comment',
+      author: 'lead@devbox',
+      body: 'Two',
+    })
+    await live.until(2)
+    expect(live.items.map((item) => item.seq)).toEqual([2, 3])
+
+    const full = await connect(ws.read)
+    await full.until(3)
+    expect(await verifyChain(full.items)).toMatchObject({ ok: true })
+    live.socket.close()
+    full.socket.close()
+  })
+
+  test('redacts entries outside a folder link', async () => {
+    const ws = await createWorkspace()
+    const created = await call(`${ws.write}/links`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tier: 'r', folder: 'release' }),
+    })
+    const { url } = (await json(created)) as { url: string }
+    const live = await connect(new URL(url).pathname)
+    await writeFile(ws.write, 'queue.md', 'Top level\n')
+    await writeFile(ws.write, 'release/queue.md', 'Release\n')
+    await live.until(2)
+    expect(live.items[0]).toMatchObject({ seq: 1, redacted: true })
+    expect(live.items[1]).toMatchObject({ seq: 2, path: 'release/queue.md' })
+    live.socket.close()
+  })
+
+  test('sends a long backlog a page per connection, so reconnecting reads the rest', async () => {
+    const ws = await createWorkspace()
+    await writeFile(ws.write, 'queue.md', 'Brief\n')
+    // 40 entries of 16,000 bytes: the write and 32 comments make one page of 512 KiB.
+    const body = 'x'.repeat(16_000)
+    await Promise.all(
+      Array.from({ length: 40 }, () =>
+        append(ws.append, { path: 'queue.md', type: 'comment', author: 'a', body }),
+      ),
+    )
+    const first = await connect(ws.read)
+    expect(await first.closed).toEqual({
+      code: MORE_BACKLOG,
+      notice: { code: MORE_BACKLOG, reason: expect.any(String) },
+    })
+    expect(first.items.map((item) => item.seq)).toEqual(Array.from({ length: 33 }, (_, i) => i + 1))
+
+    const rest = await connect(ws.read, 33)
+    await rest.until(8)
+    await append(ws.append, { path: 'queue.md', type: 'comment', author: 'a', body: 'Live' })
+    await rest.until(9)
+    expect(rest.items.map((item) => item.seq)).toEqual(Array.from({ length: 9 }, (_, i) => i + 34))
+    rest.socket.close()
+  })
+
+  // Some browsers hear of a close only once the connection ends, which can take seconds.
+  test('says why before it closes a socket, so a revoked link stops at once', async () => {
+    const ws = await createWorkspace()
+    const created = await call(`${ws.write}/links`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tier: 'r' }),
+    })
+    const { url, link } = zCreateLinkResult.parse(await json(created))
+    const live = await connect(new URL(url).pathname)
+    expect((await call(`${ws.write}/links/${link.id}`, { method: 'DELETE' })).status).toBe(204)
+    expect(await live.closed).toEqual({
+      code: 1008,
+      notice: { code: 1008, reason: 'Link revoked' },
+    })
+  })
+
+  test('a socket closed by the server, waiting for its client, does not fail the next entry', async () => {
+    const ws = await createWorkspace()
+    await writeFile(ws.write, 'queue.md', 'Brief\n')
+    const created = await call(`${ws.write}/links`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tier: 'r' }),
+    })
+    const { url, link } = zCreateLinkResult.parse(await json(created))
+    // Never accepted, so the client never answers the server's close.
+    const upgrade = { headers: { Upgrade: 'websocket' } }
+    expect((await call(`${new URL(url).pathname}/live`, upgrade)).status).toBe(101)
+    expect((await call(`${ws.write}/links/${link.id}`, { method: 'DELETE' })).status).toBe(204)
+    // Sending to the closed socket threw after the entry was sealed: a 500 for a written entry.
+    const comment = { path: 'queue.md', type: 'comment', author: 'a', body: 'After the revoke' }
+    expect((await append(ws.append, comment)).status).toBe(201)
+  })
+
+  test('needs a WebSocket upgrade', async () => {
+    const ws = await createWorkspace()
+    const response = await call(`${ws.read}/live`)
+    expect(response.status).toBe(426)
+    expect(zProblem.parse(await json(response)).code).toBe('upgrade_required')
+  })
+})

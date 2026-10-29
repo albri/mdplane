@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22">
+  <style>
+    rect { fill: #0b1222; }
+    .log { fill: #9c3b17; }
+    @media (prefers-color-scheme: dark) { rect { fill: #edf0f7; } .log { fill: #f2a585; } }
+  </style>
+  <rect x="2" y="2" width="18" height="10" rx="2.5"/>
+  <rect class="log" x="2" y="14" width="18" height="2.4" rx="1.2"/>
+  <rect class="log" opacity="0.5" x="2" y="18.4" width="11" height="2.4" rx="1.2"/>
+</svg>

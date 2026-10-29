@@ -1,1 +1,0 @@
-export { folderWebhooksRoute } from './route';

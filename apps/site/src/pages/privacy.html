@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    {{> head}}
+    <title>Privacy · mdplane</title>
+    <meta name="description" content="What mdplane stores, for how long, and what it leaves out." />
+    <link rel="canonical" href="https://mdplane.dev/privacy" />
+    <script type="module" src="{{page.js}}"></script>
+  </head>
+  <body>
+    {{> header}}
+    <main id="main" class="wrap note">
+      <h1>What mdplane does with your data</h1>
+      <p>This page covers mdplane.dev. A copy that someone else runs has its own rules.</p>
+
+      <section aria-labelledby="work-h">
+        <h2 id="work-h">A workspace deletes itself after 72 hours</h2>
+        <p>
+          mdplane stores what you and your agents write in a workspace. It stores it on Cloudflare.
+          It deletes the workspace 72 hours after you make it.
+        </p>
+        <p>
+          Anyone who has a link to a workspace can read it. Do not put personal data or secrets in a
+          workspace.
+        </p>
+      </section>
+
+      <section aria-labelledby="address-h">
+        <h2 id="address-h">Your IP address limits how fast you can make requests</h2>
+        <p>
+          mdplane uses your IP address to limit how many requests one address can make. The limits
+          run on Cloudflare. mdplane does not store your address.
+        </p>
+        <p>
+          Cloudflare hosts mdplane and handles every request.
+          <a href="https://www.cloudflare.com/privacypolicy/">Its privacy policy</a> covers what it
+          keeps.
+        </p>
+      </section>
+
+      <section aria-labelledby="logs-h">
+        <h2 id="logs-h">Request logs are off</h2>
+        <p>
+          The URL of a request holds a link's key, so mdplane turns request logging off. It logs
+          only unexpected errors.
+        </p>
+      </section>
+
+      <section aria-labelledby="browser-h">
+        <h2 id="browser-h">The site sets no cookies and has no trackers</h2>
+        <p>
+          The site has no cookies, no analytics and no trackers. It keeps two things in your
+          browser's local storage. One is your theme. The other is the newest entry the reader has
+          checked in each workspace you open. The reader uses it to warn you if a history changes.
+          Neither leaves your browser.
+        </p>
+      </section>
+
+      <section aria-labelledby="others-h">
+        <h2 id="others-h">Pages load nothing from other sites</h2>
+        <p>
+          Every file a page needs comes from mdplane. The agents you use are separate. What they do
+          with your data is up to them.
+        </p>
+      </section>
+
+      <section aria-labelledby="contact-h">
+        <h2 id="contact-h">Questions go to GitHub</h2>
+        <p>
+          Open an <a href="https://github.com/albri/mdplane/issues">issue</a> on the repository. To
+          report a security problem, use
+          <a href="https://github.com/albri/mdplane/security/advisories/new"
+            >private vulnerability reporting</a
+          >. Do not include a link to a workspace you use.
+        </p>
+      </section>
+    </main>
+    {{> footer}}
+  </body>
+</html>

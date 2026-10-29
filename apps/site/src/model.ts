@@ -1,0 +1,183 @@
+// The reader's view of one file at any point in its history, built from the same log entries and
+// task rules the server uses.
+import {
+  deriveTasks,
+  type Entry,
+  type FileView,
+  LEASE_MS,
+  type LogItem,
+  pickEntries,
+  pickTasks,
+  renderFile,
+  type TaskView,
+  type Tier,
+} from '@mdplane/contract/core'
+
+// Whether a live reader is connected to its workspace's stream. It ends only when the link stops
+// working.
+export type LiveStatus = 'connecting' | 'live' | 'reconnecting' | 'ended'
+
+// Where a reader gets the bodies a session doesn't carry. The sample carries all of its own.
+export type BodySource = {
+  // Starts fetching a write's body, unless it's here already or on its way.
+  want: (write: Entry) => void
+  // Why the body isn't here, when there's more to say than that it's loading.
+  problem: (write: Entry) => { message: string; retry: boolean } | null
+  retry: (write: Entry) => void
+}
+
+export type Session = {
+  workspaceId: string
+  name: string | null
+  path: string
+  tier: Tier
+  host: string
+  // This file's entries, oldest first.
+  entries: Entry[]
+  // Everything the link can see, so the whole chain can be checked.
+  log: LogItem[]
+  // File bodies by content hash. A write entry carries only the hash.
+  bodies: Map<string, string>
+  source?: BodySource
+  mode: 'replay' | 'live'
+  expiresAt: string | null
+  timeZone?: string
+}
+
+export type Thread = {
+  task: TaskView
+  entry: Entry
+  kids: Entry[]
+  // The claim whose lease ran out, when nobody has claimed or finished the task since.
+  lapsed: Entry | null
+}
+
+export type State = {
+  pos: number
+  list: Entry[]
+  // The entries since the file was last deleted, which are the ones its tasks come from.
+  life: Entry[]
+  now: number
+  write: Entry | null
+  body: string | null
+  // The delete that emptied the file, while nothing has been written since.
+  deletion: Entry | null
+  threads: Thread[]
+  // Comments that aren't about a task.
+  notes: Entry[]
+}
+
+export function stateAt(session: Session, pos: number, live = false): State {
+  const list = session.entries.slice(0, pos)
+  const last = list.at(-1)
+  // Replaying, time stands at the entry being shown; at the head of a live file it is now.
+  const now = live || !last ? Date.now() : Date.parse(last.at)
+  const deleted = list.findLastIndex((e) => e.type === 'delete')
+  const life = list.slice(deleted + 1)
+  const write = life.findLast((e) => e.type === 'write') ?? null
+  const deletion = write ? null : (list[deleted] ?? null)
+  const tasks = new Map(deriveTasks(life, now, LEASE_MS).map((task) => [task.seq, task]))
+  // A task's entries come after its own, so one pass in order gathers every thread.
+  const byTask = new Map<number, Thread>()
+  const notes: Entry[] = []
+  for (const e of life) {
+    if (e.type === 'task') {
+      const task = tasks.get(e.seq)
+      if (task) byTask.set(e.seq, { task, entry: e, kids: [], lapsed: null })
+    } else if (e.ref !== null) {
+      byTask.get(e.ref)?.kids.push(e)
+    } else if (e.type === 'comment') {
+      notes.push(e)
+    }
+  }
+  for (const thread of byTask.values()) {
+    if (thread.task.status !== 'open') continue
+    const lastClaim = thread.kids.findLast((k) => k.type === 'claim')
+    thread.lapsed = lastClaim ?? null
+  }
+  return {
+    pos,
+    list,
+    life,
+    now,
+    write,
+    body: write?.contentHash ? (session.bodies.get(write.contentHash) ?? null) : null,
+    deletion,
+    threads: [...byTask.values()],
+    notes,
+  }
+}
+
+export type Counts = Record<TaskView['status'], number>
+
+export function countTasks(threads: Thread[]): Counts {
+  const counts: Counts = { done: 0, claimed: 0, open: 0, cancelled: 0 }
+  for (const { task } of threads) counts[task.status] += 1
+  return counts
+}
+
+export function summary(threads: Thread[]): string {
+  if (threads.length === 0) return 'Nothing yet'
+  const c = countTasks(threads)
+  const parts = [`${threads.length} ${threads.length === 1 ? 'task' : 'tasks'}`]
+  if (c.done) parts.push(`${c.done} done`)
+  if (c.claimed) parts.push(`${c.claimed} in progress`)
+  if (c.open) parts.push(`${c.open} open`)
+  if (c.cancelled) parts.push(`${c.cancelled} cancelled`)
+  return parts.join(' · ')
+}
+
+export function minutesLeft(until: number, now: number): string {
+  const m = Math.ceil((until - now) / 60_000)
+  return m <= 1 ? 'under a minute left' : `${m} min left`
+}
+
+const headOf = (log: LogItem[]) => {
+  const last = log.at(-1)
+  return { seq: last?.seq ?? 0, hash: last?.hash ?? '0'.repeat(64) }
+}
+
+// What an agent gets from `GET $URL/files/{path}` at this point, rendered by the server's code
+// and cut to the same limits.
+export function agentView(session: Session, state: State): string {
+  const { life } = state
+  const all = state.threads.map((t) => t.task)
+  const tasks = pickTasks(all)
+  const entries = pickEntries(life)
+  const view: FileView = {
+    path: session.path,
+    at: state.list.at(-1)?.seq ?? 0,
+    head: headOf(session.log),
+    version: state.write?.version ?? 1,
+    contentHash: state.write?.contentHash ?? '',
+    body: state.body ?? '',
+    since: state.list.findLast((e) => e.type === 'delete')?.seq ?? 0,
+    tasks,
+    entries,
+    omitted: { tasks: all.length - tasks.length, entries: life.length - entries.length },
+  }
+  return renderFile(view)
+}
+
+export const leaseEnd = (claim: Entry) => Date.parse(claim.at) + LEASE_MS
+
+// One entry as a sentence, for screen readers and titles.
+export function describe(entry: Entry): string {
+  const { author, ref } = entry
+  switch (entry.type) {
+    case 'write':
+      return `${author} wrote version ${entry.version ?? 1} of the body`
+    case 'delete':
+      return `${author} deleted the file`
+    case 'task':
+      return `${author} added task #${entry.seq}`
+    case 'claim':
+      return `${author} claimed task #${ref}`
+    case 'comment':
+      return ref === null ? `${author} commented` : `${author} commented on task #${ref}`
+    case 'response':
+      return `${author} responded to task #${ref}`
+    case 'cancel':
+      return `${author} cancelled task #${ref}`
+  }
+}
