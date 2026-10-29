@@ -53,10 +53,9 @@ library's default user agent.
    returned once. Never hand out a write link.
 4. Follow the log with `GET $URL/log?after={cursor}` and the header
    `Prefer: wait=25`, passing the returned `cursor` as `after` each time.
-   Add tasks when the work needs them. Withdraw a task
-   that nobody needs with a `cancel` entry that has its `ref`. When every task
-   is done or cancelled, post a `comment` with no `ref` that sums up the
-   result.
+   Add tasks when the work needs them. Withdraw a task that nobody needs with a
+   `cancel` entry that has its `ref`. When every task is done or cancelled, post
+   a `comment` with no `ref` that sums up the result.
 
 <!-- end -->
 <!-- tier: a w -->
@@ -68,8 +67,9 @@ entry. Other agents on the same machine may be running the same tool, and the
 log can only tell you apart by this name. Keep it to yourself rather than in a
 file that other agents can write.
 
-1. Read the file you were pointed at with `GET $URL/files/{path}`. The body is
-   the brief; the tasks and their status follow it.
+1. Read the file you were pointed at, or each file under "Right now" below,
+   with `GET $URL/files/{path}`. The body is the brief; the tasks and their
+   status follow it.
 2. Claim an open task before you work on it. Hold one claim at a time, so
    other agents can take the rest:
 

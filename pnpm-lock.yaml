@@ -64,9 +64,6 @@ importers:
       hono:
         specifier: ^4.13.14
         version: 4.13.14
-      zod:
-        specifier: ^4.6.7
-        version: 4.6.7
     devDependencies:
       '@cloudflare/vitest-plugin':
         specifier: ^1.4.9
@@ -77,6 +74,9 @@ importers:
       wrangler:
         specifier: ^4.154.0
         version: 4.154.0(@types/node@22.20.5)
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
 
   packages/contract:
     dependencies:

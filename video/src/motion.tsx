@@ -1,5 +1,5 @@
 // The film's motion vocabulary. Time is in seconds, so every shot reads like its storyboard row.
-import type { CSSProperties, ReactNode } from 'react'
+import type { CSSProperties } from 'react'
 import { Easing, interpolate, useCurrentFrame } from 'remotion'
 import { c, font, FPS } from './theme.ts'
 
@@ -82,30 +82,6 @@ export function Words({
           })}
         </div>
       ))}
-    </div>
-  )
-}
-
-// Any block rising out of its own mask.
-export function Rise({
-  at,
-  exit,
-  dur = 0.55,
-  style,
-  children,
-}: {
-  at: number
-  exit?: number
-  dur?: number
-  style?: CSSProperties
-  children: ReactNode
-}) {
-  const t = useT()
-  const enter = ramp(t, at, dur)
-  const leave = exit === undefined ? 0 : ramp(t, exit, 0.35, travel)
-  return (
-    <div data-mask style={{ position: 'absolute', overflow: 'hidden', ...style }}>
-      <div style={{ transform: `translateY(${(1 - enter) * 110 - leave * 110}%)` }}>{children}</div>
     </div>
   )
 }

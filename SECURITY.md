@@ -12,6 +12,6 @@ a link, make a new workspace for it. mdplane.dev deletes it 72 hours later.
 
 Do not publish exploit details before a fix is available.
 
-## Supported Versions
+## Supported versions
 
 Only the latest commit on `main` is considered supported for security fixes.

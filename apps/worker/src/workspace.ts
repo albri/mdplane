@@ -4,7 +4,7 @@ import { DurableObject } from 'cloudflare:workers'
 import type { output } from 'zod'
 import {
   type AppendResult,
-  canonical,
+  chainInput,
   deriveTasks,
   type Entry,
   type EntryContent,
@@ -44,8 +44,8 @@ export type Result<T> =
 
 export type NewLink = { id: string; tier: Tier; folder: string | null; secretHash: string }
 export type LogQuery = { path?: string | undefined; after: number; limit: number }
-// Each file's open and claimed tasks, with only as much of each body as the summary shows.
-// `tasks` holds each file's open and claimed tasks, and `counts` tallies all of them.
+// `tasks` holds each file's open and claimed tasks, with only as much of each body as the summary
+// shows, and `counts` tallies all of them.
 export type Overview = {
   workspace: WorkspaceView
   tasks: Record<string, TaskView[]>
@@ -238,10 +238,7 @@ export class Workspace extends DurableObject<Env> {
     const { expiresAt } = this.meta()
     if (expiresAt && Date.now() >= Date.parse(expiresAt)) return null
     const [link] = this.sql
-      .exec<Link>(
-        `SELECT ${LINK} FROM links WHERE secret_hash = ? AND revoked_at IS NULL`,
-        auth.secretHash,
-      )
+      .exec<Link>(`SELECT ${LINK} FROM links WHERE secret_hash = ?`, auth.secretHash)
       .toArray()
     if (!link || link.tier !== auth.tier || !tiers.includes(link.tier)) return null
     return link
@@ -260,7 +257,7 @@ export class Workspace extends DurableObject<Env> {
     const sealed: Entry = {
       ...entry,
       prev: head.hash,
-      hash: sha256(`${head.hash}\n${canonical(entry)}`),
+      hash: sha256(chainInput(head.hash, entry)),
     }
     this.sql.exec(
       `INSERT INTO entries VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -807,7 +804,7 @@ export class Workspace extends DurableObject<Env> {
     const link = this.authorize(auth, ['w'])
     if (!link) return { ok: false, problem: NOT_FOUND }
     const links = this.sql
-      .exec<Link>(`SELECT ${LINK} FROM links WHERE revoked_at IS NULL ORDER BY created_at, id`)
+      .exec<Link>(`SELECT ${LINK} FROM links ORDER BY created_at, id`)
       .toArray()
       .filter((other) => within(link.folder, other.folder))
     return ok({ links })
@@ -833,9 +830,7 @@ export class Workspace extends DurableObject<Env> {
     const link = this.authorize(auth, ['w'])
     if (!link) return { ok: false, problem: NOT_FOUND }
     if (linkId === link.id) return fail(422, 'invalid_request', 'A link can’t revoke itself.')
-    const [target] = this.sql
-      .exec<Link>(`SELECT ${LINK} FROM links WHERE id = ? AND revoked_at IS NULL`, linkId)
-      .toArray()
+    const [target] = this.sql.exec<Link>(`SELECT ${LINK} FROM links WHERE id = ?`, linkId).toArray()
     if (!target || !within(link.folder, target.folder)) return { ok: false, problem: NOT_FOUND }
     this.sql.exec(`DELETE FROM links WHERE id = ?`, linkId)
     for (const socket of this.ctx.getWebSockets()) {

@@ -30,16 +30,16 @@ import {
   tooLarge,
 } from './http.ts'
 import { hashSecret, linkUrl, newLinkId, newSecret, newWorkspaceId, parseLink } from './keys.ts'
-import { type Auth, LIMITS, type Result } from './workspace.ts'
+import { type Auth, LIMITS, type Result, Workspace } from './workspace.ts'
 
 export { Quota } from './quota.ts'
-export { Workspace } from './workspace.ts'
+export { Workspace }
 
 type App = { Bindings: Env }
 type Keyed = {
   workspaceId: string
   auth: Auth
-  stub: DurableObjectStub<import('./workspace.ts').Workspace>
+  stub: DurableObjectStub<Workspace>
 }
 
 const ALL: readonly Tier[] = ['r', 'a', 'w']
@@ -89,6 +89,8 @@ app.use(async (c, next) => {
   }
   c.res.headers.set('Referrer-Policy', 'no-referrer')
   c.res.headers.set('X-Content-Type-Options', 'nosniff')
+  // A browser that never tries plain HTTP never sends a key in the clear.
+  c.res.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
   if (c.res.headers.get('Content-Type')?.startsWith('text/html')) {
     for (const [name, value] of Object.entries(PAGE_HEADERS)) c.res.headers.set(name, value)
   }
@@ -238,6 +240,11 @@ app.post('/workspaces', async (c) => {
     201,
   )
 })
+
+// The path holds no key, so saying that only POST works gives nothing away.
+app.all('/workspaces', () =>
+  problem({ status: 405, code: 'method_not_allowed' }, { Allow: 'POST' }),
+)
 
 app.get(
   '/:tier/:key',

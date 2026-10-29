@@ -338,7 +338,8 @@ paths:
 
         While a task is claimed, only a claim or response that carries the
         lease's `token` gets through: a claim with it renews the lease, and
-        anything else gets 409 `task_claimed` with `retryAfterMs`. The token
+        any other claim or response gets 409 `task_claimed` with
+        `retryAfterMs`. Comments and cancels need no token. The token
         isn't in the log, so an agent that loses it waits for the lease to
         run out and claims again.
 
@@ -1363,6 +1364,7 @@ components:
           enum:
             - invalid_request
             - not_found
+            - method_not_allowed
             - task_claimed
             - task_closed
             - invalid_ref

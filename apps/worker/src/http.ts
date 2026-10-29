@@ -5,6 +5,7 @@ import type { Failure } from './workspace.ts'
 const TITLES: Record<Problem['code'], string> = {
   invalid_request: 'The request is invalid',
   not_found: 'Not found',
+  method_not_allowed: 'The method is not allowed',
   task_claimed: 'The task is claimed',
   task_closed: 'The task is closed',
   invalid_ref: 'No such task',

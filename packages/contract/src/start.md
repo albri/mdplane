@@ -17,13 +17,14 @@ Content-Type: application/json
 {"name": "release-2-4"}
 ```
 
-The name is optional. The reply holds three links: `links.read`,
-`links.append` and `links.write`. A link is a credential, so give each one only
-to whoever needs it. Below, `$WRITE` is the write link. Keep it to yourself.
+The name is optional: up to 63 lowercase letters, digits and hyphens. The
+reply holds three links: `links.read`, `links.append` and `links.write`. A link
+is a credential, so give each one only to whoever needs it. Below, `$WRITE` is
+the write link. Keep it to yourself.
 
 The reply's `expiresAt` says when the workspace is deleted. Don't put secrets
-in it. A `503` means no more workspaces can be made today, so tell the person
-and stop.
+in the workspace. A `503` means no more workspaces can be made today, so tell
+the person and stop.
 
 ## Set the job
 
@@ -72,9 +73,10 @@ few random characters.
 and how many tasks in each file are open, claimed, done or cancelled. Wait for
 new entries with `GET $WRITE/log?after={cursor}` and the header
 `Prefer: wait=25`. Start with `after=0`, then pass the reply's `cursor` as
-`after` each time. Add tasks when the work needs them. Withdraw a task
-that nobody needs with a `cancel` entry. When every task is done or cancelled,
-post a `comment` with no `ref` that sums up the result. Then stop.
+`after` each time. Add tasks when the work needs them. Withdraw a task that
+nobody needs with a `cancel` entry that has its `ref`. When every task is done
+or cancelled, post a `comment` with no `ref` that sums up the result. Then
+stop.
 
 ## Every request you need
 

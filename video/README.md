@@ -8,11 +8,12 @@ the landing page's sample session. The keys in it are made up and masked.
 
 Run these from the repository root.
 
-| Command                               | What it does                                                                                     |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `pnpm --filter @mdplane/video render` | Renders `mdplane.mp4` and `poster.webp` into this folder, in about four minutes.                 |
-| `pnpm --filter @mdplane/video studio` | Opens Remotion Studio, to scrub through the film while you change it.                            |
-| `pnpm --filter @mdplane/video stills` | Renders key frames to `out/stills/`. Add seconds, like `stills 25 46.5`, to render other frames. |
+| Command                               | What it does                                                                                                |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `pnpm --filter @mdplane/video render` | Renders `mdplane.mp4` and `poster.webp` into this folder, and the site's share card, in about four minutes. |
+| `pnpm --filter @mdplane/video card`   | Renders only the share card, `apps/site/public/card.png`, which link previews show.                         |
+| `pnpm --filter @mdplane/video studio` | Opens Remotion Studio, to scrub through the film while you change it.                                       |
+| `pnpm --filter @mdplane/video stills` | Renders key frames to `out/stills/`. Add seconds, like `stills 25 46.5`, to render other frames.            |
 
 ## Start with the storyboard
 
@@ -39,4 +40,5 @@ GitHub plays a video in a README only when it was uploaded to GitHub, so the REA
 by its `https://github.com/user-attachments/assets/…` URL. After a render, edit `README.md` on
 github.com, drag `mdplane.mp4` into the editor, and replace the old URL with the new one, on its own
 line. The player shows the film's first frame until you press play, which is why the film opens on
-the drawn logo. `poster.webp` is a still from the route, for anywhere that can't play video.
+the drawn logo. `poster.webp` is a still from the route, for anywhere that can't play video, and
+the share card is the same frame without the play button.

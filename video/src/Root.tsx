@@ -55,6 +55,20 @@ function Poster(props: FilmProps) {
   )
 }
 
+// The site's share card: the poster's frame without the play button, cut to the 1.91:1 that link
+// previews use. It renders at 1920 wide and is scaled down to 1200 × 630.
+const CARD_H = Math.round((W * 630) / 1200)
+
+function Card(props: FilmProps) {
+  return (
+    <div style={{ position: 'absolute', top: (CARD_H - H) / 2, width: W, height: H }}>
+      <Sequence from={-Math.round((AT.route + 5.5) * FPS)} layout="none">
+        <Film {...props} />
+      </Sequence>
+    </div>
+  )
+}
+
 export function Root() {
   return (
     <>
@@ -73,6 +87,14 @@ export function Root() {
         component={Poster}
         width={W}
         height={H}
+        defaultProps={defaultProps}
+        calculateMetadata={calculateMetadata}
+      />
+      <Still
+        id="card"
+        component={Card}
+        width={W}
+        height={CARD_H}
         defaultProps={defaultProps}
         calculateMetadata={calculateMetadata}
       />
