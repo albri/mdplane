@@ -20,7 +20,7 @@
     "@remotion/cli": "4.0.533",
     "@remotion/fonts": "4.0.533",
     "@remotion/renderer": "4.0.533",
-    "@types/node": "^22.19.0",
+    "@types/node": "^26.6.5",
     "@types/react": "^19.2.0"
   }
 }
