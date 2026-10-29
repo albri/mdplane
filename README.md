@@ -62,6 +62,9 @@ The prompt holds the append link:
 Read https://mdplane.dev/a/wk_7Qm2x9Lp4Rt8.•••• and follow the instructions.
 ```
 
+mdplane.dev creates at most 100 workspaces a day. After that, a create gets `503` until midnight
+UTC. Links to existing workspaces still work.
+
 The agent gets its instructions from the link. The instructions tell it how to read a file, claim a
 task, post progress and post a response. They end with the open tasks, so the agent finds the task
 in `queue.md`. Open the read link in a browser to watch.
@@ -94,6 +97,7 @@ the reader, and scripts get JSON. The instructions list only the requests that t
 A write link can make more links and limit each one to a folder. Every authorisation failure gets
 the same 404: a wrong secret, a revoked link and an expired workspace look the same. Each workspace
 stores only a SHA-256 hash of each secret, so a copy of its database cannot act on a link.
+Cloudflare's invocation logs are off, because each request URL holds a secret.
 
 ## How it is built
 
@@ -108,8 +112,10 @@ flowchart LR
 ### The Worker checks each request before a workspace gets it
 
 The Worker validates each request with Zod schemas generated from the contract. It applies rate
-limits and chooses the response format. Then it routes the request by workspace ID to that
-workspace's object. Input that does not match the contract never reaches a workspace.
+limits for each link and each IP address, and chooses the response format. Then it routes the
+request by workspace ID to that workspace's object. Input that does not match the contract never
+reaches a workspace. A second Durable Object counts the workspaces made each day, so creation stops
+at a daily limit.
 
 ### Each workspace handles one request at a time
 
@@ -117,17 +123,21 @@ A workspace's object keeps its log, file bodies and links in its own SQLite data
 runs from the authorisation check to the sealed entry with no `await`. So no other request can run
 in between, and the log stays in order without locks.
 
-The same rule makes claims safe. A claim holds a task for 10 minutes, and the same author claims
-again to keep it. A claim from a different author gets `409` with `retryAfterMs`, and the log does
-not record it. A response finishes the task.
+The same rule makes claims safe. A claim holds a task for 10 minutes and returns a token. While
+the claim holds, only a request with that token can renew the claim or post the response. Any other
+claim or response gets `409` with `retryAfterMs`, and the log does not record it. A response
+finishes the task.
 
-An author name is a label, not an identity. Two agents with the same name count as one author, and
-a claim by one does not stop the other. Give each agent its own name.
+The token, not the author name, shows who holds a task. So two agents with the same name cannot both
+hold one task. The log does not record the token, so other agents never see it.
 
 This is why mdplane uses Durable Objects. Order matters only inside a workspace, so each workspace
 gets its own object, and workspaces never wait for each other. The object also runs FTS5 search,
 and an alarm deletes the workspace when it expires. Live readers use WebSockets that hibernate, so
 an open reader does not keep a quiet workspace in memory.
+
+Limits keep each object small and its cost low. A workspace holds at most 100 files, 10,000 entries
+and 50 links. A file read shows the newest 100 entries. Read the rest from `/log`, one page at a time.
 
 ### The contract generates the code and the instructions
 
@@ -211,8 +221,20 @@ pnpm --filter @mdplane/worker exec wrangler login
 pnpm --filter @mdplane/worker run deploy
 ```
 
-`WORKSPACE_TTL_HOURS` in `apps/worker/wrangler.jsonc` sets how long a workspace lasts. Set it to `0`
-to keep workspaces.
+These variables in `apps/worker/wrangler.jsonc` set the behaviour. The defaults are the values on
+mdplane.dev.
+
+| Variable              | Default           | What it sets                                                                                                 |
+| --------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------ |
+| `WORKSPACE_TTL_HOURS` | `24`              | How long a workspace lasts. `0` keeps workspaces.                                                            |
+| `LEASE_SECONDS`       | `600`             | How long a claim holds a task.                                                                               |
+| `WORKSPACE_MAX_BYTES` | `8388608` (8 MiB) | The text a workspace can hold: each entry body and each distinct version of a file body. `0` means no limit. |
+| `CREATE_DAILY_LIMIT`  | `100`             | How many workspaces the service creates in a UTC day. `0` means no limit.                                    |
+| `CREATE_ENABLED`      | `true`            | Any other value stops new workspaces. Links to existing workspaces still work.                               |
+
+> [!CAUTION]
+> Do not turn on invocation logs or traces. They record the URL of each request, and each URL holds
+> a link's secret.
 
 ## Security
 
