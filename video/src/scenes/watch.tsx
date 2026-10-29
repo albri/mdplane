@@ -16,12 +16,14 @@ const STATUS: Record<TaskView['status'], [string, string]> = {
   cancelled: ['Cancelled', c.ink3],
 }
 
-// Where the reader's timeline is, as a fractional entry number: it plays live, then is dragged back.
-const LIVE_FROM = 1.2
-const STEP = 0.4
-const SCRUB = [6.9, 8.2] as const
+// Where the reader's timeline is, as a fractional entry number: it plays live from #13, holds at the
+// head, then is dragged back to #12 and holds there.
+const LIVE_FROM = 3.1
+const FIRST = 13
+const STEP = 0.55
+const SCRUB = [9.6, 11] as const
 function position(t: number, last: number) {
-  const live = Math.min(last, 9 + Math.max(0, (t - LIVE_FROM) / STEP))
+  const live = Math.min(last, FIRST + Math.max(0, (t - LIVE_FROM) / STEP))
   const whole = Math.floor(live)
   const glide = whole + arrive(live - whole)
   return mix(glide, 12, ramp(t, SCRUB[0], SCRUB[1] - SCRUB[0], travel))
@@ -329,8 +331,8 @@ function Reader({ entries, t }: { entries: Entry[]; t: number }) {
 const CHAIN = [13, 14, 15, 16, 17]
 const BLOCK = 272
 const GUTTER = (WIDTH - CHAIN.length * BLOCK) / (CHAIN.length - 1)
-const EDIT_AT = 12.1
-const CHECK_AT = (i: number) => 13.3 + i * 0.6
+const EDIT_AT = 18
+const CHECK_AT = (i: number) => 19.5 + i * 0.7
 
 function Chain({
   entries,
@@ -361,7 +363,7 @@ function Chain({
                   left: left - GUTTER,
                   top: 214,
                   width: GUTTER,
-                  opacity: fade(t, 10.4 + i * 0.12),
+                  opacity: fade(t, 15.4 + i * 0.12),
                 }}
               >
                 <div
@@ -401,7 +403,7 @@ function Chain({
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 8,
-                ...lift(t, 10.2 + i * 0.12, 16),
+                ...lift(t, 15.3 + i * 0.12, 16),
               }}
             >
               <div style={{ fontFamily: font.mono, fontSize: 24 }}>
@@ -522,28 +524,28 @@ function Chain({
   )
 }
 
-// 0–19s. The reader fills live and is dragged back; then an edit to #15 breaks the chain.
+// 0–29.8s. The reader fills live and is dragged back; then an edit to #15 breaks the chain.
 export function Watch({ session }: { session: FilmSession }) {
   const t = useT()
-  const reader = fade(t, 0.4, 9.6)
+  const reader = fade(t, 1.5, 13.4)
   return (
     <>
       <Words
         text="Watch the work arrive, and replay any moment."
         at={0.3}
-        exit={9.5}
+        exit={13.4}
         style={{ left: X, top: 110 }}
       />
       <Words
         text={'Edit an old entry, and every\nfingerprint after it breaks.'}
-        at={9.9}
-        exit={15.5}
+        at={14}
+        exit={24.4}
         style={{ left: X, top: 110 }}
       />
       <Words
         text={'Anyone who kept a later\nfingerprint can tell.'}
-        at={15.8}
-        exit={18.6}
+        at={24.8}
+        exit={29.3}
         style={{ left: X, top: 110 }}
       />
       <div
@@ -556,7 +558,7 @@ export function Watch({ session }: { session: FilmSession }) {
       >
         <Reader entries={session.entries} t={t} />
       </div>
-      <div style={{ position: 'absolute', inset: 0, opacity: 1 - ramp(t, 18.6, 0.4, travel) }}>
+      <div style={{ position: 'absolute', inset: 0, opacity: 1 - ramp(t, 29.3, 0.4, travel) }}>
         <Chain entries={session.entries} rehashed={session.rehashed} t={t} />
       </div>
     </>

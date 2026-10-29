@@ -5,7 +5,10 @@ import { bundle } from '@remotion/bundler'
 import { renderStill, selectComposition } from '@remotion/renderer'
 import { inlineFonts } from '../webpack.ts'
 
-const BEATS = [4.5, 12.5, 18, 25, 29.5, 34.5, 40.5, 46.5, 51.5, 56.5, 63.5, 66.5, 72, 75, 77, 81]
+// A frame from each beat, once it has settled.
+const BEATS = [
+  0, 6, 12.5, 18, 25, 33, 42.5, 54, 63, 76.5, 82, 90, 96, 104.5, 110, 117.5, 122, 126, 133,
+]
 const times = process.argv.length > 2 ? process.argv.slice(2).map(Number) : BEATS
 
 const serveUrl = await bundle({

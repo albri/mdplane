@@ -5,8 +5,8 @@ write the job, hand out the link, let agents claim and report, then watch the
 work and check its history.
 
 **Audience.** People who open the repository and know coding agents. They
-should get what it is, how it works and why it exists in about a minute and a
-half, with the sound off.
+should get what it is, how it works and why it exists in a little over two
+minutes, with the sound off.
 
 **Format.** 1920×1080 at 60fps, no audio, embedded at the top of the README.
 
@@ -35,6 +35,11 @@ camera never moves.
 
 - Statements rise word by word out of a mask, hold for their reading time, and
   leave upwards.
+- Every statement and every new line of text holds for at least 1s plus 0.25s
+  a word once it has arrived. Dense frames, like the task routes, the link
+  tiers and the reader, hold longer.
+- One thing moves at a time. Nothing else moves while a statement arrives, and
+  the footer route moves on while the shot before leaves.
 - The route and the logo are each one object for the whole film. They change
   size and place, but never cut.
 
@@ -48,14 +53,14 @@ come from the contract's `deriveTasks` and fingerprints from its `hashEntry`.
 
 | Time       | Shot   | The viewer learns                                                                       |
 | ---------- | ------ | --------------------------------------------------------------------------------------- |
-| 0–7s       | Open   | The logo, then "A shared worklog any agent can join with one URL."                      |
-| 7–14.5s    | Why    | Four agents on four machines have no shared place; their lines join into one file       |
-| 14.5–21s   | Route  | How it works in four stops; the route docks in the footer                               |
-| 21–31.5s   | Job    | The brief is typed at the top of `queue.md`; tasks and claims append below              |
-| 31.5–42.5s | Link   | Read, append and write links reach different stops; one append link goes to four agents |
-| 42.5–58.5s | Claims | Task #2: a second claim is refused. Task #5: a quiet agent's lease runs out             |
-| 58.5–77.5s | Watch  | The reader fills live and is scrubbed back; editing #15 breaks every later fingerprint  |
-| 77.5–83.5s | Close  | The logo, the line and `mdplane.dev`                                                    |
+| 0–8.6s     | Open   | The logo, then "A shared worklog any agent can join with one URL."                      |
+| 8.6–19.5s  | Why    | Four agents on four machines have no shared place; their lines join into one file       |
+| 19.5–27.7s | Route  | How it works in four stops; the route docks in the footer                               |
+| 27.7–44.8s | Job    | The brief is typed at the top of `queue.md`; tasks and claims append below              |
+| 44.8–65.6s | Link   | Read, append and write links reach different stops; one append link goes to four agents |
+| 65.6–98.2s | Claims | Task #2: a second claim is refused. Task #5: a quiet agent's lease runs out             |
+| 98.2–128s  | Watch  | The reader fills live and is scrubbed back; editing #15 breaks every later fingerprint  |
+| 128–135.2s | Close  | The logo, the line and `mdplane.dev`                                                    |
 
 The exact times live at the top of `src/Film.tsx`, and each shot's beats at the
 top of its scene file.

@@ -63,28 +63,29 @@ export function LogRow({ entry, style }: { entry: Entry; style?: CSSProperties }
   )
 }
 
-const BODY_AT = 1
-const LOG_AT = [5.5, 5.95, 6.4, 6.85, 7.7, 8.25]
+const BODY_AT = 2.2
+// Alex's four tasks arrive together, then the two claims.
+const LOG_AT = [9.9, 10.45, 11, 11.55, 12.4, 13.1]
 const SHOWN = [2, 3, 4, 5, 6, 7]
 
-// 0–10.5s. The brief is typed at the top of queue.md; the log grows below it.
+// 0–17.1s. The brief is typed at the top of queue.md; the log grows below it.
 export function Job({ entries, body }: { entries: Entry[]; body: string }) {
   const t = useT()
   const rows = SHOWN.map((seq) => entries[seq - 1]).filter((e) => e !== undefined)
   const grown = LOG_AT.reduce((n, at) => n + ramp(t, at, 0.45), 0)
-  const card = lift(t, 0.4, 20)
+  const card = lift(t, 1.6, 20)
   return (
     <>
       <Words
         text="Write the job at the top of a markdown file."
         at={0.3}
-        exit={4.9}
+        exit={7.6}
         style={{ left: X, top: 110 }}
       />
       <Words
         text="The work goes in a log below it."
-        at={5.1}
-        exit={10}
+        at={8.2}
+        exit={16.55}
         style={{ left: X, top: 110 }}
       />
       <div
@@ -98,7 +99,7 @@ export function Job({ entries, body }: { entries: Entry[]; body: string }) {
           background: c.page,
           overflow: 'hidden',
           ...card,
-          opacity: Number(card.opacity) * (1 - ramp(t, 10, 0.4)),
+          opacity: Number(card.opacity) * (1 - ramp(t, 16.55, 0.4)),
         }}
       >
         <div
@@ -126,15 +127,15 @@ export function Job({ entries, body }: { entries: Entry[]; body: string }) {
             lineHeight: '39px',
           }}
         >
-          <Source text={typed(body.trimEnd(), t, BODY_AT, 75)} />
+          <Source text={typed(body.trimEnd(), t, BODY_AT, 60)} />
         </div>
-        <div style={{ height: mix(0, 32, ramp(t, 5.1, 0.5)) + grown * 44 }}>
+        <div style={{ height: mix(0, 32, ramp(t, 9.4, 0.5)) + grown * 44 }}>
           <div
             style={{
               height: 1,
               marginTop: 6,
               background: c.line,
-              width: `${ramp(t, 5.1, 0.7) * 100}%`,
+              width: `${ramp(t, 9.4, 0.7) * 100}%`,
             }}
           />
           <div style={{ padding: '12px 28px 0' }}>

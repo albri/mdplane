@@ -1,6 +1,6 @@
 # The mdplane film
 
-A 1:23 film for the top of the README: what mdplane is, how it works and why it exists. It is made
+A 2:15 film for the top of the README: what mdplane is, how it works and why it exists. It is made
 with [Remotion](https://www.remotion.dev) from the landing page's tokens and fonts, and it replays
 the landing page's sample session. The keys in it are made up and masked.
 
@@ -10,7 +10,7 @@ Run these from the repository root.
 
 | Command                               | What it does                                                                                     |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `pnpm --filter @mdplane/video render` | Renders `mdplane.mp4` and `poster.webp` into this folder, in about three minutes.                |
+| `pnpm --filter @mdplane/video render` | Renders `mdplane.mp4` and `poster.webp` into this folder, in about four minutes.                 |
 | `pnpm --filter @mdplane/video studio` | Opens Remotion Studio, to scrub through the film while you change it.                            |
 | `pnpm --filter @mdplane/video stills` | Renders key frames to `out/stills/`. Add seconds, like `stills 25 46.5`, to render other frames. |
 

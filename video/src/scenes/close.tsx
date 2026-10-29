@@ -1,7 +1,7 @@
 import { fade, useT } from '../motion.tsx'
 import { c, font } from '../theme.ts'
 
-// 0–7s. The logo comes back to the middle (in Film), with the line and the address under it.
+// 0–7.2s. The logo comes back to the middle (in Film), then the line and the address under it.
 export function Close() {
   const t = useT()
   return (
@@ -23,7 +23,7 @@ export function Close() {
           fontSize: 50,
           letterSpacing: '-0.025em',
           color: c.ink,
-          opacity: fade(t, 1.4, undefined, 0.6),
+          opacity: fade(t, 1.9, undefined, 0.6),
         }}
       >
         A shared worklog any agent can join with one URL.
@@ -33,7 +33,7 @@ export function Close() {
           fontFamily: font.mono,
           fontSize: 32,
           color: c.action,
-          opacity: fade(t, 1.9, undefined, 0.6),
+          opacity: fade(t, 2.4, undefined, 0.6),
         }}
       >
         mdplane.dev

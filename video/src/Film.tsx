@@ -12,16 +12,18 @@ import type { FilmSession } from './session.ts'
 import { c, font, FPS, X } from './theme.ts'
 
 // When each shot starts, in seconds. Each shot's own beats are at the top of its scene.
+// Every statement and line of text holds for at least 1s plus 0.25s a word once it has arrived,
+// and nothing else moves while a statement arrives.
 export const AT = {
-  why: 7,
-  route: 14.5,
-  job: 21,
-  link: 31.5,
-  claims: 42.5,
-  watch: 58.5,
-  close: 77.5,
+  why: 8.6,
+  route: 19.5,
+  job: 27.7,
+  link: 44.8,
+  claims: 65.6,
+  watch: 98.2,
+  close: 128,
 }
-export const DURATION = 83.5
+export const DURATION = 135.2
 // Each shot starts this much before the last one ends, so one leaves as the next arrives.
 const LEAD = 0.3
 
@@ -39,7 +41,7 @@ function HowItWorks() {
     <Words
       text="How it works"
       at={0.2}
-      exit={4.7}
+      exit={6.9}
       size={46}
       style={{ left: X, top: 370, letterSpacing: '-0.02em' }}
     />
@@ -51,7 +53,7 @@ export type FilmProps = { session: FilmSession }
 export function Film({ session }: FilmProps) {
   const t = useT()
   // The page turns to the landing page's sunk grey for the reader, as its stage section does.
-  const sunk = ramp(t, AT.watch - 0.4, 0.6, travel) - ramp(t, AT.close, 0.6, travel)
+  const sunk = ramp(t, AT.watch - 0.8, 0.6, travel) - ramp(t, AT.close, 0.6, travel)
   return (
     <AbsoluteFill
       style={{
@@ -84,9 +86,10 @@ export function Film({ session }: FilmProps) {
         <Close />
       </Shot>
       <Route
-        drawAt={[0.6, 1.2, 1.8, 2.4].map((s) => AT.route + s)}
-        dockAt={AT.route + 5}
-        reachAt={[AT.route + 5, AT.link, AT.claims, AT.watch]}
+        drawAt={[0.9, 1.8, 2.7, 3.6].map((s) => AT.route + s)}
+        dockAt={AT.route + 7}
+        // A stop fills while the shot before it leaves, so it never moves under a new statement.
+        reachAt={[AT.route + 7, AT.link - 0.7, AT.claims - 0.7, AT.watch - 0.7]}
         leaveAt={AT.close}
       />
       <Lockup dockAt={1.6} undockAt={AT.close + 0.3} />

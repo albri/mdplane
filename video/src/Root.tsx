@@ -12,7 +12,7 @@ const LENGTH = `${Math.floor(DURATION / 60)}:${String(Math.floor(DURATION % 60))
 function Poster(props: FilmProps) {
   return (
     <>
-      <Sequence from={-Math.round((AT.route + 4) * FPS)}>
+      <Sequence from={-Math.round((AT.route + 5.5) * FPS)}>
         <Film {...props} />
       </Sequence>
       <div
@@ -59,7 +59,7 @@ export function Root() {
       <Composition
         id="mdplane"
         component={Film}
-        durationInFrames={DURATION * FPS}
+        durationInFrames={Math.round(DURATION * FPS)}
         fps={FPS}
         width={W}
         height={H}

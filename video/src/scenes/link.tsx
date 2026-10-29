@@ -24,23 +24,23 @@ const LINE_FROM = 840
 const FAN = { x: 1000, y: 560 }
 const AGENT_Y = (i: number) => 410 + i * 100
 
-// 0–11s. The three links reach different stops. Then one append link goes to four agents.
+// 0–20.8s. The three links reach different stops. Then one append link goes to four agents.
 export function Link() {
   const t = useT()
-  const table = fade(t, 0.5, 5.6)
-  const focus = ramp(t, 4.4, 0.5)
+  const table = fade(t, 1.4, 11.7)
+  const focus = ramp(t, 9.8, 0.5)
   return (
     <>
       <Words
         text="The link decides what an agent can do."
         at={0.3}
-        exit={5.4}
+        exit={11.7}
         style={{ left: X, top: 110 }}
       />
       <Words
         text={"Paste it into any agent.\nThere's nothing to install."}
-        at={5.7}
-        exit={10.6}
+        at={12.3}
+        exit={20.2}
         style={{ left: X, top: 110 }}
       />
 
@@ -60,7 +60,7 @@ export function Link() {
               lineHeight: 1.25,
               whiteSpace: 'pre',
               color: c.ink2,
-              opacity: fade(t, 0.7 + j * 0.12),
+              opacity: fade(t, 1.6 + j * 0.15),
             }}
           >
             {name}
@@ -76,13 +76,13 @@ export function Link() {
               y2={ROW_Y(2) + 50}
               stroke={c.line}
               strokeWidth={1}
-              opacity={fade(t, 0.7)}
+              opacity={fade(t, 1.6)}
             />
           ))}
           {LINKS.map((link, i) => {
             const y = ROW_Y(i)
             const end = STATION_X[link.reach] ?? 0
-            const at = 1.1 + i * 0.6
+            const at = 3 + i * 1.6
             const k = ramp(t, at, 0.9, travel)
             const dim = link.tier === 'a' ? 0 : focus * 0.7
             return (
@@ -118,7 +118,7 @@ export function Link() {
               position: 'absolute',
               left: X,
               top: ROW_Y(i) - 46,
-              opacity: fade(t, 0.9 + i * 0.6) * (1 - (link.tier === 'a' ? 0 : focus * 0.7)),
+              opacity: fade(t, 2.8 + i * 1.6) * (1 - (link.tier === 'a' ? 0 : focus * 0.7)),
             }}
           >
             <div
@@ -145,7 +145,7 @@ export function Link() {
 }
 
 function Handout({ t }: { t: number }) {
-  const shown = fade(t, 5.85, 10.6)
+  const shown = fade(t, 13.6, 20.2)
   const prompt = `Read mdplane.dev/a/${KEY}\nand follow the instructions.`
   return (
     <div style={{ position: 'absolute', inset: 0, opacity: shown }}>
@@ -168,12 +168,12 @@ function Handout({ t }: { t: number }) {
           color: c.ink,
         }}
       >
-        {typed(prompt, t, 6.1, 48)}
+        {typed(prompt, t, 14, 40)}
       </div>
       <svg width={1920} height={1080} style={{ position: 'absolute', inset: 0 }}>
         {AGENTS.map((agent, i) => {
           const y = AGENT_Y(i)
-          const at = 7.9 + i * 0.12
+          const at = 16.4 + i * 0.12
           return (
             <g key={agent}>
               <Path
@@ -197,8 +197,8 @@ function Handout({ t }: { t: number }) {
             fontSize: 32,
             lineHeight: '40px',
             color: c.ink,
-            opacity: fade(t, 8.6 + i * 0.12),
-            transform: `translateX(${mix(12, 0, ramp(t, 8.6 + i * 0.12, 0.45))}px)`,
+            opacity: fade(t, 17 + i * 0.12),
+            transform: `translateX(${mix(12, 0, ramp(t, 17 + i * 0.12, 0.45))}px)`,
           }}
         >
           {agent}

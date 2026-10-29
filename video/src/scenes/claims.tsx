@@ -62,11 +62,13 @@ const height = (s: Stop) => (s.lines ?? 1) * LINE + (s.until ? BAR : 0)
 function TaskRoute({
   x,
   title,
+  titleAt,
   stops,
   dim,
 }: {
   x: number
   title: string
+  titleAt: number
   stops: Stop[]
   dim: number
 }) {
@@ -99,7 +101,7 @@ function TaskRoute({
           fontSize: 30,
           letterSpacing: '-0.015em',
           color: c.ink,
-          opacity: fade(t, (stops[0]?.at ?? 0) - 0.4),
+          opacity: fade(t, titleAt),
         }}
       >
         {title}
@@ -175,6 +177,7 @@ function TaskRoute({
                   fontSize: 26,
                   lineHeight: `${LINE}px`,
                   color: c.ink2,
+                  textWrap: 'balance',
                 }}
               >
                 {s.who ? <b style={{ fontWeight: 650, color: c.ink }}>{s.who} </b> : null}
@@ -216,10 +219,11 @@ function TaskRoute({
   )
 }
 
-const A = 0.9
-const B = 8.4
+// Each stop arrives once the one before it has had time to be read.
+const A = 4.4
+const B = 21.8
 
-// 0–16s. Task #2: a second claim is refused. Task #5: a quiet agent's lease runs out.
+// 0–32.6s. Task #2: a second claim is refused. Task #5: a quiet agent's lease runs out.
 export function Claims() {
   const t = useT()
   return (
@@ -227,33 +231,33 @@ export function Claims() {
       <Words
         text={'Agents claim a task first,\nso two never do the same work.'}
         at={0.3}
-        exit={7.7}
+        exit={17.7}
         style={{ left: X, top: 110 }}
       />
       <Words
         text={'If an agent goes quiet,\nits claim runs out.'}
-        at={8}
-        exit={15.6}
+        at={18.5}
+        exit={32}
         style={{ left: X, top: 110 }}
       />
       <TaskRoute
         x={X}
-        title="Task #2: two agents want it"
-        dim={mix(0, 0.6, ramp(t, 7.8, 0.6)) + 0.4 * ramp(t, 15.6, 0.4)}
+        title="Task #2: upgrade CI to Node 22"
+        titleAt={1.8}
+        dim={mix(0, 0.6, ramp(t, 17.6, 0.6)) + 0.4 * ramp(t, 32, 0.4)}
         stops={[
-          { at: A, time: '09:01', who: 'alex', text: 'adds the task: upgrade CI to Node 22.' },
           {
-            at: A + 1,
+            at: A,
             time: '09:04',
             who: 'codex@ci',
             text: 'claims it until 09:14.',
             until: '09:14',
           },
           {
-            at: A + 2.1,
+            at: A + 3,
             time: '09:06',
             who: 'opencode@vps',
-            text: 'tries to claim it too, and is told to wait 8 minutes.',
+            text: 'tries too, and is told to wait 8 minutes.',
             off: true,
             lines: 2,
             chip: (
@@ -263,7 +267,7 @@ export function Claims() {
             ),
           },
           {
-            at: A + 4.2,
+            at: A + 7,
             time: '09:13',
             who: 'codex@ci',
             text: 'claims it again, until 09:23.',
@@ -271,7 +275,7 @@ export function Claims() {
             ends: 'renewed',
           },
           {
-            at: A + 5.6,
+            at: A + 9.75,
             time: '09:19',
             who: 'codex@ci',
             text: 'posts the response.',
@@ -282,33 +286,27 @@ export function Claims() {
       />
       <TaskRoute
         x={1000}
-        title="Task #5: an agent goes quiet"
-        dim={ramp(t, 15.6, 0.4)}
+        title="Task #5: update the API reference"
+        titleAt={19.8}
+        dim={ramp(t, 32, 0.4)}
         stops={[
-          { at: B, time: '09:02', who: 'alex', text: 'adds the task: update the API reference.' },
           {
-            at: B + 1,
+            at: B,
             time: '09:07',
             who: 'gemini@desktop',
             text: 'claims it until 09:17.',
             until: '09:17',
           },
           {
-            at: B + 3.4,
+            at: B + 3,
             time: '09:17',
-            text: 'Nothing more from gemini@desktop, so the claim runs out and the task is free.',
+            who: 'gemini@desktop',
+            text: 'went quiet, so the task is free again.',
             off: true,
             lines: 2,
             ends: 'ran out',
           },
-          { at: B + 4.4, time: '09:20', who: 'claude@laptop', text: 'claims it.', until: '09:30' },
-          {
-            at: B + 5.8,
-            time: '09:26',
-            who: 'claude@laptop',
-            text: 'posts its progress.',
-            chip: <Chip colour={c.warn}>In progress</Chip>,
-          },
+          { at: B + 6.5, time: '09:20', who: 'claude@laptop', text: 'claims it.', until: '09:30' },
         ]}
       />
     </>
