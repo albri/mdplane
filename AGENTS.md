@@ -35,8 +35,10 @@ Run from the repository root, with Node 22.18 or later and pnpm.
 
 - `pnpm generate` regenerates everything derived from `openapi.yaml`.
 - `pnpm check` runs oxlint (type-aware), the oxfmt format check, the
-  TypeScript typecheck, the spec lint, and a check that generated files are
-  current.
+  TypeScript typecheck, the spec lint, a check that generated files are
+  current, and the JavaScript budget: it builds the site and fails if `/`,
+  `/demo` or the reader sends more gzipped JavaScript than `apps/site/budget.ts`
+  allows. The README's size claim depends on it.
 - `pnpm test` runs the unit and Worker tests.
 - `pnpm e2e` runs the Playwright tests, with axe, against `wrangler dev` in
   Chromium, WebKit and Firefox, on desktops and phones. Install the browsers
@@ -45,10 +47,20 @@ Run from the repository root, with Node 22.18 or later and pnpm.
 - `pnpm format` formats the code.
 - `pnpm build` builds the site. The Worker's `dev` and `deploy` build it first.
 - `pnpm --filter @mdplane/worker dev` runs the Worker and the site locally.
-- `pnpm --filter @mdplane/worker run deploy` deploys the preview Worker to
-  workers.dev. mdplane.dev is the `production` environment in `wrangler.jsonc`.
-  Only CI deploys it, after a reviewer approves, so never pass
-  `--env production` yourself.
+- `pnpm --filter @mdplane/worker run deploy` deploys the preview Worker. It
+  answers on workers.dev until the cutover. After that `workers_dev` is false,
+  because the preview shares the account's daily limits with mdplane.dev and
+  workers.dev is outside the zone's rate-limiting rule.
+- `pnpm --filter @mdplane/worker run deploy:open` deploys the same Worker with
+  its workers.dev URL on, for a test. Run `deploy` when the test is done, to
+  take the URL off again.
+- mdplane.dev is the `production` environment in `wrangler.jsonc`. Only CI
+  deploys it, after a reviewer approves, so never pass `--env production`
+  yourself.
+- `node apps/site/monitor.ts <base URL>` checks a live deployment end to end
+  and prints statuses only. The scheduled "Production check" workflow runs it
+  against mdplane.dev once the `PROD_MONITOR` repository variable is `true`.
+  Each run makes one workspace.
 
 ## Changing the API
 
