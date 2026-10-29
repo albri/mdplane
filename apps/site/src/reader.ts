@@ -155,6 +155,9 @@ export class Reader {
   private chainOpen = false
   private readonly doc = createRef<HTMLElement>()
   private readonly log = createRef<HTMLElement>()
+  // The history's panel draws the rows it lacks when it appears or changes size.
+  private readonly logSized = new ResizeObserver(() => this.onLogScroll())
+  private logWatched: HTMLElement | null = null
 
   constructor(root: HTMLElement, { variant = 'compact', level = 3, bar }: ReaderOptions = {}) {
     this.root = root
@@ -432,6 +435,11 @@ export class Reader {
       this.log.value?.querySelector<HTMLElement>('[aria-current]')?.focus({ preventScroll: true })
     }
     this.fitRows()
+    const log = this.log.value ?? null
+    if (log && log !== this.logWatched) {
+      this.logWatched = log
+      this.logSized.observe(log)
+    }
   }
 
   // Which rows are on screen is worked out from their height, so it's measured once there's a
@@ -454,6 +462,12 @@ export class Reader {
     if (count <= ALL_ROWS) {
       this.rowsDrawn = new Set(Array.from({ length: count }, (_, i) => i))
       return [...this.rowsDrawn]
+    }
+    // A history that isn't shown, as on a phone showing the file, needs only the current row. The
+    // rest are drawn when its panel appears.
+    if (this.pane === 'doc' && this.log.value?.checkVisibility() === false) {
+      this.rowsDrawn = new Set([this.pos - 1])
+      return [this.pos - 1]
     }
     const screen = this.onScreen()
     const span = (screen ? screen[1] - screen[0] : 12) + OVERSCAN
