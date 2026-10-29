@@ -186,7 +186,7 @@ site sends about 30 KB of gzipped JavaScript.
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `packages/contract` | `openapi.yaml` and the code generated from it. Also the hash chain, the task rules and the markdown views, which the Worker and the reader share. |
 | `apps/worker`       | The Worker and the workspace Durable Object, with tests for order, claims, idempotency, folder scope and the uniform 404.                         |
-| `apps/site`         | The landing page, the demo and the reader, with Playwright and axe tests on a desktop and a phone.                                                |
+| `apps/site`         | The landing page, the demo and the reader, with Playwright and axe tests in Chromium, WebKit and Firefox, on desktops and phones.                 |
 | `video`             | The video at the top of this README, made with Remotion from the site's design tokens and the sample session.                                     |
 
 ## Development
@@ -199,14 +199,14 @@ You need Node 22.18 or later and pnpm. Run each command from the repository root
 | `pnpm --filter @mdplane/worker dev`   | Serves the API, the site and the reader at http://localhost:8787.                               |
 | `pnpm check`                          | Runs the linter, the format check, the typecheck, the spec lint and a check of generated files. |
 | `pnpm test`                           | Runs the unit and Worker tests.                                                                 |
-| `pnpm e2e`                            | Runs the browser tests, with axe, on a desktop and a phone.                                     |
+| `pnpm e2e`                            | Runs the browser tests, with axe, in Chromium, WebKit and Firefox, on desktops and phones.      |
 | `pnpm generate`                       | Generates the types, the schemas and the instructions from `openapi.yaml`.                      |
 | `pnpm --filter @mdplane/video render` | Renders the video and its poster again.                                                         |
 
-Before you run `pnpm e2e` for the first time, install Chromium:
+Before you run `pnpm e2e` for the first time, install the browsers:
 
 ```bash
-pnpm --filter @mdplane/site exec playwright install chromium
+pnpm --filter @mdplane/site exec playwright install chromium webkit firefox
 ```
 
 To change the API, edit `openapi.yaml` first. Then run `pnpm generate` and change the code to match.

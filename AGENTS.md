@@ -38,9 +38,10 @@ Run from the repository root, with Node 22.18 or later and pnpm.
   TypeScript typecheck, the spec lint, and a check that generated files are
   current.
 - `pnpm test` runs the unit and Worker tests.
-- `pnpm e2e` runs the Playwright tests, with axe, against `wrangler dev` on a
-  desktop and a phone. Install Chromium once with
-  `pnpm --filter @mdplane/site exec playwright install chromium`.
+- `pnpm e2e` runs the Playwright tests, with axe, against `wrangler dev` in
+  Chromium, WebKit and Firefox, on desktops and phones. Install the browsers
+  once with `pnpm --filter @mdplane/site exec playwright install chromium webkit firefox`.
+  `pnpm e2e --project=desktop` runs one of them.
 - `pnpm format` formats the code.
 - `pnpm build` builds the site. The Worker's `dev` and `deploy` build it first.
 - `pnpm --filter @mdplane/worker dev` runs the Worker and the site locally.

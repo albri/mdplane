@@ -26,9 +26,21 @@ jobs:
       - run: pnpm check
       - run: pnpm test
 
-  # The site in a real browser against `wrangler dev`, on a desktop and a phone, with axe.
+  # The site in real browsers against `wrangler dev`, on desktops and phones, with axe. One job per
+  # engine, side by side, so each installs only its own browser.
   e2e:
+    name: e2e (${{ matrix.browser }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - browser: chromium
+            projects: --project=desktop --project=phone
+          - browser: webkit
+            projects: --project=desktop-webkit --project=phone-webkit
+          - browser: firefox
+            projects: --project=desktop-firefox
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
@@ -37,8 +49,8 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @mdplane/site exec playwright install --with-deps chromium
-      - run: pnpm e2e
+      - run: pnpm --filter @mdplane/site exec playwright install --with-deps ${{ matrix.browser }}
+      - run: pnpm e2e ${{ matrix.projects }}
 
   # Deploys main to mdplane.dev once a reviewer approves the production environment. The first
   # approved deploy adds the mdplane.dev route, so it is the cutover. Needs the

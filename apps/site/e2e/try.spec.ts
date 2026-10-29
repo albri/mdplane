@@ -1,7 +1,13 @@
 import { zAppendResult, zCreateWorkspaceResponse } from '@mdplane/contract'
 import { expect, expectAccessible, test } from './fixtures.ts'
 
-test.use({ permissions: ['clipboard-read', 'clipboard-write'] })
+// Each engine names the clipboard permissions differently: WebKit lets a click write without one,
+// and Firefox has neither, so the config lets Firefox read without a prompt.
+const clipboard: Record<string, string[]> = {
+  chromium: ['clipboard-read', 'clipboard-write'],
+  webkit: ['clipboard-read'],
+}
+test.use({ permissions: async ({ browserName }, use) => use(clipboard[browserName] ?? []) })
 
 test('a scripted agent works through the welcome task, live', async ({ page }) => {
   await page.goto('/')

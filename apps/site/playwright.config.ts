@@ -11,9 +11,21 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? 'github' : 'list',
   use: { baseURL: `http://localhost:${PORT}` },
+  // The oldest engines the build targets are Safari 17.5 and Firefox 125. Playwright's are newer,
+  // so these catch engine differences, not every old version.
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
     { name: 'phone', use: { ...devices['Pixel 7'] } },
+    { name: 'desktop-webkit', use: { ...devices['Desktop Safari'] } },
+    {
+      name: 'desktop-firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+        // Lets the page read the clipboard without Firefox's paste prompt, as Chromium's permission does.
+        launchOptions: { firefoxUserPrefs: { 'dom.events.testing.asyncClipboard': true } },
+      },
+    },
+    { name: 'phone-webkit', use: { ...devices['iPhone 15'] } },
   ],
   // The tests make more workspaces than a day allows, run after run.
   webServer: {
