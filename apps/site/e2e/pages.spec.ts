@@ -1,16 +1,42 @@
 import { expect, expectAccessible, test } from './fixtures.ts'
 
-for (const [path, title] of [
-  ['/', /shared worklog/],
-  ['/demo', /Sample session|release-2-4/],
-  ['/no-such-page', /Not found/],
+for (const [path, title, status] of [
+  ['/', /shared worklog/, 200],
+  ['/demo', /Sample session|release-2-4/, 200],
+  ['/privacy', /Privacy/, 200],
+  ['/no-such-page', /Not found/, 404],
 ] as const) {
   test(`${path} is accessible`, async ({ page }) => {
-    await page.goto(path)
+    const response = await page.goto(path)
+    expect(response?.status()).toBe(status)
     await expect(page).toHaveTitle(title)
     await expectAccessible(page)
   })
 }
+
+test('the footer links to the privacy page', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('contentinfo').getByRole('link', { name: 'Privacy' }).click()
+  await expect(page).toHaveURL(/\/privacy$/)
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+})
+
+// The privacy page says so, so a cookie or a request to another site would make it false.
+test('pages set no cookies and load nothing from other sites', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const origin = new URL(baseURL ?? '').origin
+  const foreign: string[] = []
+  page.on('request', (request) => {
+    const { protocol, origin: from } = new URL(request.url())
+    if (protocol.startsWith('http') && from !== origin) foreign.push(request.url())
+  })
+  for (const path of ['/', '/demo', '/privacy']) await page.goto(path)
+  expect(foreign).toEqual([])
+  expect(await context.cookies()).toEqual([])
+})
 
 const policy = (headers: Record<string, string>) => ({
   csp: headers['content-security-policy'],
@@ -20,8 +46,9 @@ const policy = (headers: Record<string, string>) => ({
 })
 
 test('static pages and Worker pages send the same security headers', async ({ request }) => {
-  const [demo, landing, missing] = await Promise.all([
+  const [demo, privacy, landing, missing] = await Promise.all([
     request.get('/demo'),
+    request.get('/privacy'),
     // The Worker answers the root first, so it can give agents markdown instead.
     request.get('/', { headers: { Accept: 'text/html' } }),
     request.get('/r/wk_7Qm2x9Lp4Rt8.x3Kq9Lm2Vb7Np4Rt8Wc6Hy1Jd5Fs0Ga3Z', {
@@ -30,6 +57,7 @@ test('static pages and Worker pages send the same security headers', async ({ re
   ])
   expect(missing.status()).toBe(404)
   expect(policy(demo.headers()).csp).toContain("require-trusted-types-for 'script'")
+  expect(policy(privacy.headers())).toEqual(policy(demo.headers()))
   expect(policy(landing.headers())).toEqual(policy(demo.headers()))
   expect(policy(missing.headers())).toEqual(policy(demo.headers()))
   expect(landing.headers()['x-robots-tag']).toBeUndefined()

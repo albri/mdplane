@@ -98,13 +98,37 @@
     justify-items: start;
     padding-block: clamp(48px, 9vw, 120px);
   }
-  .missing h1 {
+  .missing h1,
+  .note h1 {
     font-size: clamp(1.75rem, 1.3rem + 1.6vw, 2.5rem);
     font-weight: 650;
     letter-spacing: -0.03em;
     line-height: 1.1;
   }
   .missing p {
+    color: var(--ink-2);
+    max-width: 62ch;
+  }
+
+  /* A page of plain text, such as the privacy note. */
+  .note {
+    display: grid;
+    gap: 28px;
+    align-content: start;
+    justify-items: start;
+    padding-block: clamp(48px, 9vw, 120px);
+  }
+  .note section {
+    display: grid;
+    gap: 10px;
+  }
+  .note h2 {
+    font-size: 1.25rem;
+    font-weight: 650;
+    letter-spacing: -0.015em;
+    line-height: 1.25;
+  }
+  .note p {
     color: var(--ink-2);
     max-width: 62ch;
   }
