@@ -357,8 +357,10 @@ describe('mdplane.dev', () => {
   })
 
   test('caps the CPU a request can bill, far below the 30 seconds Workers Paid allows', () => {
-    expect(production.limits?.cpu_ms).toBeGreaterThanOrEqual(10)
-    expect(production.limits?.cpu_ms).toBeLessThanOrEqual(100)
+    // A workspace's object was never held to Workers Free's 10 ms, so a tight cap could stop a
+    // full workspace's requests.
+    expect(production.limits?.cpu_ms).toBeGreaterThanOrEqual(500)
+    expect(production.limits?.cpu_ms).toBeLessThanOrEqual(5000)
   })
 })
 
