@@ -173,8 +173,9 @@ paths:
         log entries. `at` shows the file as it was at that sequence number.
         `Accept: application/json` gets JSON; anything else gets markdown.
 
-        A view holds at most 100 tasks and 100 entries, so it stays small
-        however busy the file gets. `omitted` counts what was left out, and
+        A view holds at most 100 tasks and 100 entries, and at most 128 KiB
+        of task bodies and 128 KiB of entry bodies, so it stays small however
+        busy the file gets. `omitted` counts what was left out, and
         `GET $URL/log?path={path}&after={since}` reads every entry.
       tags: [Files]
       parameters:
@@ -409,8 +410,11 @@ paths:
       operationId: readLog
       summary: Read log entries after a cursor
       description: |
-        Entries with a sequence number above `after`, oldest first. Pass the
-        returned `cursor` as `after` next time. With `Prefer: wait=25` the
+        Entries with a sequence number above `after`, oldest first. A page
+        holds at most `limit` entries and 512 KiB of their bodies, so it can
+        stop short of `limit`. Pass the returned `cursor` as `after` next
+        time; while `cursor` is below `head.seq` there may be more to read
+        straight away. With `Prefer: wait=25` the
         request waits up to 25 seconds for a new entry before answering.
         Entries outside the link's folder appear as sequence number and hash
         only, so the chain can still be checked. At most 20 requests wait on
@@ -498,7 +502,11 @@ paths:
       description: |
         Each message is one `LogItem` as JSON. Reconnect with `after` set to
         the last sequence number you saw, and nothing is missed or repeated.
-        A workspace takes at most 100 sockets at once; another one gets 429.
+        A new connection is sent at most one page of the log after `after`:
+        500 entries or 512 KiB of their bodies. When there is more, the
+        socket closes with code 4000 after that page; reconnect straight away
+        for the next one. A workspace takes at most 100 sockets at once;
+        another one gets 429.
       tags: [Log]
       parameters:
         - $ref: '#/components/parameters/After'
@@ -977,15 +985,17 @@ components:
           type: array
           maxItems: 100
           description: |
-            The file's tasks, oldest first. When there are more than 100, the
-            open and claimed ones come first, then the newest done and
-            cancelled ones.
+            The file's tasks, oldest first. When they don't all fit in 100
+            tasks and 128 KiB of bodies, the open and claimed ones come
+            first, oldest first, then the newest done and cancelled ones.
           items:
             $ref: '#/components/schemas/TaskView'
         entries:
           type: array
           maxItems: 100
-          description: The file's newest 100 log entries up to `at`, oldest first.
+          description: |
+            The file's newest log entries up to `at`, oldest first: at most
+            100, and at most 128 KiB of their bodies.
           items:
             $ref: '#/components/schemas/Entry'
         omitted:
@@ -1235,7 +1245,9 @@ components:
         cursor:
           type: integer
           minimum: 0
-          description: Pass as `after` to continue.
+          description: |
+            Pass as `after` to continue. Below `head.seq`, there may be more
+            entries to read now.
         head:
           $ref: '#/components/schemas/Head'
 

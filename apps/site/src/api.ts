@@ -56,8 +56,12 @@ const JSON_ACCEPT = { Accept: 'application/json' }
 
 export const isEntry = (item: LogItem): item is Entry => !('redacted' in item)
 
+const MORE_BACKLOG = 4000
+
 export const getWorkspace = (base: string) => send<Workspace>(base, { headers: JSON_ACCEPT })
 
+// A page can stop short of its limit to keep its size down, so the cursor reaching the head is
+// what says the log has been read.
 export async function readLog(base: string, after = 0): Promise<LogItem[]> {
   const items: LogItem[] = []
   let cursor = after
@@ -65,7 +69,7 @@ export async function readLog(base: string, after = 0): Promise<LogItem[]> {
     // oxlint-disable-next-line no-await-in-loop -- each page starts where the last one ended
     const page = await send<LogPage>(`${base}/log?after=${cursor}&limit=500`)
     items.push(...page.entries)
-    if (page.entries.length < 500) return items
+    if (page.cursor >= page.head.seq || page.entries.length === 0) return items
     cursor = page.cursor
   }
 }
@@ -298,8 +302,10 @@ export function follow(
       // A socket replaced by a reconnect closes late, and has nothing more to say.
       if (stopped || socket !== ws) return
       socket = null
+      // The server sends one page of backlog per connection, and says when there is more.
+      if (event.code === MORE_BACKLOG) connect()
       // 1008 means the link was revoked or the workspace expired.
-      if (event.code === 1008 || (!opened && ++refused >= 2)) void check()
+      else if (event.code === 1008 || (!opened && ++refused >= 2)) void check()
       else retry()
     })
   }

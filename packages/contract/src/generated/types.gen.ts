@@ -107,14 +107,16 @@ export type FileView = {
      */
     since: number;
     /**
-     * The file's tasks, oldest first. When there are more than 100, the
-     * open and claimed ones come first, then the newest done and
-     * cancelled ones.
+     * The file's tasks, oldest first. When they don't all fit in 100
+     * tasks and 128 KiB of bodies, the open and claimed ones come
+     * first, oldest first, then the newest done and cancelled ones.
      *
      */
     tasks: Array<TaskView>;
     /**
-     * The file's newest 100 log entries up to `at`, oldest first.
+     * The file's newest log entries up to `at`, oldest first: at most
+     * 100, and at most 128 KiB of their bodies.
+     *
      */
     entries: Array<Entry>;
     /**
@@ -267,7 +269,9 @@ export type LogItem = Entry | RedactedEntry;
 export type LogPage = {
     entries: Array<LogItem>;
     /**
-     * Pass as `after` to continue.
+     * Pass as `after` to continue. Below `head.seq`, there may be more
+     * entries to read now.
+     *
      */
     cursor: number;
     head: Head;

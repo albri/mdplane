@@ -63,7 +63,10 @@ export function renderFile(view: FileView): string {
     '',
     tasks.length > 0 ? tasks.join('\n') : 'No tasks yet.',
     ...(omitted.tasks > 0
-      ? ['', `${plural(omitted.tasks, 'more task isn’t', 'more tasks aren’t')} shown.`]
+      ? [
+          '',
+          `${plural(omitted.tasks, 'more task isn’t', 'more tasks aren’t')} shown. Each is a \`task\` entry at \`GET $URL/log?path=${view.path}&after=${view.since}\`.`,
+        ]
       : []),
     '',
     '## Log',

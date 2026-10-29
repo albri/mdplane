@@ -3,10 +3,10 @@
 import {
   deriveTasks,
   type Entry,
-  FILE_VIEW_LIMITS,
   type FileView,
   LEASE_MS,
   type LogItem,
+  pickEntries,
   pickTasks,
   renderFile,
   type TaskView,
@@ -139,7 +139,7 @@ export function agentView(session: Session, state: State): string {
   const { life } = state
   const all = state.threads.map((t) => t.task)
   const tasks = pickTasks(all)
-  const entries = life.slice(-FILE_VIEW_LIMITS.entries)
+  const entries = pickEntries(life)
   const view: FileView = {
     path: session.path,
     at: state.list.at(-1)?.seq ?? 0,

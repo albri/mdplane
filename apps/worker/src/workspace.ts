@@ -10,6 +10,7 @@ import {
   type EntryContent,
   FILE_VIEW_LIMITS,
   type FileSummary,
+  fitting,
   type FileView,
   GENESIS,
   type Head,
@@ -20,6 +21,7 @@ import {
   type Problem,
   type SearchResults,
   type TaskCounts,
+  type TaskSource,
   type TaskView,
   type Tier,
   pickTasks,
@@ -49,7 +51,19 @@ export type Overview = {
 }
 
 // `polls` is how many long polls may wait at once, and `sockets` how many live connections.
-export const LIMITS = { files: 100, entries: 10_000, links: 50, polls: 20, sockets: 100 }
+// `pageBytes` is the most entry body text one page of the log carries, and `backlog` the most
+// entries a new live connection is sent before it is asked to reconnect for the rest.
+export const LIMITS = {
+  files: 100,
+  entries: 10_000,
+  links: 50,
+  polls: 20,
+  sockets: 100,
+  pageBytes: 524_288,
+  backlog: 500,
+}
+// The close code that tells a live connection there is more backlog than one connection sends.
+export const MORE_BACKLOG = 4000
 const IDEMPOTENCY_MS = 24 * 60 * 60 * 1000
 const MAX_WAIT_SECONDS = 25
 const ALL: readonly Tier[] = ['r', 'a', 'w']
@@ -371,13 +385,14 @@ export class Workspace extends DurableObject<Env> {
     asOf: number,
     bodyChars: number,
   ): TaskView[] {
-    const rows = this.sql.exec<Entry>(
-      `SELECT seq, at, path, type, author, ref, substr(body, 1, ?) AS body, version,
-              content_hash AS contentHash, prev, hash
+    // Only what statuses need. The columns after the body would make SQLite step through every
+    // long body to reach them.
+    const rows = this.sql.exec<TaskSource>(
+      `SELECT seq, at, type, author, ref, ${bodyChars > 0 ? 'substr(body, 1, ?)' : "''"} AS body
        FROM entries
        WHERE path = ? AND seq > ? AND seq <= ? AND type IN ('task', 'claim', 'response', 'cancel')
        ORDER BY seq`,
-      bodyChars,
+      ...(bodyChars > 0 ? [bodyChars] : []),
       path,
       since,
       upto,
@@ -421,9 +436,22 @@ export class Workspace extends DurableObject<Env> {
         : Date.parse(
             this.sql.exec<{ at: string }>(`SELECT at FROM entries WHERE seq = ?`, upto).one().at,
           )
-    // Statuses first, then the bodies of only the tasks the view shows.
+    // Statuses and sizes first, then the bodies of only the tasks and entries the view shows.
+    // octet_length() reads a body's size without reading the body.
     const all = this.tasks(path, since, upto, asOf, 0)
-    const shown = pickTasks(all)
+    const sizes = new Map(
+      this.sql
+        .exec<{ seq: number; bytes: number }>(
+          `SELECT seq, octet_length(body) AS bytes FROM entries
+           WHERE path = ? AND seq > ? AND seq <= ? AND type = 'task'`,
+          path,
+          since,
+          upto,
+        )
+        .toArray()
+        .map((row) => [row.seq, row.bytes]),
+    )
+    const shown = pickTasks(all, (task) => sizes.get(task.seq) ?? 0)
     const bodies = new Map(
       this.sql
         .exec<{ seq: number; body: string }>(
@@ -442,17 +470,29 @@ export class Workspace extends DurableObject<Env> {
         upto,
       )
       .one()
-    const entries = this.sql
-      .exec<Entry>(
-        `SELECT ${ENTRY} FROM entries WHERE path = ? AND seq > ? AND seq <= ?
-         ORDER BY seq DESC LIMIT ?`,
+    const newest = this.sql
+      .exec<{ seq: number; bytes: number }>(
+        `SELECT seq, COALESCE(octet_length(body), 0) AS bytes FROM entries
+         WHERE path = ? AND seq > ? AND seq <= ? ORDER BY seq DESC LIMIT ?`,
         path,
         since,
         upto,
         FILE_VIEW_LIMITS.entries,
       )
       .toArray()
-      .toReversed()
+    const fit = fitting(
+      newest.map((row) => row.bytes),
+      FILE_VIEW_LIMITS.entries,
+      FILE_VIEW_LIMITS.bytes,
+    )
+    const entries = this.sql
+      .exec<Entry>(
+        `SELECT ${ENTRY} FROM entries WHERE path = ? AND seq >= ? AND seq <= ? ORDER BY seq`,
+        path,
+        newest[fit - 1]?.seq ?? upto + 1,
+        upto,
+      )
+      .toArray()
     return ok({
       path,
       at: upto,
@@ -662,16 +702,42 @@ export class Workspace extends DurableObject<Env> {
     return row?.token ?? null
   }
 
+  // A page stops at `limit` entries or LIMITS.pageBytes of their bodies, whichever comes first.
+  // Sizes are read first, so no body past the budget is read. Entries outside the folder are sent
+  // as their hashes alone, so their bodies neither count nor leave the database.
   private page(folder: string | null, path: string | undefined, after: number, limit: number) {
-    const rows = this.sql
-      .exec<Entry>(
-        `SELECT ${ENTRY} FROM entries WHERE seq > ? ${path ? 'AND path = ?' : ''} ORDER BY seq LIMIT ?`,
+    const scope = folder === null ? '' : `${folder}/`
+    const sizes = this.sql
+      .exec<{ seq: number; bytes: number }>(
+        `SELECT seq, CASE WHEN substr(path, 1, ?) = ? THEN COALESCE(octet_length(body), 0) ELSE 0 END
+                AS bytes
+         FROM entries WHERE seq > ? ${path ? 'AND path = ?' : ''} ORDER BY seq LIMIT ?`,
+        scope.length,
+        scope,
         ...(path ? [after, path, limit] : [after, limit]),
       )
       .toArray()
+    const fit = fitting(
+      sizes.map((row) => row.bytes),
+      limit,
+      LIMITS.pageBytes,
+    )
+    const last = sizes[fit - 1]?.seq ?? after
+    const rows = this.sql
+      .exec<Entry>(
+        `SELECT seq, at, path, type, author, ref,
+                CASE WHEN substr(path, 1, ?) = ? THEN body END AS body,
+                version, content_hash AS contentHash, prev, hash
+         FROM entries WHERE seq > ? AND seq <= ? ${path ? 'AND path = ?' : ''} ORDER BY seq`,
+        scope.length,
+        scope,
+        ...(path ? [after, last, path] : [after, last]),
+      )
+      .toArray()
     const head = this.head()
-    // A short page means everything up to the head has been seen, even entries the filter skipped.
-    const cursor = rows.length === limit ? (rows.at(-1)?.seq ?? after) : Math.max(after, head.seq)
+    // A page that ended before its limit and budget has seen everything up to the head, even
+    // entries the path filter skipped.
+    const cursor = fit === sizes.length && fit < limit ? Math.max(after, head.seq) : last
     return { entries: rows.map((row) => visible(row, folder)), cursor, head }
   }
 
@@ -811,11 +877,12 @@ export class Workspace extends DurableObject<Env> {
     const state: SocketState = { linkId: link.id, folder: link.folder }
     server.serializeAttachment(state)
     // Sent before any new entry can be sealed, so the backlog and the live stream don't overlap.
-    for (const entry of this.sql.exec<Entry>(
-      `SELECT ${ENTRY} FROM entries WHERE seq > ? ORDER BY seq`,
-      after,
-    )) {
-      server.send(JSON.stringify(visible(entry, link.folder)))
+    // A connection gets at most one page of the log. When there is more, it closes after that
+    // page, and the client reconnects from the last entry it has, as after any drop.
+    const backlog = this.page(link.folder, undefined, after, LIMITS.backlog)
+    for (const item of backlog.entries) server.send(JSON.stringify(item))
+    if (backlog.cursor < backlog.head.seq) {
+      server.close(MORE_BACKLOG, 'More to send: reconnect with after set to the last entry')
     }
     return new Response(null, { status: 101, webSocket: client })
   }

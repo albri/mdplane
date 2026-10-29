@@ -1,4 +1,15 @@
-import { zCreateLinkResult, zFileView, zProblem, zSearchResults } from '@mdplane/contract'
+import {
+  deriveTasks,
+  type Entry,
+  FILE_VIEW_LIMITS,
+  pickEntries,
+  pickTasks,
+  zCreateLinkResult,
+  zFileView,
+  zLogPage,
+  zProblem,
+  zSearchResults,
+} from '@mdplane/contract'
 import { runInDurableObject } from 'cloudflare:test'
 import { env } from 'cloudflare:workers'
 import { describe, expect, test } from 'vitest'
@@ -212,6 +223,43 @@ describe('reading a busy file', () => {
     expect(text).toContain('5 older entries are at `GET $URL/log?path=queue.md&after=0`.')
   })
 
+  test('keeps its tasks and entries within a byte budget, cut where the reader cuts them', async () => {
+    const ws = await createWorkspace()
+    await writeFile(ws.write, 'queue.md', 'Brief\n')
+    // Two bytes a character, so counting characters would fit twice as many.
+    const body = 'é'.repeat(8000)
+    await Promise.all(
+      Array.from({ length: 10 }, () =>
+        append(ws.append, { path: 'queue.md', type: 'task', author: 'a', body }),
+      ),
+    )
+    const view = zFileView.parse(
+      await json(
+        await call(`${ws.read}/files/queue.md`, { headers: { Accept: 'application/json' } }),
+      ),
+    )
+    // 16,000 bytes a task: eight fit in 128 KiB, and the write entry has no body.
+    expect(view.tasks.map((task) => task.seq)).toEqual([2, 3, 4, 5, 6, 7, 8, 9])
+    expect(view.entries.map((entry) => entry.seq)).toEqual([4, 5, 6, 7, 8, 9, 10, 11])
+    expect(view.omitted).toEqual({ tasks: 2, entries: 3 })
+    expect(FILE_VIEW_LIMITS.bytes).toBe(131_072)
+
+    // The reader replays the log to show what an agent gets.
+    const log = zLogPage
+      .parse(await json(await call(`${ws.read}/log`)))
+      .entries.filter((item): item is Entry => !('redacted' in item))
+    expect(pickTasks(deriveTasks(log, Date.now())).map((task) => task.seq)).toEqual(
+      view.tasks.map((task) => task.seq),
+    )
+    expect(pickEntries(log).map((entry) => entry.seq)).toEqual(
+      view.entries.map((entry) => entry.seq),
+    )
+    const text = await (await call(`${ws.read}/files/queue.md`)).text()
+    expect(text).toContain(
+      '2 more tasks aren’t shown. Each is a `task` entry at `GET $URL/log?path=queue.md&after=0`.',
+    )
+  })
+
   test('the overview carries only what its summary of each open task needs', async () => {
     const ws = await createWorkspace()
     await writeFile(ws.write, 'queue.md', 'Brief\n')
@@ -228,6 +276,50 @@ describe('reading a busy file', () => {
     const tasks = result.value.tasks['queue.md'] ?? []
     expect(tasks.map((task) => [task.seq, task.status])).toEqual([[2, 'open']])
     expect(tasks[0]?.body.length).toBeLessThanOrEqual(240)
+  })
+})
+
+// 40 entries of 16,000 bytes come to 640,000 bytes, more than one page carries.
+async function withLongLog() {
+  const ws = await createWorkspace()
+  await writeFile(ws.write, 'queue.md', 'Brief\n')
+  const body = 'x'.repeat(16_000)
+  await Promise.all(
+    Array.from({ length: 40 }, () =>
+      append(ws.append, { path: 'queue.md', type: 'comment', author: 'a', body }),
+    ),
+  )
+  return ws
+}
+
+describe('reading the log', () => {
+  test('stops a page at its byte budget, and its cursor reads on with nothing missed', async () => {
+    const ws = await withLongLog()
+    const first = zLogPage.parse(await json(await call(`${ws.read}/log?limit=500`)))
+    // The write and 32 comments fit in 512 KiB; a 33rd comment would not.
+    expect(LIMITS.pageBytes).toBe(524_288)
+    expect(first.entries.map((e) => e.seq)).toEqual(Array.from({ length: 33 }, (_, i) => i + 1))
+    expect(first).toMatchObject({ cursor: 33, head: { seq: 41 } })
+    const second = zLogPage.parse(await json(await call(`${ws.read}/log?after=33&limit=500`)))
+    expect(second.entries.map((e) => e.seq)).toEqual(Array.from({ length: 8 }, (_, i) => i + 34))
+    expect(second.cursor).toBe(41)
+  })
+
+  test('does not count or send the bodies a folder link sees redacted', async () => {
+    const ws = await withLongLog()
+    const created = await call(`${ws.write}/links`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tier: 'r', folder: 'release' }),
+    })
+    const { url } = zCreateLinkResult.parse(await json(created))
+    const response = await call(`${new URL(url).pathname}/log?limit=500`)
+    const text = await response.text()
+    expect(text).not.toContain('xxxx')
+    const page = zLogPage.parse(JSON.parse(text))
+    expect(page.entries).toHaveLength(41)
+    expect(page.entries.every((item) => 'redacted' in item)).toBe(true)
+    expect(page.cursor).toBe(41)
   })
 })
 

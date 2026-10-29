@@ -1,5 +1,6 @@
 import { type LogItem, verifyChain, zCreateLinkResult, zLogItem, zProblem } from '@mdplane/contract'
 import { describe, expect, test } from 'vitest'
+import { MORE_BACKLOG } from '../src/workspace.ts'
 import { append, call, createWorkspace, json, writeFile } from './helpers.ts'
 
 async function connect(link: string, after = 0) {
@@ -12,12 +13,15 @@ async function connect(link: string, after = 0) {
     items.push(zLogItem.parse(JSON.parse(String(event.data))))
     for (const waiter of waiting.filter((w) => items.length >= w.count)) waiter.resolve()
   })
+  const closed = new Promise<number>((resolve) =>
+    socket.addEventListener('close', (event) => resolve(event.code)),
+  )
   socket.accept()
   const until = (count: number) =>
     items.length >= count
       ? Promise.resolve()
       : new Promise<void>((resolve) => waiting.push({ count, resolve }))
-  return { socket, items, until }
+  return { socket, items, until, closed }
 }
 
 describe('the live stream', () => {
@@ -59,6 +63,28 @@ describe('the live stream', () => {
     expect(live.items[0]).toMatchObject({ seq: 1, redacted: true })
     expect(live.items[1]).toMatchObject({ seq: 2, path: 'release/queue.md' })
     live.socket.close()
+  })
+
+  test('sends a long backlog a page per connection, so reconnecting reads the rest', async () => {
+    const ws = await createWorkspace()
+    await writeFile(ws.write, 'queue.md', 'Brief\n')
+    // 40 entries of 16,000 bytes: the write and 32 comments make one page of 512 KiB.
+    const body = 'x'.repeat(16_000)
+    await Promise.all(
+      Array.from({ length: 40 }, () =>
+        append(ws.append, { path: 'queue.md', type: 'comment', author: 'a', body }),
+      ),
+    )
+    const first = await connect(ws.read)
+    expect(await first.closed).toBe(MORE_BACKLOG)
+    expect(first.items.map((item) => item.seq)).toEqual(Array.from({ length: 33 }, (_, i) => i + 1))
+
+    const rest = await connect(ws.read, 33)
+    await rest.until(8)
+    await append(ws.append, { path: 'queue.md', type: 'comment', author: 'a', body: 'Live' })
+    await rest.until(9)
+    expect(rest.items.map((item) => item.seq)).toEqual(Array.from({ length: 9 }, (_, i) => i + 34))
+    rest.socket.close()
   })
 
   test('a socket closed by the server, waiting for its client, does not fail the next entry', async () => {
