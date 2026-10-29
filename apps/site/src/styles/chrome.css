@@ -108,4 +108,15 @@
     color: var(--ink);
     font-weight: 600;
   }
+  /* Set apart by space, and each kept whole, so a narrow screen wraps between them. */
+  .foot-links {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 24px;
+  }
+  .foot-links li {
+    white-space: nowrap;
+  }
 }

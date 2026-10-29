@@ -1,4 +1,4 @@
-import { zCreateLinkResult, zCreateWorkspaceResponse } from '@mdplane/contract'
+import { zAppendResult, zCreateLinkResult, zCreateWorkspaceResponse } from '@mdplane/contract'
 import type { APIRequestContext, Page } from '@playwright/test'
 import { expect, expectAccessible, showPanel, test } from './fixtures.ts'
 
@@ -236,6 +236,26 @@ it('a long file path fits the screen', async ({ page, shared, files }) => {
   }))
   expect(width.page).toBe(width.screen)
   expect((await picker.boundingBox())?.width).toBeLessThan(width.screen)
+})
+
+// Agents name themselves, in up to 64 characters with nowhere to break, and a title or a body can
+// be a path. Each wraps or is cut short, so the file never scrolls sideways.
+it('long names and words stay within the file', async ({ page, request, shared, files }) => {
+  const path = named('long-words')
+  await files({ [path]: '# Queue' })
+  const author = `agent@${'x'.repeat(58)}`
+  const word = 'apps/worker/test/protocol.test.ts/'.repeat(4)
+  const append = (data: Record<string, unknown>) =>
+    request.post(`${shared.append}/appends`, { data: { path, author, ...data } })
+  const added = await append({ type: 'task', body: `Fix ${word}` })
+  const { entry } = zAppendResult.parse(await added.json())
+  const claimed = await append({ type: 'claim', ref: entry.seq, body: `Taking ${word}` })
+  expect(claimed.status()).toBe(201)
+  await page.goto(`${shared.read}#${path}`)
+  // The claim is the latest entry, so its task is open.
+  await expect(page.locator('.task-row')).toHaveAttribute('aria-expanded', 'true')
+  const sideways = await page.locator('.rd-doc').evaluate((el) => el.scrollWidth - el.clientWidth)
+  expect(sideways).toBe(0)
 })
 
 it('a long history draws only the rows near the screen', async ({

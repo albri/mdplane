@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { GENESIS, LEASE_MS, type Entry } from '@mdplane/contract/core'
-import { type Session, stateAt } from '../src/model.ts'
+import { renews, type Session, stateAt } from '../src/model.ts'
 
 const START = Date.parse('2026-10-28T09:00:00Z')
 
@@ -79,5 +79,24 @@ describe('a file at a point in its history', () => {
       ['done', [4, 5]],
     ])
     expect(state.notes.map((e) => e.seq)).toEqual([3])
+  })
+})
+
+describe('a claim on a task', () => {
+  test('renews the lease only when its holder claims again in time', () => {
+    const lease = LEASE_MS / 60_000
+    const { entries } = session([
+      [0, 'task', 'lead@devbox'],
+      [1, 'claim', 'codex@ci', 1],
+      // The holder again, before the lease runs out.
+      [2, 'claim', 'codex@ci', 1],
+      // The same author once that lease has run out takes the task afresh.
+      [3 + lease, 'claim', 'codex@ci', 1],
+      [4 + 2 * lease, 'claim', 'claude@laptop', 1],
+      // Back to the first author, after someone else held it.
+      [5 + 3 * lease, 'claim', 'codex@ci', 1],
+    ])
+    const kids = entries.slice(1)
+    expect(kids.map((_, i) => renews(kids, i))).toEqual([false, true, false, false, false])
   })
 })

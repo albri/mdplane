@@ -152,35 +152,30 @@
     outline-offset: -2px;
   }
 
-  /* A task's status. */
+  /* A task's status: a dot and a word in its colour, at the size of the text around it. With no
+     fill, it reads the same on any surface, a highlighted row included. The dot is a border, so
+     forced colours keep it. */
   .chip {
-    --c: var(--ink-2);
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 2px 9px;
-    border: 1px solid transparent;
-    border-radius: 999px;
     white-space: nowrap;
-    font: 500 0.75rem/1.4 var(--font-sans);
-    color: var(--c);
-    background: color-mix(in srgb, var(--c) 10%, var(--page));
+    font-weight: 500;
+    color: var(--ink-2);
   }
   .chip::before {
     content: '';
-    width: 6px;
-    height: 6px;
+    display: inline-block;
+    margin-right: 0.5em;
+    border: 0.275em solid;
     border-radius: 50%;
-    background: currentColor;
+    vertical-align: 0.08em;
   }
   .chip[data-k='claimed'] {
-    --c: var(--warn);
+    color: var(--warn);
   }
   .chip[data-k='done'] {
-    --c: var(--ok);
+    color: var(--ok);
   }
   .chip[data-k='cancelled'] {
-    --c: var(--ink-3);
+    color: var(--ink-3);
   }
 
   /* Keys in hints. */
@@ -210,6 +205,14 @@
   }
   .src .ty {
     font-size: inherit;
+  }
+  /* Each item is a box as wide as the file, indented by the two characters of its dash and then
+     pulled back by them on its first line. A continuation line's own two spaces fill that gap. */
+  .src .li {
+    display: inline-block;
+    width: 100%;
+    padding-left: 2ch;
+    text-indent: -2ch;
   }
 
   /* Name and value pairs. */

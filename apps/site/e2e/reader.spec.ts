@@ -74,6 +74,27 @@ test('renders the file as an agent reads it', async ({ page }) => {
 const row = (page: import('@playwright/test').Page, task: number) =>
   page.locator(`.task-row[data-task="${task}"]`)
 
+// Matches a list of accessible names that has one containing this text.
+const aName = (text: string) => expect.arrayContaining([expect.stringContaining(text)])
+
+// Read from Chromium's accessibility tree, which a screen reader hears. Playwright works names out
+// itself and keeps a space there that Chromium drops.
+test('a row names its parts as separate words to a screen reader', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', "reads Chromium's accessibility tree")
+  const cdp = await page.context().newCDPSession(page)
+  const names = async () => {
+    const { nodes } = await cdp.send('Accessibility.getFullAXTree')
+    return nodes.map((node) => String(node.name?.value ?? ''))
+  }
+  // The tree catches up with the page a moment after it draws, so each read is retried.
+  await expect.poll(names).toEqual(aName('In progress claude@laptop holds it'))
+  await showPanel(page, 'History')
+  await expect.poll(names).toEqual(aName('#21 comment claude@laptop'))
+})
+
 test('each task is one row that opens on its thread', async ({ page }) => {
   // At the head, the current entry is a comment on #5, so #5 is the only task open.
   await expect(page.locator('.task-row[aria-expanded="true"]')).toHaveCount(1)
@@ -169,4 +190,33 @@ test.describe('on a phone', () => {
       }
     })
   }
+
+  // A header that wrapped would leave its type, author and time on separate lines.
+  test('each entry says what, who and when on one line', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 760 })
+    // At the head, #5's thread is open: the task, two claims and a comment.
+    await expect(page.locator('.task-row[data-task="5"]')).toHaveAttribute('aria-expanded', 'true')
+    const lines = await page
+      .locator('.rd-doc .ent-meta')
+      .evaluateAll((els) =>
+        els.map((el) => el.offsetHeight / Number.parseFloat(getComputedStyle(el).lineHeight)),
+      )
+    expect(lines.length).toBeGreaterThanOrEqual(4)
+    for (const n of lines) {
+      expect(n).toBeGreaterThan(0.5)
+      expect(n).toBeLessThan(1.5)
+    }
+    const sideways = await page.locator('.rd-doc').evaluate((el) => el.scrollWidth - el.clientWidth)
+    expect(sideways).toBe(0)
+  })
+
+  test('the chain and the diagram fit a phone without scrolling sideways', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 760 })
+    await page.goto('/')
+    await expect(page.locator('#chain .blk')).toHaveCount(5)
+    const sideways = await page
+      .locator('#chain, .fig-body')
+      .evaluateAll((els) => els.map((el) => el.scrollWidth - el.clientWidth))
+    expect(sideways).toEqual([0, 0])
+  })
 })
