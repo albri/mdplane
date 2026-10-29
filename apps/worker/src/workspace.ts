@@ -16,6 +16,7 @@ import {
   type Head,
   type Lease,
   type Link,
+  type LiveClose,
   type LogItem,
   type LogPage,
   type Problem,
@@ -218,7 +219,7 @@ export class Workspace extends DurableObject<Env> {
   }
 
   override async alarm(): Promise<void> {
-    for (const socket of this.ctx.getWebSockets()) socket.close(1008, 'Workspace expired')
+    for (const socket of this.ctx.getWebSockets()) this.end(socket, 1008, 'Workspace expired')
     await this.ctx.storage.deleteAll()
     this.exists = false
   }
@@ -839,7 +840,7 @@ export class Workspace extends DurableObject<Env> {
     this.sql.exec(`DELETE FROM links WHERE id = ?`, linkId)
     for (const socket of this.ctx.getWebSockets()) {
       const state: SocketState = socket.deserializeAttachment()
-      if (state.linkId === linkId) socket.close(1008, 'Link revoked')
+      if (state.linkId === linkId) this.end(socket, 1008, 'Link revoked')
     }
     return ok(null)
   }
@@ -870,7 +871,7 @@ export class Workspace extends DurableObject<Env> {
     const backlog = this.page(link.folder, undefined, after, LIMITS.backlog)
     for (const item of backlog.entries) server.send(JSON.stringify(item))
     if (backlog.cursor < backlog.head.seq) {
-      server.close(MORE_BACKLOG, 'More to send: reconnect with after set to the last entry')
+      this.end(server, MORE_BACKLOG, 'More to send: reconnect with after set to the last entry')
     }
     return new Response(null, { status: 101, webSocket: client })
   }
@@ -898,6 +899,17 @@ export class Workspace extends DurableObject<Env> {
     this.ctx.acceptWebSocket(server, [kind])
     server.serializeAttachment(state)
     return { client, server }
+  }
+
+  // Some browsers report a close only once the connection itself ends, and Cloudflare holds that
+  // open for seconds after the closing handshake. A live socket hears why first, so its client
+  // can act at once. A poll's socket goes to the Worker, which reads only pages.
+  private end(socket: WebSocket, code: number, reason: string): void {
+    const [kind] = this.ctx.getTags(socket)
+    if (kind === 'live' && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ close: { code, reason } } satisfies LiveClose))
+    }
+    socket.close(code, reason)
   }
 
   override webSocketMessage(): void {

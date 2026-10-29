@@ -507,11 +507,18 @@ paths:
         socket closes with code 4000 after that page; reconnect straight away
         for the next one. A workspace takes at most 100 sockets at once;
         another one gets 429.
+
+        Before the server closes a socket, it sends one `LiveClose` message
+        with the same code and reason. Act on it rather than wait for the
+        close, which some clients report only once the connection ends. Code
+        1008 means the link no longer works.
       tags: [Log]
       parameters:
         - $ref: '#/components/parameters/After'
       x-message:
-        $ref: '#/components/schemas/LogItem'
+        oneOf:
+          - $ref: '#/components/schemas/LogItem'
+          - $ref: '#/components/schemas/LiveClose'
       responses:
         '101':
           description: Switching to the WebSocket protocol.
@@ -1233,6 +1240,24 @@ components:
       oneOf:
         - $ref: '#/components/schemas/Entry'
         - $ref: '#/components/schemas/RedactedEntry'
+    LiveClose:
+      type: object
+      additionalProperties: false
+      required: [close]
+      description: The last message on a live socket the server is closing.
+      properties:
+        close:
+          type: object
+          additionalProperties: false
+          required: [code, reason]
+          properties:
+            code:
+              type: integer
+              description: The close code the socket closes with.
+              examples: [1008]
+            reason:
+              type: string
+              examples: [Link revoked]
     LogPage:
       type: object
       additionalProperties: false

@@ -266,6 +266,19 @@ export type RedactedEntry = {
 
 export type LogItem = Entry | RedactedEntry;
 
+/**
+ * The last message on a live socket the server is closing.
+ */
+export type LiveClose = {
+    close: {
+        /**
+         * The close code the socket closes with.
+         */
+        code: number;
+        reason: string;
+    };
+};
+
 export type LogPage = {
     entries: Array<LogItem>;
     /**

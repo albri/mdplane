@@ -4,6 +4,7 @@ import type {
   CreateWorkspaceResponse,
   Entry,
   FileView,
+  LiveClose,
   LogItem,
   LogPage,
   Problem,
@@ -292,22 +293,25 @@ export function follow(
       delay = 1000
       set('live')
     })
-    ws.addEventListener('message', (event) => {
-      const item: LogItem = JSON.parse(String(event.data))
-      if (item.seq <= last) return
-      last = item.seq
-      onItem(item)
-    })
-    ws.addEventListener('close', (event) => {
-      // A socket replaced by a reconnect closes late, and has nothing more to say.
+    const closed = (code: number) => {
+      // A socket replaced by a reconnect, or already closed by its notice, has nothing more to say.
       if (stopped || socket !== ws) return
       socket = null
       // The server sends one page of backlog per connection, and says when there is more.
-      if (event.code === MORE_BACKLOG) connect()
+      if (code === MORE_BACKLOG) connect()
       // 1008 means the link was revoked or the workspace expired.
-      else if (event.code === 1008 || (!opened && ++refused >= 2)) void check()
+      else if (code === 1008 || (!opened && ++refused >= 2)) void check()
       else retry()
+    }
+    ws.addEventListener('message', (event) => {
+      const message: LogItem | LiveClose = JSON.parse(String(event.data))
+      // Some browsers report the close itself seconds late, so the notice before it is acted on.
+      if ('close' in message) return closed(message.close.code)
+      if (message.seq <= last) return
+      last = message.seq
+      onItem(message)
     })
+    ws.addEventListener('close', (event) => closed(event.code))
   }
 
   // Back online, the old socket may be half dead, so start a new one now rather than wait it out.

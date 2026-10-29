@@ -223,6 +223,16 @@ export const zLogItem = z.union([
     zRedactedEntry
 ]);
 
+/**
+ * The last message on a live socket the server is closing.
+ */
+export const zLiveClose = z.strictObject({
+    close: z.strictObject({
+        code: z.int(),
+        reason: z.string()
+    })
+});
+
 export const zLogPage = z.strictObject({
     entries: z.array(zLogItem),
     cursor: z.int().gte(0),

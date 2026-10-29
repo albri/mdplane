@@ -1,4 +1,12 @@
-import { type LogItem, verifyChain, zCreateLinkResult, zLogItem, zProblem } from '@mdplane/contract'
+import {
+  type LiveClose,
+  type LogItem,
+  verifyChain,
+  zCreateLinkResult,
+  zLiveClose,
+  zLogItem,
+  zProblem,
+} from '@mdplane/contract'
 import { describe, expect, test } from 'vitest'
 import { MORE_BACKLOG } from '../src/workspace.ts'
 import { append, call, createWorkspace, json, writeFile } from './helpers.ts'
@@ -8,13 +16,18 @@ async function connect(link: string, after = 0) {
   const socket = response.webSocket
   if (response.status !== 101 || !socket) throw new Error(`live returned ${response.status}`)
   const items: LogItem[] = []
+  let notice: LiveClose['close'] | null = null
   const waiting: Array<{ count: number; resolve: () => void }> = []
   socket.addEventListener('message', (event) => {
-    items.push(zLogItem.parse(JSON.parse(String(event.data))))
+    const message: unknown = JSON.parse(String(event.data))
+    const close = zLiveClose.safeParse(message)
+    if (close.success) notice = close.data.close
+    else items.push(zLogItem.parse(message))
     for (const waiter of waiting.filter((w) => items.length >= w.count)) waiter.resolve()
   })
-  const closed = new Promise<number>((resolve) =>
-    socket.addEventListener('close', (event) => resolve(event.code)),
+  // The code the socket closed with, and the notice that came before it.
+  const closed = new Promise<{ code: number; notice: LiveClose['close'] | null }>((resolve) =>
+    socket.addEventListener('close', (event) => resolve({ code: event.code, notice })),
   )
   socket.accept()
   const until = (count: number) =>
@@ -76,7 +89,10 @@ describe('the live stream', () => {
       ),
     )
     const first = await connect(ws.read)
-    expect(await first.closed).toBe(MORE_BACKLOG)
+    expect(await first.closed).toEqual({
+      code: MORE_BACKLOG,
+      notice: { code: MORE_BACKLOG, reason: expect.any(String) },
+    })
     expect(first.items.map((item) => item.seq)).toEqual(Array.from({ length: 33 }, (_, i) => i + 1))
 
     const rest = await connect(ws.read, 33)
@@ -85,6 +101,23 @@ describe('the live stream', () => {
     await rest.until(9)
     expect(rest.items.map((item) => item.seq)).toEqual(Array.from({ length: 9 }, (_, i) => i + 34))
     rest.socket.close()
+  })
+
+  // Some browsers hear of a close only once the connection ends, which can take seconds.
+  test('says why before it closes a socket, so a revoked link stops at once', async () => {
+    const ws = await createWorkspace()
+    const created = await call(`${ws.write}/links`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tier: 'r' }),
+    })
+    const { url, link } = zCreateLinkResult.parse(await json(created))
+    const live = await connect(new URL(url).pathname)
+    expect((await call(`${ws.write}/links/${link.id}`, { method: 'DELETE' })).status).toBe(204)
+    expect(await live.closed).toEqual({
+      code: 1008,
+      notice: { code: 1008, reason: 'Link revoked' },
+    })
   })
 
   test('a socket closed by the server, waiting for its client, does not fail the next entry', async () => {

@@ -5,3 +5,7 @@ openapi.yaml:
   # The root takes no input and no key, so it has nothing to refuse.
   operation-4xx-response:
     - '#/paths/~1/get/responses'
+  # A live socket's close notice is named only in the stream's x-message, which the linter
+  # doesn't follow.
+  no-unused-components:
+    - '#/components/schemas/LiveClose'
