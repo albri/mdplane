@@ -3,9 +3,11 @@
 import {
   deriveTasks,
   type Entry,
+  FILE_VIEW_LIMITS,
   type FileView,
   LEASE_MS,
   type LogItem,
+  pickTasks,
   renderFile,
   type TaskView,
   type Tier,
@@ -131,9 +133,13 @@ const headOf = (log: LogItem[]) => {
   return { seq: last?.seq ?? 0, hash: last?.hash ?? '0'.repeat(64) }
 }
 
-// What an agent gets from `GET $URL/files/{path}` at this point, rendered by the server's code.
+// What an agent gets from `GET $URL/files/{path}` at this point, rendered by the server's code
+// and cut to the same limits.
 export function agentView(session: Session, state: State): string {
   const { life } = state
+  const all = state.threads.map((t) => t.task)
+  const tasks = pickTasks(all)
+  const entries = life.slice(-FILE_VIEW_LIMITS.entries)
   const view: FileView = {
     path: session.path,
     at: state.list.at(-1)?.seq ?? 0,
@@ -141,8 +147,10 @@ export function agentView(session: Session, state: State): string {
     version: state.write?.version ?? 1,
     contentHash: state.write?.contentHash ?? '',
     body: state.body ?? '',
-    tasks: state.threads.map((t) => t.task),
-    entries: life,
+    since: state.list.findLast((e) => e.type === 'delete')?.seq ?? 0,
+    tasks,
+    entries,
+    omitted: { tasks: all.length - tasks.length, entries: life.length - entries.length },
   }
   return renderFile(view)
 }

@@ -8,6 +8,7 @@ import {
   deriveTasks,
   type Entry,
   type EntryContent,
+  FILE_VIEW_LIMITS,
   type FileSummary,
   type FileView,
   GENESIS,
@@ -20,6 +21,7 @@ import {
   type SearchResults,
   type TaskView,
   type Tier,
+  pickTasks,
   type Workspace as WorkspaceView,
   type WriteResult,
   type zAppendRequest,
@@ -34,6 +36,7 @@ export type Result<T> =
   | { ok: false; problem: Failure }
 
 export type NewLink = { id: string; tier: Tier; folder: string | null; secretHash: string }
+// Each file's open and claimed tasks, with only as much of each body as the summary shows.
 export type Overview = { workspace: WorkspaceView; tasks: Record<string, TaskView[]> }
 
 // `polls` is how many long polls may wait at once, and `sockets` how many live connections.
@@ -54,6 +57,8 @@ const ok = <T>(value: T, extra: { created?: boolean } = {}): Result<T> => ({
 })
 
 const ENTRY = `seq, at, path, type, author, ref, body, version, content_hash AS contentHash, prev, hash`
+// More of a task's body than the overview's one-line summary of it needs.
+const SUMMARY_CHARS = 240
 const LINK = `id, tier, folder, created_at AS createdAt`
 
 const SCHEMA = `
@@ -330,11 +335,22 @@ export class Workspace extends DurableObject<Env> {
       .toArray()
   }
 
-  private tasks(path: string, since: number, upto: number, asOf: number): TaskView[] {
+  // Every task's status, with at most `bodyChars` of each body, so a file with thousands of long
+  // tasks can't fill the object's memory or a response.
+  private tasks(
+    path: string,
+    since: number,
+    upto: number,
+    asOf: number,
+    bodyChars: number,
+  ): TaskView[] {
     const rows = this.sql.exec<Entry>(
-      `SELECT ${ENTRY} FROM entries
+      `SELECT seq, at, path, type, author, ref, substr(body, 1, ?) AS body, version,
+              content_hash AS contentHash, prev, hash
+       FROM entries
        WHERE path = ? AND seq > ? AND seq <= ? AND type IN ('task', 'claim', 'response', 'cancel')
        ORDER BY seq`,
+      bodyChars,
       path,
       since,
       upto,
@@ -351,7 +367,14 @@ export class Workspace extends DurableObject<Env> {
     const tasks: Record<string, TaskView[]> = {}
     for (const file of files) {
       const state = this.fileState(file.path, head.seq)
-      if (state) tasks[file.path] = this.tasks(file.path, state.since, head.seq, Date.now())
+      if (!state) continue
+      tasks[file.path] = this.tasks(
+        file.path,
+        state.since,
+        head.seq,
+        Date.now(),
+        SUMMARY_CHARS,
+      ).filter((task) => task.status === 'open' || task.status === 'claimed')
     }
     return ok({ workspace: { ...meta, link, head, files }, tasks })
   }
@@ -374,14 +397,38 @@ export class Workspace extends DurableObject<Env> {
         : Date.parse(
             this.sql.exec<{ at: string }>(`SELECT at FROM entries WHERE seq = ?`, upto).one().at,
           )
-    const entries = this.sql
-      .exec<Entry>(
-        `SELECT ${ENTRY} FROM entries WHERE path = ? AND seq > ? AND seq <= ? ORDER BY seq`,
+    // Statuses first, then the bodies of only the tasks the view shows.
+    const all = this.tasks(path, since, upto, asOf, 0)
+    const shown = pickTasks(all)
+    const bodies = new Map(
+      this.sql
+        .exec<{ seq: number; body: string }>(
+          `SELECT seq, body FROM entries WHERE seq IN (SELECT value FROM json_each(?))`,
+          JSON.stringify(shown.map((task) => task.seq)),
+        )
+        .toArray()
+        .map((row) => [row.seq, row.body]),
+    )
+    const tasks = shown.map((task) => ({ ...task, body: bodies.get(task.seq) ?? '' }))
+    const { count } = this.sql
+      .exec<{ count: number }>(
+        `SELECT COUNT(*) AS count FROM entries WHERE path = ? AND seq > ? AND seq <= ?`,
         path,
         since,
         upto,
       )
+      .one()
+    const entries = this.sql
+      .exec<Entry>(
+        `SELECT ${ENTRY} FROM entries WHERE path = ? AND seq > ? AND seq <= ?
+         ORDER BY seq DESC LIMIT ?`,
+        path,
+        since,
+        upto,
+        FILE_VIEW_LIMITS.entries,
+      )
       .toArray()
+      .toReversed()
     return ok({
       path,
       at: upto,
@@ -389,8 +436,10 @@ export class Workspace extends DurableObject<Env> {
       version: write.version ?? 1,
       contentHash,
       body,
-      tasks: this.tasks(path, since, upto, asOf),
+      since,
+      tasks,
       entries,
+      omitted: { tasks: all.length - tasks.length, entries: count - entries.length },
     })
   }
 
@@ -505,7 +554,7 @@ export class Workspace extends DurableObject<Env> {
     if (!file) return { ok: false, problem: NOT_FOUND }
     const ref = request.type === 'task' ? null : (request.ref ?? null)
     if (ref !== null) {
-      const task = this.tasks(request.path, file.since, Number.MAX_SAFE_INTEGER, now).find(
+      const task = this.tasks(request.path, file.since, Number.MAX_SAFE_INTEGER, now, 0).find(
         (t) => t.seq === ref,
       )
       if (!task) {

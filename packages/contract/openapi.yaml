@@ -139,9 +139,13 @@ paths:
       operationId: readFile
       summary: Read a file
       description: |
-        The body plus every log entry for the file, with each task's current
-        status. `at` shows the file as it was at that sequence number.
+        The body, the file's tasks with their current status, and its newest
+        log entries. `at` shows the file as it was at that sequence number.
         `Accept: application/json` gets JSON; anything else gets markdown.
+
+        A view holds at most 100 tasks and 100 entries, so it stays small
+        however busy the file gets. `omitted` counts what was left out, and
+        `GET $URL/log?path={path}&after={since}` reads every entry.
       tags: [Files]
       parameters:
         - $ref: '#/components/parameters/At'
@@ -167,6 +171,7 @@ paths:
                 version: 1
                 contentHash: 9c0e5b1d7f3a8c2e6b0d4f9a3c7e1b5d8f2a6c0e4b9d3f7a1c5e8b2d6f0a4c9e
                 body: "# Release 2.4\n\nShip 2.4 on Thursday. Claim a task before you start.\n"
+                since: 0
                 tasks:
                   - seq: 2
                     author: alex
@@ -198,6 +203,9 @@ paths:
                     contentHash: null
                     prev: e7b1d5f9a3c8e2b6d0f4a9c3e7b2d6f0a5c9e3b8d2f6a0c4e9b3d7f1a6c0e4b8
                     hash: 5d9f3a7c1e6b0d4f8a2c7e1b5d9f4a8c2e6b1d5f9a3c8e2b6d0f5a9c3e7b1d6f
+                omitted:
+                  tasks: 0
+                  entries: 0
         '400':
           $ref: '#/components/responses/InvalidRequest'
         '404':
@@ -893,7 +901,7 @@ components:
     FileView:
       type: object
       additionalProperties: false
-      required: [path, at, head, version, contentHash, body, tasks, entries]
+      required: [path, at, head, version, contentHash, body, since, tasks, entries, omitted]
       properties:
         path:
           $ref: '#/components/schemas/FilePath'
@@ -910,15 +918,42 @@ components:
           $ref: '#/components/schemas/Hash'
         body:
           type: string
+        since:
+          type: integer
+          minimum: 0
+          description: |
+            The file's log starts after this sequence number: its last delete
+            before `at`, or 0.
         tasks:
           type: array
+          maxItems: 100
+          description: |
+            The file's tasks, oldest first. When there are more than 100, the
+            open and claimed ones come first, then the newest done and
+            cancelled ones.
           items:
             $ref: '#/components/schemas/TaskView'
         entries:
           type: array
-          description: The file's log entries up to `at`, oldest first.
+          maxItems: 100
+          description: The file's newest 100 log entries up to `at`, oldest first.
           items:
             $ref: '#/components/schemas/Entry'
+        omitted:
+          type: object
+          additionalProperties: false
+          required: [tasks, entries]
+          description: What the view leaves out to stay within its limits.
+          properties:
+            tasks:
+              type: integer
+              minimum: 0
+            entries:
+              type: integer
+              minimum: 0
+              description: |
+                Older entries, which `GET $URL/log?path={path}&after={since}`
+                reads.
     TaskView:
       type: object
       additionalProperties: false

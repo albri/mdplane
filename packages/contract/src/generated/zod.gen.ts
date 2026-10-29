@@ -182,8 +182,13 @@ export const zFileView = z.object({
     version: z.int().gte(1),
     contentHash: zHash,
     body: z.string(),
-    tasks: z.array(zTaskView),
-    entries: z.array(zEntry)
+    since: z.int().gte(0),
+    tasks: z.array(zTaskView).max(100),
+    entries: z.array(zEntry).max(100),
+    omitted: z.object({
+        tasks: z.int().gte(0),
+        entries: z.int().gte(0)
+    })
 });
 
 export const zWriteResult = z.object({

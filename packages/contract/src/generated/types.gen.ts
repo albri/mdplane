@@ -95,11 +95,35 @@ export type FileView = {
     version: number;
     contentHash: Hash;
     body: string;
+    /**
+     * The file's log starts after this sequence number: its last delete
+     * before `at`, or 0.
+     *
+     */
+    since: number;
+    /**
+     * The file's tasks, oldest first. When there are more than 100, the
+     * open and claimed ones come first, then the newest done and
+     * cancelled ones.
+     *
+     */
     tasks: Array<TaskView>;
     /**
-     * The file's log entries up to `at`, oldest first.
+     * The file's newest 100 log entries up to `at`, oldest first.
      */
     entries: Array<Entry>;
+    /**
+     * What the view leaves out to stay within its limits.
+     */
+    omitted: {
+        tasks: number;
+        /**
+         * Older entries, which `GET $URL/log?path={path}&after={since}`
+         * reads.
+         *
+         */
+        entries: number;
+    };
 };
 
 export type TaskView = {

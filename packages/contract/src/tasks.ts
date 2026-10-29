@@ -50,3 +50,20 @@ export function deriveTasks(
   }
   return [...tasks.values()]
 }
+
+// A file view holds at most this many tasks and entries, so it stays small enough to send however
+// busy the file gets.
+export const FILE_VIEW_LIMITS = { tasks: 100, entries: 100 }
+
+const active = (task: TaskView) => task.status === 'open' || task.status === 'claimed'
+
+// The tasks a file view shows when they don't all fit: the open and claimed ones first, oldest
+// first, since they are the ones to work on, then the newest done and cancelled ones. The server
+// and the reader both use this, so the reader shows what an agent gets.
+export function pickTasks(tasks: TaskView[], limit = FILE_VIEW_LIMITS.tasks): TaskView[] {
+  if (tasks.length <= limit) return tasks
+  const open = tasks.filter(active).slice(0, limit)
+  const closed = tasks.filter((task) => !active(task))
+  const room = limit - open.length
+  return [...open, ...closed.slice(closed.length - room)].toSorted((a, b) => a.seq - b.seq)
+}

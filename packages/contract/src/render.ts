@@ -31,10 +31,13 @@ function entryLine(entry: Entry): string {
   return `- #${entry.seq} ${time(entry.at)} ${entry.author}, ${entry.type}${about}: ${indent(detail)}`
 }
 
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+
 export function renderFile(view: FileView): string {
   const tasks = view.tasks.map(
     (task) => `- #${task.seq} ${status(task)}: ${indent(task.body)} (from ${task.author})`,
   )
+  const { omitted } = view
   return [
     view.body.trimEnd(),
     '',
@@ -43,9 +46,18 @@ export function renderFile(view: FileView): string {
     `## Tasks in ${view.path}`,
     '',
     tasks.length > 0 ? tasks.join('\n') : 'No tasks yet.',
+    ...(omitted.tasks > 0
+      ? ['', `${plural(omitted.tasks, 'more task isn’t', 'more tasks aren’t')} shown.`]
+      : []),
     '',
     '## Log',
     '',
+    ...(omitted.entries > 0
+      ? [
+          `The newest ${view.entries.length} entries. ${plural(omitted.entries, 'older entry is', 'older entries are')} at \`GET $URL/log?path=${view.path}&after=${view.since}\`.`,
+          '',
+        ]
+      : []),
     view.entries.map(entryLine).join('\n'),
     '',
     `Version ${view.version} of ${view.path}, as of entry ${view.at}. The workspace log is at entry ${view.head.seq}.`,

@@ -1,10 +1,11 @@
-import { zProblem } from '@mdplane/contract'
+import { zFileView, zProblem } from '@mdplane/contract'
 import { runInDurableObject } from 'cloudflare:test'
 import { env } from 'cloudflare:workers'
 import { describe, expect, test } from 'vitest'
 import { clientAddress } from '../src/http.ts'
+import { hashSecret } from '../src/keys.ts'
 import { LIMITS } from '../src/workspace.ts'
-import { append, call, createWorkspace, json, sleep, withVars, writeFile } from './helpers.ts'
+import { append, call, createWorkspace, json, withVars, writeFile } from './helpers.ts'
 
 const problemOf = async (response: Response) => zProblem.parse(await json(response))
 
@@ -178,5 +179,53 @@ describe('waiting on a workspace', () => {
     expect(refused.status).toBe(429)
     expect(await problemOf(refused)).toMatchObject({ code: 'rate_limited' })
     for (const socket of sockets) socket.close()
+  })
+})
+
+describe('reading a busy file', () => {
+  test('shows its open tasks and newest entries, and says where the rest are', async () => {
+    const ws = await createWorkspace()
+    await writeFile(ws.write, 'queue.md', 'Brief\n')
+    await Promise.all(
+      Array.from({ length: 102 }, (_, i) =>
+        append(ws.append, { path: 'queue.md', type: 'task', author: 'a', body: `Task ${i}` }),
+      ),
+    )
+    for (const ref of [2, 3]) {
+      // oxlint-disable-next-line no-await-in-loop -- the cancels land after the tasks, in order
+      await append(ws.append, { path: 'queue.md', type: 'cancel', author: 'a', ref })
+    }
+    const read = (accept: string) =>
+      call(`${ws.read}/files/queue.md`, { headers: { Accept: accept } })
+    const view = zFileView.parse(await json(await read('application/json')))
+    // 102 tasks, two of them cancelled: the 100 open ones fit, the cancelled ones don't.
+    expect(view.tasks).toHaveLength(100)
+    expect(view.tasks.every((task) => task.status === 'open')).toBe(true)
+    expect(view.omitted).toEqual({ tasks: 2, entries: 5 })
+    // A write, 102 tasks and 2 cancels: the newest 100 of 105 entries.
+    expect(view.entries.map((e) => e.seq)).toEqual(Array.from({ length: 100 }, (_, i) => i + 6))
+    expect(view.since).toBe(0)
+
+    const text = await (await read('text/markdown')).text()
+    expect(text).toContain('2 more tasks aren’t shown.')
+    expect(text).toContain('5 older entries are at `GET $URL/log?path=queue.md&after=0`.')
+  })
+
+  test('the overview carries only what its summary of each open task needs', async () => {
+    const ws = await createWorkspace()
+    await writeFile(ws.write, 'queue.md', 'Brief\n')
+    const long = { path: 'queue.md', type: 'task', author: 'a', body: 'x'.repeat(16_000) }
+    await append(ws.append, long)
+    await append(ws.append, long)
+    await append(ws.append, { path: 'queue.md', type: 'cancel', author: 'a', ref: 3 })
+    const secret = ws.read.split('.')[1] ?? ''
+    const result = await env.WORKSPACES.getByName(ws.id).overview({
+      tier: 'r',
+      secretHash: await hashSecret(secret),
+    })
+    if (!result.ok) throw new Error('overview failed')
+    const tasks = result.value.tasks['queue.md'] ?? []
+    expect(tasks.map((task) => [task.seq, task.status])).toEqual([[2, 'open']])
+    expect(tasks[0]?.body.length).toBeLessThanOrEqual(240)
   })
 })
