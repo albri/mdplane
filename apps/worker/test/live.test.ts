@@ -1,4 +1,4 @@
-import { type LogItem, verifyChain, zLogItem, zProblem } from '@mdplane/contract'
+import { type LogItem, verifyChain, zCreateLinkResult, zLogItem, zProblem } from '@mdplane/contract'
 import { describe, expect, test } from 'vitest'
 import { append, call, createWorkspace, json, writeFile } from './helpers.ts'
 
@@ -59,6 +59,24 @@ describe('the live stream', () => {
     expect(live.items[0]).toMatchObject({ seq: 1, redacted: true })
     expect(live.items[1]).toMatchObject({ seq: 2, path: 'release/queue.md' })
     live.socket.close()
+  })
+
+  test('a socket closed by the server, waiting for its client, does not fail the next entry', async () => {
+    const ws = await createWorkspace()
+    await writeFile(ws.write, 'queue.md', 'Brief\n')
+    const created = await call(`${ws.write}/links`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tier: 'r' }),
+    })
+    const { url, link } = zCreateLinkResult.parse(await json(created))
+    // Never accepted, so the client never answers the server's close.
+    const upgrade = { headers: { Upgrade: 'websocket' } }
+    expect((await call(`${new URL(url).pathname}/live`, upgrade)).status).toBe(101)
+    expect((await call(`${ws.write}/links/${link.id}`, { method: 'DELETE' })).status).toBe(204)
+    // Sending to the closed socket threw after the entry was sealed: a 500 for a written entry.
+    const comment = { path: 'queue.md', type: 'comment', author: 'a', body: 'After the revoke' }
+    expect((await append(ws.append, comment)).status).toBe(201)
   })
 
   test('needs a WebSocket upgrade', async () => {

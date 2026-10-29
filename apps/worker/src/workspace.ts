@@ -273,6 +273,9 @@ export class Workspace extends DurableObject<Env> {
     this.wake()
     const messages = new Map<string | null, string>()
     for (const socket of this.ctx.getWebSockets()) {
+      // A socket closed here, after its backlog or a revoke, stays listed until the client
+      // answers, and sending to it would throw after the entry is sealed.
+      if (socket.readyState !== WebSocket.OPEN) continue
       const { folder }: SocketState = socket.deserializeAttachment()
       const message = messages.get(folder) ?? JSON.stringify(visible(entry, folder))
       messages.set(folder, message)
