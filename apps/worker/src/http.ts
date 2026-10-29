@@ -14,6 +14,7 @@ const TITLES: Record<Problem['code'], string> = {
   payload_too_large: 'The body is too large',
   workspace_full: 'The workspace is full',
   rate_limited: 'Too many requests',
+  creation_paused: 'Creating workspaces is paused',
   upgrade_required: 'A WebSocket upgrade is required',
   internal_error: 'Something went wrong',
 }
@@ -54,6 +55,26 @@ export const rateLimited = () =>
     { status: 429, code: 'rate_limited', detail: 'Wait a minute, then try again.' },
     { 'Retry-After': '60' },
   )
+
+export const paused = (detail: string, retryAfterSeconds?: number) =>
+  problem(
+    { status: 503, code: 'creation_paused', detail },
+    retryAfterSeconds === undefined ? {} : { 'Retry-After': String(retryAfterSeconds) },
+  )
+
+// What a per-address limit counts against. An IPv6 client is usually given a whole /64, so the
+// /64 counts as one address; otherwise one machine could hand every request a new address.
+export function clientAddress(ip: string | undefined): string {
+  if (!ip) return 'unknown'
+  if (!ip.includes(':')) return ip
+  const [head = '', tail] = ip.toLowerCase().split('::')
+  const left = head === '' ? [] : head.split(':')
+  const right = tail === undefined || tail === '' ? [] : tail.split(':')
+  const zeros =
+    tail === undefined ? [] : Array.from({ length: 8 - left.length - right.length }, () => '0')
+  const groups = [...left, ...zeros, ...right].slice(0, 4).map((g) => g.padStart(4, '0'))
+  return `${groups.join(':')}::/64`
+}
 
 // Picks the offer the Accept header ranks highest. Ties go to the earliest offer, so `*/*` and
 // a missing header get the first.

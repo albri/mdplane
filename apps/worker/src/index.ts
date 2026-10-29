@@ -16,18 +16,21 @@ import {
 } from '@mdplane/contract'
 import { type Context, Hono } from 'hono'
 import {
+  clientAddress,
   invalid,
   invalidFrom,
   negotiate,
   notFound,
+  paused,
   problem,
   rateLimited,
   readBody,
   tooLarge,
 } from './http.ts'
 import { hashSecret, linkUrl, newLinkId, newSecret, newWorkspaceId, parseLink } from './keys.ts'
-import type { Auth, Result } from './workspace.ts'
+import { type Auth, LIMITS, type Result } from './workspace.ts'
 
+export { Quota } from './quota.ts'
 export { Workspace } from './workspace.ts'
 
 type App = { Bindings: Env }
@@ -119,18 +122,25 @@ function respond<T>(
   send: (value: T) => Response | Promise<Response>,
 ): Response | Promise<Response> {
   if (!result.ok) {
-    return result.problem.status === 404 ? notFound() : problem(result.problem)
+    const failure = result.problem
+    if (failure.status === 404) return notFound()
+    const wait = failure.status === 429 ? failure.retryAfterMs : undefined
+    return problem(failure, wait ? { 'Retry-After': String(Math.ceil(wait / 1000)) } : {})
   }
   return send(result.value)
 }
 
+const address = (c: Context<App>) => clientAddress(c.req.header('CF-Connecting-IP'))
+
 // Resolves the link in the URL to its workspace. A malformed key, or a tier the route doesn't
-// accept, gets the same 404 as a wrong key.
+// accept, gets the same 404 as a wrong key. Both limits come before the workspace is asked, so
+// whether they refuse a request says nothing about its key.
 function keyed(
   tiers: readonly Tier[],
   handler: (c: Context<App>, link: Keyed) => Promise<Response>,
 ) {
   return async (c: Context<App>) => {
+    if (!(await c.env.ADDRESS_LIMITER.limit({ key: address(c) })).success) return rateLimited()
     const parsed = parseLink(c.req.param('tier') ?? '', c.req.param('key') ?? '', tiers)
     if (!parsed) return notFound()
     const secretHash = await hashSecret(parsed.secret)
@@ -144,13 +154,33 @@ function keyed(
   }
 }
 
+const secondsUntilTomorrow = () => {
+  const now = new Date()
+  return Math.ceil(
+    (Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1) - now.getTime()) /
+      1000,
+  )
+}
+
 app.post('/workspaces', async (c) => {
-  const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
-  if (!(await c.env.CREATE_LIMITER.limit({ key: ip })).success) return rateLimited()
+  if (c.env.CREATE_ENABLED !== 'true') return paused('Creating workspaces is switched off for now.')
+  if (!(await c.env.CREATE_LIMITER.limit({ key: address(c) })).success) return rateLimited()
   const body = await readJson(c)
   if (body instanceof Response) return body
   const parsed = zCreateWorkspaceRequest.safeParse(body.value ?? {})
   if (!parsed.success) return invalidFrom(parsed.error)
+  // The daily count is the ceiling on what workspaces can cost, so only a create that is about
+  // to happen takes from it.
+  const daily = Number(c.env.CREATE_DAILY_LIMIT)
+  if (daily > 0) {
+    const today = new Date().toISOString().slice(0, 10)
+    if (!(await c.env.QUOTA.getByName('creates').take(today, daily))) {
+      return paused(
+        'mdplane has made as many workspaces as it will today. Try again after midnight UTC.',
+        secondsUntilTomorrow(),
+      )
+    }
+  }
 
   const id = newWorkspaceId()
   const hours = Number(c.env.WORKSPACE_TTL_HOURS)
@@ -321,7 +351,16 @@ app.get(
         },
       }),
     )
-    return response.status === 101 ? response : notFound()
+    if (response.status === 101) return response
+    if (response.status !== 429) return notFound()
+    return problem(
+      {
+        status: 429,
+        code: 'rate_limited',
+        detail: `A workspace takes at most ${LIMITS.sockets} live connections at once.`,
+      },
+      { 'Retry-After': '60' },
+    )
   }),
 )
 

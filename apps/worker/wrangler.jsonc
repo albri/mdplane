@@ -23,15 +23,36 @@
   // never turn them on.
   "observability": { "enabled": true, "logs": { "invocation_logs": false } },
   "durable_objects": {
-    "bindings": [{ "name": "WORKSPACES", "class_name": "Workspace" }],
+    "bindings": [
+      { "name": "WORKSPACES", "class_name": "Workspace" },
+      // Counts the workspaces made each day, so there is a ceiling on what they can cost.
+      { "name": "QUOTA", "class_name": "Quota" },
+    ],
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Workspace"] }],
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["Workspace"] },
+    { "tag": "v2", "new_sqlite_classes": ["Quota"] },
+  ],
+  // Each limit counts per Cloudflare location, so none of them is exact.
   "ratelimits": [
+    // Per address, IPv6 by its /64.
     { "name": "CREATE_LIMITER", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } },
+    // Per link. A made-up secret starts a fresh count, which is why there is a limit per address
+    // as well.
     { "name": "LINK_LIMITER", "namespace_id": "1002", "simple": { "limit": 300, "period": 60 } },
+    // Per address, IPv6 by its /64, across every request with a key in it.
+    { "name": "ADDRESS_LIMITER", "namespace_id": "1003", "simple": { "limit": 600, "period": 60 } },
   ],
   "vars": {
+    // 0 keeps workspaces until they are deleted.
     "WORKSPACE_TTL_HOURS": "24",
     "LEASE_SECONDS": "600",
+    // The text a workspace may hold: every entry's body and every distinct version of a file
+    // body. 0 means no limit.
+    "WORKSPACE_MAX_BYTES": "8388608",
+    // Anything but "true" stops new workspaces from being made. Existing links keep working.
+    "CREATE_ENABLED": "true",
+    // New workspaces a day across the service, counted in UTC. 0 means no limit.
+    "CREATE_DAILY_LIMIT": "100",
   },
 }

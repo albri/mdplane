@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer'
 import { createHash } from 'node:crypto'
 import { DurableObject } from 'cloudflare:workers'
 import type { output } from 'zod'
@@ -35,7 +36,8 @@ export type Result<T> =
 export type NewLink = { id: string; tier: Tier; folder: string | null; secretHash: string }
 export type Overview = { workspace: WorkspaceView; tasks: Record<string, TaskView[]> }
 
-export const LIMITS = { files: 100, entries: 10_000, links: 50 }
+// `polls` is how many long polls may wait at once, and `sockets` how many live connections.
+export const LIMITS = { files: 100, entries: 10_000, links: 50, polls: 20, sockets: 100 }
 const IDEMPOTENCY_MS = 24 * 60 * 60 * 1000
 const MAX_WAIT_SECONDS = 25
 const ALL: readonly Tier[] = ['r', 'a', 'w']
@@ -74,7 +76,19 @@ const SCHEMA = `
   CREATE VIRTUAL TABLE search USING fts5 (text, path UNINDEXED, seq UNINDEXED);
 `
 
+// Each one takes the schema a version further. A new workspace runs them all after SCHEMA; one
+// made before a deploy runs the ones it hasn't had the first time it's used after it. Durable
+// Objects refuse PRAGMA user_version, so the version is kept in a table.
+const MIGRATIONS = [
+  // 1: how many bytes of text the workspace holds, for its budget.
+  `ALTER TABLE meta ADD COLUMN bytes INTEGER NOT NULL DEFAULT 0;
+   UPDATE meta SET bytes =
+     (SELECT COALESCE(SUM(length(CAST(body AS BLOB))), 0) FROM entries) +
+     (SELECT COALESCE(SUM(length(CAST(body AS BLOB))), 0) FROM bodies);`,
+]
+
 const sha256 = (text: string) => createHash('sha256').update(text).digest('hex')
+const utf8Bytes = (text: string) => Buffer.byteLength(text, 'utf8')
 
 // A folder-limited link sees paths under its folder; a link without one sees everything.
 const inScope = (folder: string | null, path: string) =>
@@ -101,6 +115,7 @@ type SocketState = { linkId: string; folder: string | null }
 export class Workspace extends DurableObject<Env> {
   private readonly sql = this.ctx.storage.sql
   private readonly waiters = new Set<() => void>()
+  private polls = 0
   private exists = false
 
   private get leaseMs(): number {
@@ -110,10 +125,32 @@ export class Workspace extends DurableObject<Env> {
   // Reading sqlite_master doesn't write, so a request for a workspace that was never created
   // leaves nothing behind.
   private created(): boolean {
-    this.exists ||=
+    if (
+      !this.exists &&
       this.sql.exec(`SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'meta'`).toArray()
         .length > 0
+    ) {
+      this.migrate()
+      this.exists = true
+    }
     return this.exists
+  }
+
+  private migrate(): void {
+    const versioned =
+      this.sql
+        .exec(`SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'schema_version'`)
+        .toArray().length > 0
+    const version = versioned
+      ? this.sql.exec<{ version: number }>(`SELECT version FROM schema_version`).one().version
+      : 0
+    if (version >= MIGRATIONS.length) return
+    this.ctx.storage.transactionSync(() => {
+      for (const step of MIGRATIONS.slice(version)) this.sql.exec(step)
+      if (!versioned) this.sql.exec(`CREATE TABLE schema_version (version INTEGER NOT NULL)`)
+      this.sql.exec(`DELETE FROM schema_version`)
+      this.sql.exec(`INSERT INTO schema_version VALUES (?)`, MIGRATIONS.length)
+    })
   }
 
   async create(input: {
@@ -128,6 +165,7 @@ export class Workspace extends DurableObject<Env> {
       this.sql.exec(SCHEMA)
       this.sql.exec(`INSERT INTO meta VALUES (?, ?, ?)`, input.id, input.name, input.expiresAt)
       for (const link of input.links) this.insertLink(link, now)
+      this.migrate()
     })
     this.exists = true
     if (input.expiresAt) await this.ctx.storage.setAlarm(Date.parse(input.expiresAt))
@@ -217,23 +255,44 @@ export class Workspace extends DurableObject<Env> {
     }
   }
 
+  // Each waiter deletes itself, which a Set allows while it is being iterated.
   private wake(): void {
     for (const wake of this.waiters) wake()
-    this.waiters.clear()
   }
 
+  // A waiter removes itself whether an entry or the timeout comes first.
   private nextEntry(timeoutMs: number): Promise<void> {
     return new Promise((resolve) => {
-      const timer = setTimeout(resolve, timeoutMs)
-      this.waiters.add(() => {
+      const done = () => {
         clearTimeout(timer)
+        this.waiters.delete(done)
         resolve()
-      })
+      }
+      const timer = setTimeout(done, timeoutMs)
+      this.waiters.add(done)
     })
   }
 
   private logFull(): boolean {
     return this.head().seq >= LIMITS.entries
+  }
+
+  // Refuses text that would take the workspace over its budget. The budget counts each entry's
+  // body and each distinct version of a file body, which is what its storage grows with.
+  private overBudget<T>(bytes: number): Result<T> | null {
+    const max = Number(this.env.WORKSPACE_MAX_BYTES)
+    if (!(max > 0) || bytes === 0) return null
+    const used = this.sql.exec<{ bytes: number }>(`SELECT bytes FROM meta`).one().bytes
+    if (used + bytes <= max) return null
+    return fail(
+      409,
+      'workspace_full',
+      `A workspace holds at most ${max} bytes of text. It holds ${used}, and this needs ${bytes} more.`,
+    )
+  }
+
+  private spend(bytes: number): void {
+    if (bytes > 0) this.sql.exec(`UPDATE meta SET bytes = bytes + ?`, bytes)
   }
 
   // The file's newest write, unless it has been deleted since, and where its current life began.
@@ -366,13 +425,20 @@ export class Workspace extends DurableObject<Env> {
     }
     if (this.logFull()) return this.full()
     const contentHash = sha256(body)
+    // A body the workspace already holds, under any path, costs nothing more.
+    const known =
+      this.sql.exec(`SELECT 1 FROM bodies WHERE content_hash = ?`, contentHash).toArray().length > 0
+    const bytes = known ? 0 : utf8Bytes(body)
+    const refused = this.overBudget<WriteResult>(bytes)
+    if (refused) return refused
     const { version } = this.sql
       .exec<{ version: number }>(
         `SELECT COALESCE(MAX(version), 0) + 1 AS version FROM entries WHERE path = ? AND type = 'write'`,
         path,
       )
       .one()
-    this.sql.exec(`INSERT OR IGNORE INTO bodies VALUES (?, ?)`, contentHash, body)
+    if (!known) this.sql.exec(`INSERT INTO bodies VALUES (?, ?)`, contentHash, body)
+    this.spend(bytes)
     const entry = this.seal(
       { path, type: 'write', author: link.id, ref: null, body: null, version, contentHash },
       body,
@@ -465,6 +531,10 @@ export class Workspace extends DurableObject<Env> {
       }
     }
     if (this.logFull()) return this.full()
+    const bytes = utf8Bytes(request.body ?? '')
+    const refused = this.overBudget<AppendResult>(bytes)
+    if (refused) return refused
+    this.spend(bytes)
 
     const entry = this.seal(
       {
@@ -523,15 +593,33 @@ export class Workspace extends DurableObject<Env> {
     let page = this.page(link.folder, query.path, query.after, query.limit)
     const wait = Math.min(waitSeconds, MAX_WAIT_SECONDS)
     if (page.entries.length > 0 || wait <= 0) return ok({ page, waited: null })
+    // Each waiting request holds memory in the object, and a socket to /live serves any number of
+    // readers for less.
+    if (this.polls >= LIMITS.polls) {
+      return {
+        ok: false,
+        problem: {
+          status: 429,
+          code: 'rate_limited',
+          detail: `At most ${LIMITS.polls} requests can wait on a workspace at once. Try again shortly, or follow it over /live.`,
+          retryAfterMs: 5000,
+        },
+      }
+    }
 
-    const deadline = Date.now() + wait * 1000
-    while (page.entries.length === 0 && Date.now() < deadline) {
-      // oxlint-disable-next-line no-await-in-loop -- each wait depends on what the last one found
-      await this.nextEntry(deadline - Date.now())
-      // The link may have been revoked, or the workspace expired, while this request waited.
-      link = this.authorize(auth)
-      if (!link) return { ok: false, problem: NOT_FOUND }
-      page = this.page(link.folder, query.path, query.after, query.limit)
+    this.polls += 1
+    try {
+      const deadline = Date.now() + wait * 1000
+      while (page.entries.length === 0 && Date.now() < deadline) {
+        // oxlint-disable-next-line no-await-in-loop -- each wait depends on what the last one found
+        await this.nextEntry(deadline - Date.now())
+        // The link may have been revoked, or the workspace expired, while this request waited.
+        link = this.authorize(auth)
+        if (!link) return { ok: false, problem: NOT_FOUND }
+        page = this.page(link.folder, query.path, query.after, query.limit)
+      }
+    } finally {
+      this.polls -= 1
     }
     return ok({ page, waited: wait })
   }
@@ -613,6 +701,8 @@ export class Workspace extends DurableObject<Env> {
     const secretHash = request.headers.get('x-mdplane-secret-hash')
     const link = tier && secretHash ? this.authorize({ tier, secretHash }) : null
     if (!link) return new Response(null, { status: 404 })
+    if (this.ctx.getWebSockets().length >= LIMITS.sockets)
+      return new Response(null, { status: 429 })
     const after = Number(new URL(request.url).searchParams.get('after') ?? 0)
 
     const [client, server] = Object.values(new WebSocketPair())

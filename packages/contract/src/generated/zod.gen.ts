@@ -274,6 +274,7 @@ export const zProblem = z.object({
         'payload_too_large',
         'workspace_full',
         'rate_limited',
+        'creation_paused',
         'upgrade_required',
         'internal_error'
     ]),

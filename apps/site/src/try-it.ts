@@ -5,7 +5,15 @@
 import type { CreateWorkspaceResponse } from '@mdplane/contract/core'
 import { html, nothing, render, type TemplateResult } from 'lit-html'
 import { classMap } from 'lit-html/directives/class-map.js'
-import { ApiError, append, createFile, createWorkspace, isRateLimited, parseLink } from './api.ts'
+import {
+  ApiError,
+  append,
+  createFile,
+  createWorkspace,
+  isPaused,
+  isRateLimited,
+  parseLink,
+} from './api.ts'
 import { $, $as, $$, copyText, dateTime, scrollBehavior } from './dom.ts'
 import { watch, type Watch } from './live.ts'
 import type { Session } from './model.ts'
@@ -122,13 +130,16 @@ export function initTryIt(hero: Reader, sample: Session): void {
     } catch (error) {
       set({
         name: 'start',
-        error: isRateLimited(error)
-          ? partial
-            ? 'Too many requests. Try again in a minute to finish setting up your workspace.'
-            : 'Too many workspaces from your address. Try again in a minute.'
-          : partial
-            ? "Couldn't finish setting up your workspace. Try again."
-            : "Couldn't create a workspace. Try again.",
+        // The server says why new workspaces are paused, and until when.
+        error: isPaused(error)
+          ? error.message
+          : isRateLimited(error)
+            ? partial
+              ? 'Too many requests. Try again in a minute to finish setting up your workspace.'
+              : 'Too many workspaces from your address. Try again in a minute.'
+            : partial
+              ? "Couldn't finish setting up your workspace. Try again."
+              : "Couldn't create a workspace. Try again.",
       })
     }
   }

@@ -278,7 +278,7 @@ export type Problem = {
     title: string;
     status: number;
     detail?: string;
-    code: 'invalid_request' | 'not_found' | 'task_claimed' | 'task_closed' | 'invalid_ref' | 'idempotency_key_reused' | 'precondition_failed' | 'precondition_required' | 'payload_too_large' | 'workspace_full' | 'rate_limited' | 'upgrade_required' | 'internal_error';
+    code: 'invalid_request' | 'not_found' | 'task_claimed' | 'task_closed' | 'invalid_ref' | 'idempotency_key_reused' | 'precondition_failed' | 'precondition_required' | 'payload_too_large' | 'workspace_full' | 'rate_limited' | 'creation_paused' | 'upgrade_required' | 'internal_error';
     holder?: Author;
     retryAfterMs?: number;
 };
@@ -358,9 +358,22 @@ export type CreateWorkspaceErrors = {
      */
     400: Problem;
     /**
-     * Too many requests from this address or link.
+     * The body is over its size limit.
+     */
+    413: Problem;
+    /**
+     * Too many requests from this address or link, or too many waiting on
+     * this workspace at once.
+     *
      */
     429: Problem;
+    /**
+     * `creation_paused`: new workspaces are switched off, or the service has
+     * made as many as it will today. Links to existing workspaces still
+     * work.
+     *
+     */
+    503: Problem;
 };
 
 export type CreateWorkspaceError = CreateWorkspaceErrors[keyof CreateWorkspaceErrors];
@@ -398,7 +411,9 @@ export type GetWorkspaceErrors = {
      */
     404: Problem;
     /**
-     * Too many requests from this address or link.
+     * Too many requests from this address or link, or too many waiting on
+     * this workspace at once.
+     *
      */
     429: Problem;
 };
@@ -454,7 +469,8 @@ export type DeleteFileErrors = {
     /**
      * `task_claimed` (someone else holds the lease; see `retryAfterMs` and
      * `holder`), `task_closed` (the task is done or cancelled) or
-     * `workspace_full`.
+     * `workspace_full` (the workspace is at its limit of files, entries,
+     * links or text).
      *
      */
     409: Problem;
@@ -467,7 +483,9 @@ export type DeleteFileErrors = {
      */
     428: Problem;
     /**
-     * Too many requests from this address or link.
+     * Too many requests from this address or link, or too many waiting on
+     * this workspace at once.
+     *
      */
     429: Problem;
 };
@@ -520,7 +538,9 @@ export type ReadFileErrors = {
      */
     404: Problem;
     /**
-     * Too many requests from this address or link.
+     * Too many requests from this address or link, or too many waiting on
+     * this workspace at once.
+     *
      */
     429: Problem;
 };
@@ -580,7 +600,8 @@ export type WriteFileErrors = {
     /**
      * `task_claimed` (someone else holds the lease; see `retryAfterMs` and
      * `holder`), `task_closed` (the task is done or cancelled) or
-     * `workspace_full`.
+     * `workspace_full` (the workspace is at its limit of files, entries,
+     * links or text).
      *
      */
     409: Problem;
@@ -597,7 +618,9 @@ export type WriteFileErrors = {
      */
     428: Problem;
     /**
-     * Too many requests from this address or link.
+     * Too many requests from this address or link, or too many waiting on
+     * this workspace at once.
+     *
      */
     429: Problem;
 };
@@ -653,7 +676,8 @@ export type AppendErrors = {
     /**
      * `task_claimed` (someone else holds the lease; see `retryAfterMs` and
      * `holder`), `task_closed` (the task is done or cancelled) or
-     * `workspace_full`.
+     * `workspace_full` (the workspace is at its limit of files, entries,
+     * links or text).
      *
      */
     409: Problem;
@@ -669,7 +693,9 @@ export type AppendErrors = {
      */
     422: Problem;
     /**
-     * Too many requests from this address or link.
+     * Too many requests from this address or link, or too many waiting on
+     * this workspace at once.
+     *
      */
     429: Problem;
 };
@@ -729,7 +755,9 @@ export type ReadLogErrors = {
      */
     404: Problem;
     /**
-     * Too many requests from this address or link.
+     * Too many requests from this address or link, or too many waiting on
+     * this workspace at once.
+     *
      */
     429: Problem;
 };
@@ -780,7 +808,9 @@ export type SearchErrors = {
      */
     404: Problem;
     /**
-     * Too many requests from this address or link.
+     * Too many requests from this address or link, or too many waiting on
+     * this workspace at once.
+     *
      */
     429: Problem;
 };
@@ -833,7 +863,9 @@ export type LiveErrors = {
      */
     426: Problem;
     /**
-     * Too many requests from this address or link.
+     * Too many requests from this address or link, or too many waiting on
+     * this workspace at once.
+     *
      */
     429: Problem;
 };
@@ -864,7 +896,9 @@ export type ListLinksErrors = {
      */
     404: Problem;
     /**
-     * Too many requests from this address or link.
+     * Too many requests from this address or link, or too many waiting on
+     * this workspace at once.
+     *
      */
     429: Problem;
 };
@@ -910,7 +944,8 @@ export type CreateLinkErrors = {
     /**
      * `task_claimed` (someone else holds the lease; see `retryAfterMs` and
      * `holder`), `task_closed` (the task is done or cancelled) or
-     * `workspace_full`.
+     * `workspace_full` (the workspace is at its limit of files, entries,
+     * links or text).
      *
      */
     409: Problem;
@@ -922,7 +957,9 @@ export type CreateLinkErrors = {
      */
     422: Problem;
     /**
-     * Too many requests from this address or link.
+     * Too many requests from this address or link, or too many waiting on
+     * this workspace at once.
+     *
      */
     429: Problem;
 };
@@ -970,7 +1007,9 @@ export type RevokeLinkErrors = {
      */
     422: Problem;
     /**
-     * Too many requests from this address or link.
+     * Too many requests from this address or link, or too many waiting on
+     * this workspace at once.
+     *
      */
     429: Problem;
 };

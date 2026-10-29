@@ -49,6 +49,8 @@ async function send<T>(url: string, init: RequestInit = {}): Promise<T> {
 
 export const isGone = (error: unknown) => error instanceof ApiError && error.status === 404
 export const isRateLimited = (error: unknown) => error instanceof ApiError && error.status === 429
+export const isPaused = (error: unknown): error is ApiError =>
+  error instanceof ApiError && error.problem?.code === 'creation_paused'
 
 const JSON_ACCEPT = { Accept: 'application/json' }
 

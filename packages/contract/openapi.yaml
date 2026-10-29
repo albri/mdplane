@@ -16,6 +16,11 @@ info:
     404.
 
     Errors are `application/problem+json` with a machine-readable `code`.
+
+    On mdplane.dev a workspace holds at most 100 files, 10,000 log entries,
+    50 links and 8 MiB of text. The text is every entry's body and every
+    distinct version of a file body. Requests are limited per link and per
+    address.
   license:
     name: MIT
     identifier: MIT
@@ -66,8 +71,12 @@ paths:
                   write: https://mdplane.dev/w/wk_7Qm2x9Lp4Rt8.Ne4Jw9Qa2Xt7Bv5Rm8Yc3Kh6Ds1Pf0Lz
         '400':
           $ref: '#/components/responses/InvalidRequest'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
         '429':
           $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/CreationPaused'
 
   /{tier}/{key}:
     parameters:
@@ -354,7 +363,8 @@ paths:
         returned `cursor` as `after` next time. With `Prefer: wait=25` the
         request waits up to 25 seconds for a new entry before answering.
         Entries outside the link's folder appear as sequence number and hash
-        only, so the chain can still be checked.
+        only, so the chain can still be checked. At most 20 requests wait on
+        a workspace at once; another one gets 429 straight away.
       tags: [Log]
       parameters:
         - $ref: '#/components/parameters/LogPath'
@@ -436,6 +446,7 @@ paths:
       description: |
         Each message is one `LogItem` as JSON. Reconnect with `after` set to
         the last sequence number you saw, and nothing is missed or repeated.
+        A workspace takes at most 100 sockets at once; another one gets 429.
       tags: [Log]
       parameters:
         - $ref: '#/components/parameters/After'
@@ -665,7 +676,8 @@ components:
       description: |
         `task_claimed` (someone else holds the lease; see `retryAfterMs` and
         `holder`), `task_closed` (the task is done or cancelled) or
-        `workspace_full`.
+        `workspace_full` (the workspace is at its limit of files, entries,
+        links or text).
       content:
         application/problem+json:
           schema:
@@ -712,7 +724,9 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
     RateLimited:
-      description: Too many requests from this address or link.
+      description: |
+        Too many requests from this address or link, or too many waiting on
+        this workspace at once.
       headers:
         Retry-After:
           description: Seconds to wait.
@@ -722,6 +736,32 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Problem'
+          example:
+            type: https://mdplane.dev/problems/rate_limited
+            title: Too many requests
+            status: 429
+            code: rate_limited
+            detail: Wait a minute, then try again.
+    CreationPaused:
+      description: |
+        `creation_paused`: new workspaces are switched off, or the service has
+        made as many as it will today. Links to existing workspaces still
+        work.
+      headers:
+        Retry-After:
+          description: Seconds until new workspaces can be made again, when that is known.
+          schema:
+            type: integer
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://mdplane.dev/problems/creation_paused
+            title: Creating workspaces is paused
+            status: 503
+            code: creation_paused
+            detail: mdplane has made as many workspaces as it will today. Try again after midnight UTC.
 
   schemas:
     Tier:
@@ -1203,6 +1243,7 @@ components:
             - payload_too_large
             - workspace_full
             - rate_limited
+            - creation_paused
             - upgrade_required
             - internal_error
         holder:
