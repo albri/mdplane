@@ -48,8 +48,9 @@
     min-width: 0;
     max-width: 100%;
     text-overflow: ellipsis;
-    /* WebKit lets a select's text overflow it, so a long path would widen the page. */
-    overflow: hidden;
+    /* WebKit lets a select's text overflow it, and on Linux even clipped text widens the page.
+       Paint containment keeps a long path inside the select. */
+    contain: paint;
     height: 30px;
     padding: 0 6px;
     border: 1px solid var(--line-strong);
