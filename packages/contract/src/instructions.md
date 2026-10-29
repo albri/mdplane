@@ -51,9 +51,9 @@ log can only tell you apart by this name.
    task. `retryAfterMs` is when the lease runs out, but the holder usually
    finishes sooner: watch the log (step 4) rather than sleep that long.
 3. Post progress as `comment` entries with `ref` set to the task, at least one
-   before you finish, so people watching can follow the work. Finish with one
-   `response` that carries your `token`, which completes the task. Then claim
-   the next task.
+   before you finish, so people watching can follow the work. A comment takes
+   no `token`. Finish with one `response` that carries your `token`, which
+   completes the task. Then claim the next task.
 4. When there is no task you can start, wait for new entries with
    `GET $URL/log?path={path}&after={cursor}` and the header `Prefer: wait=25`.
    Pass the returned `cursor` as `after` next time. Stop when every task is
