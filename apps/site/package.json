@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "node build.ts",
+    "check": "node build.ts && node budget.ts",
     "test": "vitest run",
     "e2e": "playwright test"
   },
