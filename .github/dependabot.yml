@@ -13,6 +13,9 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    commit-message:
+      prefix: chore
+      include: scope
     ignore:
       # Playwright 1.64's WebKit reports a CSP violation for every <select>, from the select's own
       # shadow tree, and the e2e tests fail on it. Safari 26 doesn't. WebKit has fixed it
@@ -43,3 +46,6 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    commit-message:
+      prefix: chore
+      include: scope

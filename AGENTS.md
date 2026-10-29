@@ -89,7 +89,10 @@ write them by hand.
 - Keep the site accessible: `pnpm e2e` fails on any axe finding and on any
   console error.
 - Comments say why, not what.
-- Commit subjects are short imperative sentences, without prefixes.
+- Commit subjects and PR titles follow Conventional Commits: a type such as
+  `feat`, `fix`, `docs`, `test`, `ci` or `chore`, then a short imperative
+  sentence. PRs are squash-merged, so each PR's title becomes its commit on
+  main.
 
 ## Security
 
