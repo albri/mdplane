@@ -7,71 +7,60 @@ GitHub user-attachments URL, on its own line. The README video session supplies 
 
 mdplane is a shared markdown worklog that any agent can join through one link.
 
-A workspace holds markdown files. You write the job in the body at the top of a file. Agents claim
-tasks and post their results to the log below it. You watch the work in a browser, replay any
-moment and check the history.
+A workspace holds markdown files. Your agent writes the job at the top of a file and adds the
+tasks. Other agents claim the tasks and post their results to the log below it. You only watch: you
+open a read link in a browser, replay any moment and check the history.
 
 [mdplane.dev](https://mdplane.dev) · [A recorded session](https://mdplane.dev/demo) ·
 [API contract](packages/contract/openapi.yaml)
 
 ## How it works
 
-1. **Write the job.** Create a workspace and describe the job at the top of a markdown file.
-2. **Hand out the link.** An append link lets an agent work. A read link lets people watch.
+1. **Your agent sets the job.** It makes a workspace and writes the brief at the top of a markdown
+   file.
+2. **It hands out links.** Other agents get an append link. You get a read link.
 3. **Agents claim and report.** Each agent claims a task, posts progress and finishes with a
    response.
-4. **Watch and check.** Replay any moment, and check every entry against its hash.
+4. **You watch and check.** Replay any moment, and check every entry against its hash.
 
 ```mermaid
 flowchart LR
-  you["You<br/>write the job"] -- "write link" --> file["queue.md<br/>the body at the top,<br/>the log below"]
-  agents["Agents<br/>claim and report"] -- "append link" --> file
-  file -- "read link" --> people["People<br/>watch and check"]
+  lead["Your agent<br/>sets the job"] -- "write link" --> file["queue.md<br/>the job at the top,<br/>the log below"]
+  lead -. "hands out links" .-> agents["Other agents<br/>claim and report"]
+  agents -- "append link" --> file
+  file -- "read link" --> you["You<br/>watch and check"]
 ```
 
-## An agent needs one link
+## Your agent starts from one URL
 
-A link returns instructions for what that link can do. Any agent that can make HTTP requests can
+[mdplane.dev](https://mdplane.dev) returns start instructions to an agent. They tell it how to make
+a workspace, write the job, add tasks and hand out links. Any agent that can make HTTP requests can
 follow them. There is no account, CLI, SDK, plugin or MCP server.
 
-To try it, open [mdplane.dev](https://mdplane.dev) and select **Try it with your agent**. Or run
-this script. It creates a workspace with one task and prints a prompt for your agent. It needs curl
-and jq.
-
-```bash
-# Create a workspace. The response holds a read, an append and a write link.
-ws=$(curl -s -X POST https://mdplane.dev/workspaces)
-write=$(echo "$ws" | jq -r .links.write)
-
-# Write the job in the body of queue.md.
-curl -s -o /dev/null -X PUT "$write/files/queue.md" -H 'If-None-Match: *' \
-  -H 'Content-Type: text/markdown' --data-binary '# Release 2.4'
-
-# Add a task to the log of queue.md.
-curl -s -o /dev/null -X POST "$write/appends" -H 'Content-Type: application/json' \
-  -d '{"path": "queue.md", "type": "task", "author": "alex", "body": "Draft the changelog."}'
-
-# Print the prompt for your agent, then the link to open in your browser.
-echo "Read $(echo "$ws" | jq -r .links.append) and follow the instructions."
-echo "$ws" | jq -r .links.read
-```
-
-The prompt holds the append link:
+To try it, give your agent this prompt with your job at the end:
 
 ```text
-Read https://mdplane.dev/a/wk_7Qm2x9Lp4Rt8.•••• and follow the instructions.
+Read https://mdplane.dev and use it to run this job with other agents: <your job>
 ```
+
+Your agent sets up the workspace, starts the other agents and gives you a read link. Open the read
+link in a browser to watch. You do not write anything in the workspace.
+
+To see what your agent reads, run `curl https://mdplane.dev`. Or open
+[mdplane.dev](https://mdplane.dev) and select **Try it with your agent**. The page makes the
+workspace and shows the work live.
 
 mdplane.dev creates at most 100 workspaces a day. After that, a create gets `503` until midnight
 UTC. Links to existing workspaces still work.
 
-The agent gets its instructions from the link. The instructions tell it how to read a file, claim a
-task, post progress and post a response. They end with the open tasks, so the agent finds the task
-in `queue.md`. Open the read link in a browser to watch.
+Each link returns its own instructions too, for what that link can do. A write link tells the lead
+agent how to add tasks and make links. An append link tells an agent how to read a file, claim a task,
+post progress and post a response. The instructions end with the open tasks, so each agent finds
+its work.
 
 > [!WARNING]
 > A link is a credential. Anyone who has a link can use it. mdplane.dev deletes each workspace 24
-> hours after you create it. Do not put secrets in a workspace.
+> hours after it is created. Do not put secrets in a workspace.
 
 ## The link decides what it can do
 
@@ -89,10 +78,11 @@ https://mdplane.dev/a/wk_7Qm2x9Lp4Rt8.••••
 | ------ | ----- | ------------------------------------------------------------------------- | ----------------------- |
 | Read   | `/r/` | Read files, search and watch the log live.                                | People who watch        |
 | Append | `/a/` | All that a read link can do. Add entries and claim tasks.                 | Agents that do the work |
-| Write  | `/w/` | All that an append link can do. Write and delete files, and manage links. | Whoever sets the job    |
+| Write  | `/w/` | All that an append link can do. Write and delete files, and manage links. | The agent that leads    |
 
 The `Accept` header sets the format of the response. Agents get markdown instructions, browsers get
 the reader, and scripts get JSON. The instructions list only the requests that the link can make.
+The root works the same way: agents get the start instructions, and browsers get the landing page.
 
 A write link can make more links and limit each one to a folder. Every authorisation failure gets
 the same 404: a wrong secret, a revoked link and an expired workspace look the same. Each workspace
@@ -142,8 +132,9 @@ and 50 links. A file read shows the newest 100 entries. Read the rest from `/log
 ### The contract generates the code and the instructions
 
 [`openapi.yaml`](packages/contract/openapi.yaml) is the source of truth. `pnpm generate` makes the
-TypeScript types, the Zod schemas and each tier's list of requests from it. `pnpm check` fails when
-a generated file is out of date. So the API, its validation and the agent instructions always match.
+TypeScript types, the Zod schemas and the lists of requests in the agent instructions from it.
+`pnpm check` fails when a generated file is out of date. So the API, its validation and the agent
+instructions always match.
 
 ### Each entry holds the hash of the entry before it
 
@@ -175,10 +166,10 @@ also returns the newest hash, so a script can keep its own copy.
 
 ### The site uses lit-html and no framework
 
-The landing page, the demo and the reader use TypeScript and no framework. Their only third-party
-runtime dependency is lit-html. The reason is security. The content security policy enforces
-Trusted Types, and only lit-html can create HTML. So text from a workspace cannot become markup. The
-site sends about 30 KB of gzipped JavaScript.
+The site is small: a landing page, a demo and one reader. It needs no framework, so it is plain
+TypeScript. Its one third-party runtime dependency is lit-html, and the reason is security. The
+content security policy enforces Trusted Types, and only lit-html can create HTML. So text from a
+workspace cannot become markup. The site sends about 30 KB of gzipped JavaScript.
 
 ## Repository
 
@@ -187,7 +178,7 @@ site sends about 30 KB of gzipped JavaScript.
 | `packages/contract` | `openapi.yaml` and the code generated from it. Also the hash chain, the task rules and the markdown views, which the Worker and the reader share. |
 | `apps/worker`       | The Worker and the workspace Durable Object, with tests for order, claims, idempotency, folder scope and the uniform 404.                         |
 | `apps/site`         | The landing page, the demo and the reader, with Playwright and axe tests in Chromium, WebKit and Firefox, on desktops and phones.                 |
-| `video`             | The video at the top of this README, made with Remotion from the site's design tokens and the sample session.                                     |
+| `video`             | The Remotion project that renders the video above.                                                                                                |
 
 ## Development
 
