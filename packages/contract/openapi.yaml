@@ -1313,3 +1313,7 @@ components:
         retryAfterMs:
           type: integer
           minimum: 0
+          description: |
+            For `task_claimed`, the milliseconds until the lease runs out. The
+            holder can finish the task sooner, so follow the log rather than
+            sleep this long.

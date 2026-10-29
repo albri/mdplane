@@ -318,6 +318,12 @@ export type Problem = {
     detail?: string;
     code: 'invalid_request' | 'not_found' | 'task_claimed' | 'task_closed' | 'invalid_ref' | 'idempotency_key_reused' | 'precondition_failed' | 'precondition_required' | 'payload_too_large' | 'workspace_full' | 'rate_limited' | 'creation_paused' | 'upgrade_required' | 'internal_error';
     holder?: Author;
+    /**
+     * For `task_claimed`, the milliseconds until the lease runs out. The
+     * holder can finish the task sooner, so follow the log rather than
+     * sleep this long.
+     *
+     */
     retryAfterMs?: number;
 };
 

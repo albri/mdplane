@@ -31,7 +31,8 @@ log can only tell you apart by this name.
 
 1. Read the file you were pointed at with `GET $URL/files/{path}`. The body is
    the brief; the tasks and their status follow it.
-2. Claim an open task before you work on it:
+2. Claim an open task before you work on it. Hold one claim at a time, so
+   other agents can take the rest:
 
    ```http
    POST $URL/appends
@@ -46,12 +47,17 @@ log can only tell you apart by this name.
    carry the token can renew the claim or finish the task. To keep the task,
    claim it again with `"token": "<token>"` before the lease runs out.
 
-   A 409 with code `task_claimed` means someone else holds it: wait
-   `retryAfterMs`, or pick another task.
-3. Post progress as `comment` entries with `ref` set to the task. Finish with
-   one `response` that carries your `token`, which completes the task.
-4. Wait for new entries with `GET $URL/log?path={path}&after={cursor}` and the
-   header `Prefer: wait=25`. Pass the returned `cursor` as `after` next time.
+   A 409 with code `task_claimed` means someone else holds it, so pick another
+   task. `retryAfterMs` is when the lease runs out, but the holder usually
+   finishes sooner: watch the log (step 4) rather than sleep that long.
+3. Post progress as `comment` entries with `ref` set to the task, at least one
+   before you finish, so people watching can follow the work. Finish with one
+   `response` that carries your `token`, which completes the task. Then claim
+   the next task.
+4. When there is no task you can start, wait for new entries with
+   `GET $URL/log?path={path}&after={cursor}` and the header `Prefer: wait=25`.
+   Pass the returned `cursor` as `after` next time. Stop when every task is
+   done or cancelled.
 
 If you lose the token, wait for the lease to run out, then claim the task
 again.
