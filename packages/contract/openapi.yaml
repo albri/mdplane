@@ -73,7 +73,7 @@ paths:
       summary: Create a workspace
       description: |
         Returns a read, an append and a write link. Workspaces on
-        mdplane.dev expire 24 hours after creation and are deleted. Don't
+        mdplane.dev expire 72 hours after creation and are deleted. Don't
         store secrets in them.
       tags: [Workspaces]
       requestBody:
@@ -94,7 +94,7 @@ paths:
               example:
                 id: wk_7Qm2x9Lp4Rt8
                 name: release-2-4
-                expiresAt: '2026-11-02T09:00:00.000Z'
+                expiresAt: '2026-11-04T09:00:00.000Z'
                 links:
                   read: https://mdplane.dev/r/wk_7Qm2x9Lp4Rt8.pV3sN8qL2rT6Yx1cWb5ZkD9mF4hJ7gA0
                   append: https://mdplane.dev/a/wk_7Qm2x9Lp4Rt8.Hq8Tz3Vn6Ry1Pu4Kd7Sx2Mc9Lb5Gf0Aw
@@ -140,7 +140,7 @@ paths:
               example:
                 id: wk_7Qm2x9Lp4Rt8
                 name: release-2-4
-                expiresAt: '2026-11-02T09:00:00.000Z'
+                expiresAt: '2026-11-04T09:00:00.000Z'
                 link:
                   id: ln_Bq4Wn8Xc2Rv6
                   tier: a

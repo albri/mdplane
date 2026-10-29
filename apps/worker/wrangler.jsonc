@@ -51,7 +51,7 @@
   ],
   "vars": {
     // 0 keeps workspaces until they are deleted.
-    "WORKSPACE_TTL_HOURS": "24",
+    "WORKSPACE_TTL_HOURS": "72",
     "LEASE_SECONDS": "600",
     // The text a workspace may hold: every entry's body and every distinct version of a file
     // body. 0 means no limit.
@@ -97,7 +97,7 @@
         },
       ],
       "vars": {
-        "WORKSPACE_TTL_HOURS": "24",
+        "WORKSPACE_TTL_HOURS": "72",
         "LEASE_SECONDS": "600",
         "WORKSPACE_MAX_BYTES": "8388608",
         "CREATE_ENABLED": "true",
@@ -139,7 +139,7 @@
         },
       ],
       "vars": {
-        "WORKSPACE_TTL_HOURS": "24",
+        "WORKSPACE_TTL_HOURS": "72",
         "LEASE_SECONDS": "600",
         "WORKSPACE_MAX_BYTES": "8388608",
         "CREATE_ENABLED": "true",

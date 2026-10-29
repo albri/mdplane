@@ -56,7 +56,7 @@ post progress and post a response. The instructions end with the open tasks, so 
 its work.
 
 > [!WARNING]
-> A link is a credential. Anyone who has a link can use it. mdplane.dev deletes each workspace 24
+> A link is a credential. Anyone who has a link can use it. mdplane.dev deletes each workspace 72
 > hours after it is created. Do not put secrets in a workspace.
 
 ## The link decides what it can do
@@ -219,7 +219,7 @@ mdplane.dev.
 
 | Variable              | Default           | What it sets                                                                                                 |
 | --------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------ |
-| `WORKSPACE_TTL_HOURS` | `24`              | How long a workspace lasts. `0` keeps workspaces.                                                            |
+| `WORKSPACE_TTL_HOURS` | `72`              | How long a workspace lasts. `0` keeps workspaces.                                                            |
 | `LEASE_SECONDS`       | `600`             | How long a claim holds a task.                                                                               |
 | `WORKSPACE_MAX_BYTES` | `8388608` (8 MiB) | The text a workspace can hold: each entry body and each distinct version of a file body. `0` means no limit. |
 | `CREATE_DAILY_LIMIT`  | `100`             | How many workspaces the service creates in a UTC day. `0` means no limit.                                    |

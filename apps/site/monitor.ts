@@ -144,7 +144,7 @@ async function workspace() {
   const madeUp = await notFound(`/r/${MADE_UP}`)
   check('made-up key', `${madeUp.status} ${madeUp.type}`, '404 application/problem+json')
 
-  // One workspace a run, of the 100 mdplane.dev makes a day. It expires after 24 hours.
+  // One workspace a run, of the 100 mdplane.dev makes a day. It expires after 72 hours.
   const created = await expectJson(
     'POST /workspaces',
     await request('/workspaces', { method: 'POST' }),

@@ -233,7 +233,7 @@ export function initTryIt(hero: Reader, sample: Session): void {
           : html`<p class="dlg-lead">
               Make a real workspace and give its write link to your agent. Your agent sets a small
               job, and you watch the work in the reader on this page. The workspace deletes itself
-              after 24 hours, so don't put secrets in it.
+              after 72 hours, so don't put secrets in it.
             </p>`
       }
       <ol class="steps">
