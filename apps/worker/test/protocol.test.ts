@@ -2,6 +2,7 @@ import {
   verifyChain,
   zAppendResult,
   zCreateLinkResult,
+  zCreateWorkspaceResponse,
   zFileView,
   zLogPage,
   zProblem,
@@ -10,7 +11,7 @@ import {
   zWriteResult,
 } from '@mdplane/contract'
 import { describe, expect, test } from 'vitest'
-import { append, call, createWorkspace, json, sleep, writeFile } from './helpers.ts'
+import { append, call, createWorkspace, json, ORIGIN, sleep, writeFile } from './helpers.ts'
 
 const BRIEF = '# Release 2.4\n\nShip on Thursday. Claim a task before you start.\n'
 
@@ -22,7 +23,7 @@ async function withQueue() {
       await append(ws.append, {
         path: 'queue.md',
         type: 'task',
-        author: 'alex',
+        author: 'lead@devbox',
         body: 'Upgrade CI to Node 22.',
       }),
     ),
@@ -45,6 +46,74 @@ const seqOf = async (response: Response) => zAppendResult.parse(await json(respo
 async function problemCode(response: Response) {
   return zProblem.parse(await json(response)).code
 }
+
+// Each ```http block in a markdown text, as an agent would send it.
+function httpBlocks(text: string) {
+  return [...text.matchAll(/```http\n([\s\S]*?)```/g)].map(([, block = '']) => {
+    const [head = '', ...body] = block.split('\n\n')
+    const [line = '', ...headers] = head.split('\n')
+    const [method = '', url = ''] = line.split(' ')
+    return {
+      method,
+      url,
+      headers: Object.fromEntries(headers.map((header) => header.split(': '))),
+      body: body.join('\n\n'),
+    }
+  })
+}
+
+describe('the root', () => {
+  test('tells an agent with no link how to start a job', async () => {
+    // Claude Code's WebFetch, curl, and a client that sends no Accept at all.
+    for (const accept of ['text/markdown, text/html, */*', '*/*', null]) {
+      // oxlint-disable-next-line no-await-in-loop -- one client after another
+      const response = await call('/', accept === null ? {} : { headers: { Accept: accept } })
+      expect(response.status).toBe(200)
+      expect(response.headers.get('Content-Type')).toBe('text/markdown; charset=utf-8')
+      expect(response.headers.get('Vary')).toBe('Accept, User-Agent')
+      // oxlint-disable-next-line no-await-in-loop -- one client after another
+      const text = await response.text()
+      expect(text).toContain(`POST ${ORIGIN}/workspaces`)
+      expect(text).not.toContain('{{')
+    }
+  })
+
+  test('gives browsers and link previews the landing page', async () => {
+    const browser = { Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' }
+    const preview = { Accept: '*/*', 'User-Agent': 'LinkedInBot/1.0 (compatible; Mozilla/5.0)' }
+    for (const headers of [browser, preview]) {
+      // oxlint-disable-next-line no-await-in-loop -- one client after another
+      const response = await call('/', { headers })
+      expect(response.status).toBe(200)
+      expect(response.headers.get('Content-Type')).toContain('text/html')
+      expect(response.headers.get('Content-Security-Policy')).toContain('trusted-types lit-html')
+      // The landing page holds no key, so search engines may index it.
+      expect(response.headers.get('X-Robots-Tag')).toBeNull()
+      // oxlint-disable-next-line no-await-in-loop -- one client after another
+      expect(await response.text()).toContain('<h1')
+    }
+  })
+
+  test('its requests work as written', async () => {
+    const [create, brief, task, ...rest] = httpBlocks(await (await call('/')).text())
+    if (!create || !brief || !task) throw new Error('The start text has three requests')
+    expect(rest).toEqual([])
+    const created = await call(create.url.slice(ORIGIN.length), create)
+    expect(created.status).toBe(201)
+    const write = zCreateWorkspaceResponse.parse(await json(created)).links.write
+    const send = ({ method, url, headers, body }: typeof brief) =>
+      call(url.replace('$WRITE', write).slice(ORIGIN.length), {
+        method,
+        headers: { ...headers, 'Idempotency-Key': crypto.randomUUID() },
+        body,
+      })
+    expect((await send(brief)).status).toBe(201)
+    expect((await send(task)).status).toBe(201)
+    const overview = await (await call(write.slice(ORIGIN.length))).text()
+    expect(overview).toContain('## Leading the job')
+    expect(overview).toMatch(/#2 open: Draft the changelog/)
+  })
+})
 
 describe('a workspace', () => {
   test('tells an agent what its link can do and what is happening', async () => {
@@ -148,7 +217,12 @@ describe('the log', () => {
     const started = Date.now()
     const waiting = call(`${ws.read}/log?after=2`, { headers: { Prefer: 'wait=10' } })
     await sleep(50)
-    await append(ws.append, { path: 'queue.md', type: 'comment', author: 'alex', body: 'Hello' })
+    await append(ws.append, {
+      path: 'queue.md',
+      type: 'comment',
+      author: 'lead@devbox',
+      body: 'Hello',
+    })
     const response = await waiting
     expect(response.headers.get('Preference-Applied')).toBe('wait=10')
     const page = zLogPage.parse(await json(response))
@@ -259,7 +333,7 @@ describe('claims and leases', () => {
     const cancel = append(ws.append, {
       path: 'queue.md',
       type: 'cancel',
-      author: 'alex',
+      author: 'lead@devbox',
       ref: ws.task,
     })
     expect(await problemCode(await cancel)).toBe('task_closed')

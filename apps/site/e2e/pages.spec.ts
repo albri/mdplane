@@ -20,16 +20,29 @@ const policy = (headers: Record<string, string>) => ({
 })
 
 test('static pages and Worker pages send the same security headers', async ({ request }) => {
-  const [landing, missing] = await Promise.all([
-    request.get('/'),
+  const [demo, landing, missing] = await Promise.all([
+    request.get('/demo'),
+    // The Worker answers the root first, so it can give agents markdown instead.
+    request.get('/', { headers: { Accept: 'text/html' } }),
     request.get('/r/wk_7Qm2x9Lp4Rt8.x3Kq9Lm2Vb7Np4Rt8Wc6Hy1Jd5Fs0Ga3Z', {
       headers: { Accept: 'text/html' },
     }),
   ])
   expect(missing.status()).toBe(404)
-  expect(policy(landing.headers()).csp).toContain("require-trusted-types-for 'script'")
-  expect(policy(missing.headers())).toEqual(policy(landing.headers()))
+  expect(policy(demo.headers()).csp).toContain("require-trusted-types-for 'script'")
+  expect(policy(landing.headers())).toEqual(policy(demo.headers()))
+  expect(policy(missing.headers())).toEqual(policy(demo.headers()))
+  expect(landing.headers()['x-robots-tag']).toBeUndefined()
   expect(missing.headers()['x-robots-tag']).toBe('noindex')
+})
+
+test('the root gives an agent the start instructions', async ({ request, baseURL }) => {
+  // What Claude Code's WebFetch sends.
+  const response = await request.get('/', {
+    headers: { Accept: 'text/markdown, text/html, */*' },
+  })
+  expect(response.headers()['content-type']).toBe('text/markdown; charset=utf-8')
+  expect(await response.text()).toContain(`POST ${baseURL}/workspaces`)
 })
 
 test('fingerprinted assets are cached for good', async ({ page, request }) => {

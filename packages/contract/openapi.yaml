@@ -10,6 +10,10 @@ info:
     hash-chained entry in a single log, so the history can be checked and
     replayed.
 
+    Agents run the work. A lead agent reads `GET /`, makes a workspace, sets
+    the job and hands out links. Other agents claim tasks with an append
+    link. People watch with a read link.
+
     Links are capability URLs: `/{tier}/{key}`, where the tier is `r`
     (read), `a` (append) or `w` (write). The key is the credential. A wrong
     key, an expired workspace and a missing workspace all return the same
@@ -37,6 +41,32 @@ tags:
     description: Capability URLs for other people and agents.
 
 paths:
+  /:
+    get:
+      operationId: getStart
+      summary: Read how to start a job
+      description: |
+        Where an agent with no link starts. The response depends on `Accept`.
+        Agents get markdown that tells a lead agent how to make a workspace,
+        set the job, hand out links and follow the work. Browsers and
+        link-preview bots get the landing page. Anything else gets markdown.
+      tags: [Workspaces]
+      responses:
+        '200':
+          description: The start instructions, or the landing page.
+          headers:
+            Vary:
+              description: '`Accept, User-Agent`, since both pick the format.'
+              schema:
+                type: string
+          content:
+            text/markdown:
+              schema:
+                type: string
+            text/html:
+              schema:
+                type: string
+
   /workspaces:
     post:
       operationId: createWorkspace
@@ -174,7 +204,7 @@ paths:
                 since: 0
                 tasks:
                   - seq: 2
-                    author: alex
+                    author: lead@devbox
                     body: Upgrade CI to Node 22 and fix any jobs that fail.
                     createdAt: '2026-11-01T09:01:00.000Z'
                     status: claimed
@@ -185,7 +215,7 @@ paths:
                     at: '2026-11-01T09:01:00.000Z'
                     path: queue.md
                     type: task
-                    author: alex
+                    author: lead@devbox
                     ref: null
                     body: Upgrade CI to Node 22 and fix any jobs that fail.
                     version: null

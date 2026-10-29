@@ -1,6 +1,7 @@
 import {
   renderFile,
   renderInstructions,
+  renderStart,
   type Tier,
   zAppendRequest,
   zCreateLinkRequest,
@@ -79,10 +80,13 @@ app.use(async (c, next) => {
   ) {
     c.res = await htmlPage(c, '/404', 404)
   }
-  c.res.headers.set('Cache-Control', 'no-store')
+  // The root holds no key, so it is cached and indexed like any other page.
+  if (c.req.path !== '/') {
+    c.res.headers.set('Cache-Control', 'no-store')
+    c.res.headers.set('X-Robots-Tag', 'noindex')
+  }
   c.res.headers.set('Referrer-Policy', 'no-referrer')
   c.res.headers.set('X-Content-Type-Options', 'nosniff')
-  c.res.headers.set('X-Robots-Tag', 'noindex')
   if (c.res.headers.get('Content-Type')?.startsWith('text/html')) {
     for (const [name, value] of Object.entries(PAGE_HEADERS)) c.res.headers.set(name, value)
   }
@@ -161,6 +165,29 @@ const secondsUntilTomorrow = () => {
       1000,
   )
 }
+
+// Link previews accept anything, as an agent's HTTP client does, but they need the page's meta tags.
+const LINK_PREVIEWS =
+  /facebookexternalhit|linkedinbot|slackbot|twitterbot|discordbot|whatsapp|telegrambot|skypeuripreview|embedly/i
+
+// Where an agent with no link starts. Browsers and link previews get the landing page instead.
+app.get('/', async (c) => {
+  const vary = { Vary: 'Accept, User-Agent' }
+  const page =
+    negotiate(c.req.header('Accept'), ['text/markdown', 'text/html']) === 'text/html' ||
+    LINK_PREVIEWS.test(c.req.header('User-Agent') ?? '')
+  if (page) {
+    // The request goes on as it came, so a revalidation still gets a 304.
+    const asset = await c.env.ASSETS.fetch(c.req.raw)
+    const response = new Response(asset.body, asset)
+    response.headers.set('Vary', vary.Vary)
+    return response
+  }
+  return c.body(renderStart(new URL(c.req.url).origin), 200, {
+    ...vary,
+    'Content-Type': 'text/markdown; charset=utf-8',
+  })
+})
 
 app.post('/workspaces', async (c) => {
   if (c.env.CREATE_ENABLED !== 'true') return paused('Creating workspaces is switched off for now.')

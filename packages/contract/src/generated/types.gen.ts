@@ -389,6 +389,22 @@ export type IfMatch = string;
  */
 export type IfNoneMatch = '*';
 
+export type GetStartData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/';
+};
+
+export type GetStartResponses = {
+    /**
+     * The start instructions, or the landing page.
+     */
+    200: string;
+};
+
+export type GetStartResponse = GetStartResponses[keyof GetStartResponses];
+
 export type CreateWorkspaceData = {
     body?: CreateWorkspaceRequest;
     path?: never;

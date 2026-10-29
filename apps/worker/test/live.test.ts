@@ -24,11 +24,16 @@ describe('the live stream', () => {
   test('sends the backlog, then each new entry, with nothing missed or repeated', async () => {
     const ws = await createWorkspace()
     await writeFile(ws.write, 'queue.md', 'Brief\n')
-    await append(ws.append, { path: 'queue.md', type: 'task', author: 'alex', body: 'One' })
+    await append(ws.append, { path: 'queue.md', type: 'task', author: 'lead@devbox', body: 'One' })
 
     const live = await connect(ws.read, 1)
     await live.until(1)
-    await append(ws.append, { path: 'queue.md', type: 'comment', author: 'alex', body: 'Two' })
+    await append(ws.append, {
+      path: 'queue.md',
+      type: 'comment',
+      author: 'lead@devbox',
+      body: 'Two',
+    })
     await live.until(2)
     expect(live.items.map((item) => item.seq)).toEqual([2, 3])
 

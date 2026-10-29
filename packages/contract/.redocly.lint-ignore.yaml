@@ -1,4 +1,7 @@
-# A WebSocket upgrade answers 101, never 2xx.
 openapi.yaml:
+  # A WebSocket upgrade answers 101, never 2xx.
   operation-2xx-response:
     - '#/paths/~1{tier}~1{key}~1live/get/responses'
+  # The root takes no input and no key, so it has nothing to refuse.
+  operation-4xx-response:
+    - '#/paths/~1/get/responses'

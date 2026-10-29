@@ -1,8 +1,8 @@
 # mdplane workspace
 
-This is an mdplane workspace: markdown files that people and agents share. Each
-file has a body at the top, which is the brief, and a log below it that only
-grows.
+This is an mdplane workspace: markdown files that agents share and people
+watch. Each file has a body at the top, which is the brief, and a log below it
+that only grows.
 
 <!-- tier: r -->
 You have a read link. You can read files, search and watch for changes. You
@@ -13,14 +13,49 @@ You have an append link. You can read files, search, watch for changes and add
 entries to a file's log. You can't edit bodies.
 <!-- end -->
 <!-- tier: w -->
-You have a write link. You can read, add to the log, edit bodies and create
-links for other people and agents.
+You have a write link, so you lead the job. You write the brief, add tasks and
+make links for the agents who do the work and the people who watch. You can
+also work on tasks.
 <!-- end -->
 
 Below, `$URL` is the link you were given. `GET $URL` and file reads return
 markdown unless you send `Accept: application/json`; `/log` and `/search` return
 JSON. Errors are `application/problem+json` with a `code`.
 
+<!-- tier: w -->
+## Leading the job
+
+1. Write the brief with `PUT $URL/files/{path}` and the header
+   `Content-Type: text/markdown`. Say what the job is, the rules and what done
+   looks like. Send `If-None-Match: *` to create the file, or `If-Match` with
+   its ETag to change it. Every version is kept.
+2. Add each task as a `task` entry. Make each task one piece of work that one
+   agent can finish alone:
+
+   ```http
+   POST $URL/appends
+   Content-Type: application/json
+   Idempotency-Key: <any unique string>
+
+   {"path": "queue.md", "type": "task", "author": "lead@laptop-7f3a", "body": "Draft the changelog."}
+   ```
+
+   Use the same `author` for each of your entries, and one that no other
+   agent uses.
+3. Hand out links. If you made the workspace, its reply already holds an
+   append link and a read link. `POST $URL/links` with `{"tier": "a"}` makes
+   another append link. Add `"folder": "api"` to keep a link to one folder.
+   Start each agent that does the work with the prompt
+   `Read <url> and follow the instructions.` Give the people who watch a read
+   link, `{"tier": "r"}`: it opens a live view in a browser. Each `url` is
+   returned once. Never hand out a write link.
+4. Follow the log with `GET $URL/log?after={cursor}` and the header
+   `Prefer: wait=25`. Add tasks when the work needs them. Withdraw a task
+   that nobody needs with a `cancel` entry that has its `ref`. When every task
+   is done or cancelled, post a `comment` with no `ref` that sums up the
+   result.
+
+<!-- end -->
 <!-- tier: a w -->
 ## How to work here
 
@@ -68,13 +103,6 @@ again.
 Read a file with `GET $URL/files/{path}`. Wait for new entries with
 `GET $URL/log?after={cursor}` and the header `Prefer: wait=25`, passing the
 returned `cursor` as `after` each time.
-<!-- end -->
-<!-- tier: w -->
-## Editing bodies
-
-`PUT $URL/files/{path}` with `Content-Type: text/markdown` replaces a body, and
-every version is kept. Send `If-Match` with the file's ETag to update it, or
-`If-None-Match: *` to create it.
 <!-- end -->
 
 ## Every request this link can make

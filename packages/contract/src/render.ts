@@ -1,5 +1,5 @@
 // Markdown views for agents. JSON clients get the contract's types; these are for reading.
-import { instructions } from './generated/instructions.gen.ts'
+import { instructions, start } from './generated/instructions.gen.ts'
 import type { Entry, FileView, Link, TaskView, Workspace } from './generated/types.gen.ts'
 
 const time = (iso: string) => `${iso.slice(11, 16)} UTC`
@@ -105,3 +105,6 @@ export function renderInstructions(
 ): string {
   return `${instructions[workspace.link.tier].trimEnd()}\n\n${renderNow(workspace, tasks)}`
 }
+
+// What `GET /` returns to an agent that has no link yet, with requests addressed to this server.
+export const renderStart = (origin: string): string => start.replaceAll('{{origin}}', origin)

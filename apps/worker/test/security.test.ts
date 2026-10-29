@@ -98,7 +98,12 @@ async function scoped() {
   const ws = await createWorkspace()
   await writeFile(ws.write, 'queue.md', 'Top level\n')
   await writeFile(ws.write, 'release/queue.md', 'Release\n')
-  await append(ws.append, { path: 'queue.md', type: 'task', author: 'alex', body: 'Secret plan' })
+  await append(ws.append, {
+    path: 'queue.md',
+    type: 'task',
+    author: 'lead@devbox',
+    body: 'Secret plan',
+  })
   const { result } = await createLink(ws.write, { tier: 'w', folder: 'release' })
   return { ...ws, release: (result?.url ?? '').slice(ORIGIN.length), linkId: result?.link.id }
 }

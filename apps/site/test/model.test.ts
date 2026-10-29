@@ -38,10 +38,10 @@ describe('a file at a point in its history', () => {
     const lease = LEASE_MS / 60_000
     const s = session([
       [0, 'write', 'ln_Ne4Jw9Qa2Xt7'],
-      [1, 'task', 'alex'],
+      [1, 'task', 'lead@devbox'],
       [2, 'claim', 'gemini@desktop', 2],
-      [2 + lease - 1, 'comment', 'alex'],
-      [2 + lease, 'comment', 'alex'],
+      [2 + lease - 1, 'comment', 'lead@devbox'],
+      [2 + lease, 'comment', 'lead@devbox'],
     ])
     const held = stateAt(s, 4).threads[0]
     expect(held?.task).toMatchObject({ status: 'claimed', holder: 'gemini@desktop' })
@@ -54,7 +54,7 @@ describe('a file at a point in its history', () => {
   test('starts the file over after a delete', () => {
     const s = session([
       [0, 'write', 'ln_Ne4Jw9Qa2Xt7'],
-      [1, 'task', 'alex'],
+      [1, 'task', 'lead@devbox'],
       [2, 'delete', 'ln_Ne4Jw9Qa2Xt7'],
       [3, 'write', 'ln_Ne4Jw9Qa2Xt7'],
     ])
@@ -69,8 +69,8 @@ describe('a file at a point in its history', () => {
   test('threads entries under their task and keeps other comments apart', () => {
     const s = session([
       [0, 'write', 'ln_Ne4Jw9Qa2Xt7'],
-      [1, 'task', 'alex'],
-      [2, 'comment', 'alex'],
+      [1, 'task', 'lead@devbox'],
+      [2, 'comment', 'lead@devbox'],
       [3, 'claim', 'codex@ci', 2],
       [4, 'response', 'codex@ci', 2],
     ])

@@ -7,12 +7,14 @@
   "compatibility_flags": ["nodejs_compat"],
   "upload_source_maps": true,
   // The site and the reader are static files built by apps/site. Anything that isn't one of
-  // them reaches the Worker.
+  // them reaches the Worker. So does the root, which answers agents with markdown and browsers
+  // with the landing page.
   "assets": {
     "directory": "../site/dist",
     "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "none",
+    "run_worker_first": ["/"],
   },
   "build": {
     "command": "pnpm --filter @mdplane/site build",

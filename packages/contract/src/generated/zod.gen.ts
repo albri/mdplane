@@ -357,6 +357,11 @@ export const zIfMatch = z.string();
  */
 export const zIfNoneMatch = z.enum(['*']);
 
+/**
+ * The start instructions, or the landing page.
+ */
+export const zGetStartResponse = z.string();
+
 export const zCreateWorkspaceBody = zCreateWorkspaceRequest;
 
 /**
