@@ -70,6 +70,8 @@ const OVERSCAN = 4
 // The file shows the tasks and comments with an entry among this many of its latest, and more on
 // request. A log can hold 10,000 entries, which would be far too many to draw at every step.
 const DOC_DEPTH = 40
+// Entries the history check takes at a time. On a phone, 500 take about 20 ms.
+const CHECK_SLICE = 500
 
 const LIVE = {
   connecting: ['Connecting…', 'Connecting to the live stream'],
@@ -300,23 +302,36 @@ export class Reader {
       return
     }
     if (full || this.checked.log !== log) this.checked = { log, count: 0, head: GENESIS }
-    const { count, head } = this.checked
     const check = ++this.checks
-    if (count === 0) this.setVerification({ state: 'checking' })
-    const items = log.slice(count)
-    const result = await verifyChain(items, head)
-    // A later check started from the same point, so its answer covers this one.
-    if (check !== this.checks) return
-    if (result.ok) {
-      this.checked = { log, count: count + items.length, head: result.head }
-      this.compareWithMemory(log)
-      if (this.changedAt === null) {
-        this.setVerification({ state: 'ok', count: this.checked.count, head: result.head })
-      } else {
-        this.setVerification({ state: 'changed', at: this.changedAt })
+    if (this.checked.count === 0) this.setVerification({ state: 'checking' })
+    // A slice at a time, each after a frame has been drawn, so checking a long log neither holds
+    // up the first frame nor blocks input for long.
+    while (this.checked.count < log.length) {
+      // oxlint-disable-next-line no-await-in-loop -- the point is to let the page run in between
+      await afterPaint()
+      // A later check carries on from the same place, so its answer covers this one.
+      if (check !== this.checks) return
+      const { count, head } = this.checked
+      const items = log.slice(count, count + CHECK_SLICE)
+      // oxlint-disable-next-line no-await-in-loop -- each slice starts from the last one's head
+      const result = await verifyChain(items, head)
+      if (!result.ok) {
+        if (check !== this.checks) return
+        this.setVerification({ state: 'broken', at: result.brokenAt })
+        if (announce) this.say(this.verifyText)
+        return
       }
+      // Kept even when a later check has started, since that one continues from here.
+      if (this.checked.log === log && this.checked.count === count) {
+        this.checked = { log, count: count + items.length, head: result.head }
+      }
+    }
+    if (check !== this.checks) return
+    this.compareWithMemory(log)
+    if (this.changedAt === null) {
+      this.setVerification({ state: 'ok', count: this.checked.count, head: this.checked.head })
     } else {
-      this.setVerification({ state: 'broken', at: result.brokenAt })
+      this.setVerification({ state: 'changed', at: this.changedAt })
     }
     if (announce) this.say(this.verifyText)
   }
@@ -1195,6 +1210,10 @@ export class Reader {
 
 const counter = new Intl.NumberFormat('en-GB')
 const count = (n: number) => counter.format(n)
+
+// Resolves once the next frame has been drawn.
+const afterPaint = () =>
+  new Promise<void>((resolve) => requestAnimationFrame(() => window.setTimeout(resolve)))
 
 const topIn = (box: HTMLElement, el: Element) =>
   el.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop
