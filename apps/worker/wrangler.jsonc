@@ -113,6 +113,10 @@
       // off. workers.dev would be a way round both.
       "workers_dev": false,
       "preview_urls": false,
+      // The account is on Workers Paid, which bills CPU time and allows 30 seconds of it a request
+      // by default. Every request is built to fit the 10 ms that Workers Free allows, so this
+      // leaves five times that and stops a runaway request from running up a bill.
+      "limits": { "cpu_ms": 50 },
       // An environment inherits no bindings or vars, so these repeat the ones above. The limiters
       // have their own namespaces, so the preview's traffic doesn't count against mdplane.dev.
       "durable_objects": {

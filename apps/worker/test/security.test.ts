@@ -317,6 +317,7 @@ const worker = z.object({
   vars: z.record(z.string(), z.string()),
   workers_dev: z.boolean().optional(),
   preview_urls: z.boolean().optional(),
+  limits: z.object({ cpu_ms: z.number().optional() }).optional(),
 })
 const deployed = worker
   .extend({ env: z.object({ production: worker, open: worker }) })
@@ -353,6 +354,11 @@ describe('mdplane.dev', () => {
   test('is reached only through its zone, where the rate-limiting rule applies', () => {
     expect(production.workers_dev).toBe(false)
     expect(production.preview_urls).toBe(false)
+  })
+
+  test('caps the CPU a request can bill, far below the 30 seconds Workers Paid allows', () => {
+    expect(production.limits?.cpu_ms).toBeGreaterThanOrEqual(10)
+    expect(production.limits?.cpu_ms).toBeLessThanOrEqual(100)
   })
 })
 
