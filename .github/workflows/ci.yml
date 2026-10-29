@@ -28,7 +28,7 @@ jobs:
 
   # The site in real browsers against `wrangler dev`, on desktops and phones, with axe. One job per
   # engine, side by side, so each installs only its own browser.
-  e2e:
+  browsers:
     name: e2e (${{ matrix.browser }})
     runs-on: ubuntu-latest
     strategy:
@@ -51,6 +51,17 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @mdplane/site exec playwright install --with-deps ${{ matrix.browser }}
       - run: pnpm e2e ${{ matrix.projects }}
+
+  # main's ruleset requires one check named e2e, so it needs no change when the browsers do. It
+  # passes only when every browser job passed.
+  e2e:
+    needs: browsers
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: test "$RESULT" = success
+        env:
+          RESULT: ${{ needs.browsers.result }}
 
   # Deploys main to mdplane.dev once a reviewer approves the production environment. The first
   # approved deploy adds the mdplane.dev route, so it is the cutover. Needs the
