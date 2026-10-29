@@ -14,6 +14,15 @@ updates:
       minor-and-patch:
         update-types: [minor, patch]
     ignore:
+      # Playwright 1.64's WebKit reports a CSP violation for every <select>, from the select's own
+      # shadow tree, and the e2e tests fail on it. Safari 26 doesn't. WebKit has fixed it
+      # (https://bugs.webkit.org/show_bug.cgi?id=327212), so the next Playwright should pass.
+      - dependency-name: '@playwright/test'
+        versions: ['1.64.x']
+      # Remotion after 4.0.533 renders with Chrome 157, whose headless shell hangs on macOS 26.
+      # video/README.md says more.
+      - dependency-name: remotion
+      - dependency-name: '@remotion/*'
       # packages/contract keeps TypeScript 6 for the code generator, so TypeScript majors are
       # done by hand.
       - dependency-name: typescript
