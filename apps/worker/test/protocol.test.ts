@@ -334,6 +334,7 @@ describe('invalid requests', () => {
       body: 'x'.repeat(16_385),
     })
     expect(big.status).toBe(413)
+    expect(zProblem.parse(await json(big)).detail).toBe('The limit is 16384 characters.')
     const file = await call(`${ws.write}/files/big.md`, {
       method: 'PUT',
       headers: { 'If-None-Match': '*' },

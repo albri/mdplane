@@ -95,6 +95,9 @@ const MIGRATIONS = [
   // link can cancel any task anyway; it stops two agents from both holding one task, so it is
   // kept as it is.
   `CREATE TABLE leases (task INTEGER PRIMARY KEY, token TEXT NOT NULL);`,
+  // 3: revoking a link now deletes it, so only live links count toward the limit and making and
+  // revoking links can't grow the table.
+  `DELETE FROM links WHERE revoked_at IS NOT NULL;`,
 ]
 
 const sha256 = (text: string) => createHash('sha256').update(text).digest('hex')
@@ -258,11 +261,15 @@ export class Workspace extends DurableObject<Env> {
     }
   }
 
+  // Sockets with the same folder get the same message, so each folder's is serialised once.
   private broadcast(entry: Entry): void {
     this.wake()
+    const messages = new Map<string | null, string>()
     for (const socket of this.ctx.getWebSockets()) {
-      const state: SocketState = socket.deserializeAttachment()
-      socket.send(JSON.stringify(visible(entry, state.folder)))
+      const { folder }: SocketState = socket.deserializeAttachment()
+      const message = messages.get(folder) ?? JSON.stringify(visible(entry, folder))
+      messages.set(folder, message)
+      socket.send(message)
     }
   }
 
@@ -763,7 +770,7 @@ export class Workspace extends DurableObject<Env> {
       .exec<Link>(`SELECT ${LINK} FROM links WHERE id = ? AND revoked_at IS NULL`, linkId)
       .toArray()
     if (!target || !within(link.folder, target.folder)) return { ok: false, problem: NOT_FOUND }
-    this.sql.exec(`UPDATE links SET revoked_at = ? WHERE id = ?`, new Date().toISOString(), linkId)
+    this.sql.exec(`DELETE FROM links WHERE id = ?`, linkId)
     for (const socket of this.ctx.getWebSockets()) {
       const state: SocketState = socket.deserializeAttachment()
       if (state.linkId === linkId) socket.close(1008, 'Link revoked')

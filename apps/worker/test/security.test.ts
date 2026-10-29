@@ -171,6 +171,15 @@ describe('folder links', () => {
   })
 })
 
+describe('search', () => {
+  test('refuses control characters, which would end the quoted search', async () => {
+    const ws = await createWorkspace()
+    const response = await call(`${ws.read}/search?q=%00`)
+    expect(response.status).toBe(400)
+    expect(zProblem.parse(await json(response)).code).toBe('invalid_request')
+  })
+})
+
 describe('revoking', () => {
   test('stops a link at once, and a link cannot revoke itself', async () => {
     const ws = await createWorkspace()

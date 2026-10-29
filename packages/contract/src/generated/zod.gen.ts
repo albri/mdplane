@@ -464,7 +464,7 @@ export const zSearchPath = z.object({
 });
 
 export const zSearchQuery = z.object({
-    q: z.string().min(1).max(200),
+    q: z.string().min(1).max(200).regex(/^[^\x00-\x1F\x7F]*$/),
     path: zFilePath.optional(),
     limit: z.int().gte(1).lte(50).optional().default(20)
 });

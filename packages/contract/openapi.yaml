@@ -425,10 +425,12 @@ paths:
         - name: q
           in: query
           required: true
+          description: Words to find. Control characters are refused.
           schema:
             type: string
             minLength: 1
             maxLength: 200
+            pattern: '^[^\x00-\x1F\x7F]*$'
         - $ref: '#/components/parameters/LogPath'
         - name: limit
           in: query
@@ -510,6 +512,7 @@ paths:
       description: |
         A new link for any tier, optionally limited to a folder inside this
         link's own folder. The URL is returned once; only its hash is stored.
+        A workspace has at most 50 links that haven't been revoked.
       tags: [Links]
       requestBody:
         required: true

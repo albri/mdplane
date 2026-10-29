@@ -295,7 +295,7 @@ app.post(
       const tooBig = parsed.error.issues.some(
         (issue) => issue.code === 'too_big' && issue.path.join('.') === 'body',
       )
-      return tooBig ? tooLarge(ENTRY_BODY_LIMIT) : invalidFrom(parsed.error)
+      return tooBig ? tooLarge(ENTRY_BODY_LIMIT, 'characters') : invalidFrom(parsed.error)
     }
     const result = await stub.append(auth, parsed.data, key ?? null)
     if (!result.ok) return respond(result, () => notFound())

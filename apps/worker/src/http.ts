@@ -47,8 +47,8 @@ export function invalidFrom(error: ZodError): Response {
   return invalid(`${where}${issue.message}`)
 }
 
-export const tooLarge = (limit: number) =>
-  problem({ status: 413, code: 'payload_too_large', detail: `The limit is ${limit} bytes.` })
+export const tooLarge = (limit: number, unit: 'bytes' | 'characters' = 'bytes') =>
+  problem({ status: 413, code: 'payload_too_large', detail: `The limit is ${limit} ${unit}.` })
 
 export const rateLimited = () =>
   problem(
@@ -109,11 +109,31 @@ export function negotiate<T extends string>(accept: string | undefined, offers: 
   return best
 }
 
-// Reads a body without trusting Content-Length, which a client can leave out or get wrong.
+// Reads a body without trusting Content-Length, which a client can leave out or get wrong. It
+// stops at the first chunk past the limit, so a body sent without a length can't fill memory.
 export async function readBody(request: Request, limit: number): Promise<string | null> {
   const declared = Number(request.headers.get('Content-Length') ?? 0)
   if (declared > limit) return null
-  const bytes = await request.arrayBuffer()
-  if (bytes.byteLength > limit) return null
+  if (!request.body) return ''
+  const reader = request.body.getReader()
+  const chunks: Uint8Array[] = []
+  let size = 0
+  for (;;) {
+    // oxlint-disable-next-line no-await-in-loop -- a stream is read one chunk after another
+    const { done, value } = await reader.read()
+    if (done) break
+    size += value.byteLength
+    if (size > limit) {
+      await reader.cancel()
+      return null
+    }
+    chunks.push(value)
+  }
+  const bytes = new Uint8Array(size)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.byteLength
+  }
   return new TextDecoder().decode(bytes)
 }

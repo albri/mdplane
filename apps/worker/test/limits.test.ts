@@ -1,4 +1,4 @@
-import { zFileView, zProblem } from '@mdplane/contract'
+import { zCreateLinkResult, zFileView, zProblem } from '@mdplane/contract'
 import { runInDurableObject } from 'cloudflare:test'
 import { env } from 'cloudflare:workers'
 import { describe, expect, test } from 'vitest'
@@ -228,5 +228,51 @@ describe('reading a busy file', () => {
     const tasks = result.value.tasks['queue.md'] ?? []
     expect(tasks.map((task) => [task.seq, task.status])).toEqual([[2, 'open']])
     expect(tasks[0]?.body.length).toBeLessThanOrEqual(240)
+  })
+})
+
+describe('request bodies', () => {
+  test('one sent without a length is read only as far as its limit', async () => {
+    let pulled = 0
+    const chunk = new Uint8Array(65_536).fill(120)
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulled += chunk.byteLength
+        if (pulled > 4_194_304) controller.close()
+        else controller.enqueue(chunk)
+      },
+    })
+    const response = await call(`/w/${madeUpKey(0)}/files/big.md`, {
+      method: 'PUT',
+      headers: { 'If-None-Match': '*' },
+      body,
+    })
+    expect(response.status).toBe(413)
+    // The limit is 256 KiB; reading on would have pulled all 4 MiB.
+    expect(pulled).toBeLessThan(1_048_576)
+  })
+})
+
+describe('links', () => {
+  test('only live ones count toward the limit', async () => {
+    const ws = await createWorkspace()
+    const make = () =>
+      call(`${ws.write}/links`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier: 'r' }),
+      })
+    for (let i = 0; i < LIMITS.links; i++) {
+      // oxlint-disable-next-line no-await-in-loop -- each link is made, then revoked
+      const { link } = zCreateLinkResult.parse(await json(await make()))
+      // oxlint-disable-next-line no-await-in-loop -- each link is made, then revoked
+      expect((await call(`${ws.write}/links/${link.id}`, { method: 'DELETE' })).status).toBe(204)
+    }
+    // The workspace's own three links, and as many more as the limit leaves.
+    const made = await Promise.all(Array.from({ length: LIMITS.links - 3 }, make))
+    expect(made.every((r) => r.status === 201)).toBe(true)
+    const refused = await make()
+    expect(refused.status).toBe(409)
+    expect(await problemOf(refused)).toMatchObject({ code: 'workspace_full' })
   })
 })

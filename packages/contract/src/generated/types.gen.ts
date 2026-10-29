@@ -824,6 +824,9 @@ export type SearchData = {
         key: string;
     };
     query: {
+        /**
+         * Words to find. Control characters are refused.
+         */
         q: string;
         /**
          * Only entries for this file.
