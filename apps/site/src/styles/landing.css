@@ -26,6 +26,15 @@
     gap: 12px;
     margin-top: 34px;
   }
+  /* A phone in portrait stacks the buttons, each the full width as a thumb-sized target, whether
+     or not the pair would fit side by side. */
+  @media (max-width: 479.98px) {
+    .ctas {
+      flex-direction: column;
+      align-items: stretch;
+      justify-self: stretch;
+    }
+  }
   .fine {
     margin-top: 16px;
     font-size: var(--text-small);
@@ -387,6 +396,12 @@
     font-weight: 600;
     letter-spacing: -0.01em;
   }
+  /* On a phone the card gives its padding to the words, which sit right of the times and stops. */
+  @media (max-width: 759.98px) {
+    .route-card {
+      padding: 18px 16px 20px;
+    }
+  }
   .route {
     --time: 3rem;
     list-style: none;
@@ -442,9 +457,9 @@
     font-weight: 600;
     color: var(--ink);
   }
+  /* The outcome, on a line of its own under what happened, as the reader shows a status. */
   .route .chip {
-    margin-left: 4px;
-    vertical-align: 1px;
+    display: block;
   }
   .route-key {
     list-style: none;
@@ -479,15 +494,29 @@
     background: var(--page);
     overflow: hidden;
   }
-  .fig-scroll {
-    overflow-x: auto;
+  .fig-body {
+    container-type: inline-size;
     padding: 22px 20px 12px;
   }
   .fig svg {
     display: block;
     width: 100%;
-    min-width: 720px;
     height: auto;
+  }
+  .fig .fig-tall {
+    display: none;
+    max-width: 380px;
+    margin-inline: auto;
+  }
+  /* The wide picture needs 720px for its text to stay readable. Narrower than that, the upright
+     one takes its place, so neither ever scrolls. */
+  @container (width < 720px) {
+    .fig .fig-wide {
+      display: none;
+    }
+    .fig .fig-tall {
+      display: block;
+    }
   }
   .fig figcaption {
     padding: 12px 20px 16px;
@@ -654,6 +683,52 @@
     to {
       transform: none;
       opacity: 1;
+    }
+  }
+  /* On a phone the chain runs down the page, so all five entries are in view of the buttons, and
+     an edit visibly breaks every entry after it. Each entry keeps to three lines: who, what, and
+     its two fingerprints, with the check's verdict at the top right. */
+  @media (max-width: 759.98px) {
+    .chain {
+      flex-direction: column;
+      overflow: visible;
+      padding: 0;
+    }
+    .blk {
+      flex: none;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 6px 12px;
+      padding: 12px;
+    }
+    .blk-top > :last-child {
+      flex-basis: auto;
+    }
+    .blk-status {
+      order: 1;
+      margin-left: auto;
+      min-height: 0;
+    }
+    .blk-body {
+      order: 2;
+      flex-basis: 100%;
+      -webkit-line-clamp: 2;
+      min-height: 0;
+    }
+    .blk-h {
+      order: 3;
+    }
+    .link {
+      flex: 0 0 22px;
+      width: 1px;
+      height: auto;
+    }
+    .link::after {
+      inset: auto auto 0 -4px;
+      border: 4.5px solid transparent;
+      border-top: 6px solid var(--line-strong);
+      border-bottom: 0;
     }
   }
   .chain-ctl {

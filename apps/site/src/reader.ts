@@ -25,6 +25,7 @@ import {
   leaseEnd,
   type LiveStatus,
   minutesLeft,
+  renews,
   type Session,
   type State,
   stateAt,
@@ -802,7 +803,12 @@ export class Reader {
     const v = this.verification
     const n = session.log.length
     return html`<p class="info-hash">
-        ${last ? `${count(n)} ${n === 1 ? 'entry' : 'entries'} in the workspace · head ${last.hash.slice(0, 12)}` : 'No entries yet'}
+        ${
+          last
+            ? html`<span>${count(n)} ${n === 1 ? 'entry' : 'entries'} in the workspace</span>
+                <span>Head ${last.hash.slice(0, 12)}</span>`
+            : 'No entries yet'
+        }
       </p>
       <p
         class=${classMap({
@@ -840,8 +846,10 @@ export class Reader {
           data-seq=${write.seq}
           data-flip="body"
         >
-          <p class="doc-meta">
-            Body · version ${write.version ?? 1} · ${write.author} at ${time(write.at)}
+          <p class="ent-meta doc-meta">
+            <span class="ty ty-write">Body version ${write.version ?? 1}</span>
+            <span class="ent-who">${write.author}</span>
+            <time datetime=${write.at}>${time(write.at)}</time>
           </p>
           <div class="prose">${this.body(session, state, write)}</div>
         </section>`
@@ -941,20 +949,23 @@ export class Reader {
     return { 'is-current': this.isCurrent(entry), 'is-new': this.arrived.has(entry.seq) }
   }
 
-  // One row per task: its number, title, status and who has it. The row opens on its thread, which
-  // starts with the task's own entry, since the row says what it is but not who added it.
+  // One row per task: its number and title, then its status and who has it. The row opens on its
+  // thread, which starts with the task's own entry. The status leads the second line, so the title
+  // has the row's width, and the line after it is a sentence that can wrap anywhere.
   private task({ task, entry, kids, lapsed }: Thread, state: State, cut: number): TemplateResult {
     const time = this.time
     const closer = kids.findLast((k) => k.type === 'response' || k.type === 'cancel')
     const earlier = kids.filter((k) => k.seq < cut).length
-    let meta = `Added by ${entry.author} at ${time(entry.at)}`
+    // A non-breaking space keeps each time with the word before it when the line wraps.
+    let meta = `${entry.author} added it at\u00a0${time(entry.at)}`
     if (task.status === 'claimed' && task.holder && task.leaseExpiresAt) {
       const until = Date.parse(task.leaseExpiresAt)
-      meta = `${task.holder} holds it until ${time(until)}, ${minutesLeft(until, state.now)}`
+      meta = `${task.holder} holds it until\u00a0${time(until)}, ${minutesLeft(until, state.now)}`
     } else if (lapsed) {
-      meta = `${lapsed.author}'s lease ran out at ${time(leaseEnd(lapsed))}`
+      meta = `${lapsed.author}'s lease ran out at\u00a0${time(leaseEnd(lapsed))}`
     } else if (closer) {
-      meta = `${task.status === 'done' ? 'Done' : 'Cancelled'} by ${closer.author} at ${time(closer.at)}`
+      const did = task.status === 'done' ? 'finished' : 'withdrew'
+      meta = `${closer.author} ${did} it at\u00a0${time(closer.at)}`
     }
     const open = this.isOpen(entry.seq)
     const id = `${this.id}-t${entry.seq}`
@@ -978,9 +989,11 @@ export class Reader {
       >
         <span class="task-num">#${entry.seq}</span>
         <span class="task-text">${task.body}</span>
-        <span class="chip" data-k=${task.status}>${STATUS[task.status]}</span>
-        <span class="task-meta">${meta}</span>
         ${ICONS.more}
+        <span class="task-meta"
+          ><span class="chip" data-k=${task.status}>${STATUS[task.status]}</span
+          >${spaced(meta)}</span
+        >
       </button>
       ${
         open
@@ -1019,16 +1032,22 @@ export class Reader {
     return entry.seq === this.entry?.seq
   }
 
+  // A header that stays on one line at any width: what, who and when. A claim's lease gets a line
+  // of its own, in words, rather than wrapping the header.
   private item(e: Entry, renewed: boolean, body = true): TemplateResult {
     const time = this.time
-    const lease =
-      e.type === 'claim'
-        ? html` · <span class="ent-lease">lease until ${time(leaseEnd(e))}</span>`
-        : nothing
     return html`<p class="ent-meta">
-        <span class="ty ty-${e.type}">${renewed ? 'claim · renewed' : e.type}</span>
-        ${e.author} · ${time(e.at)}${lease}
+        <span class="ty ty-${e.type}">${e.type}</span>
+        <span class="ent-who">${e.author}</span>
+        <time datetime=${e.at}>${time(e.at)}</time>
       </p>
+      ${
+        e.type === 'claim'
+          ? html`<p class="ent-lease">
+              ${renewed ? 'Lease renewed until' : 'Lease until'} ${time(leaseEnd(e))}
+            </p>`
+          : nothing
+      }
       ${body && e.body ? html`<p class="ent-body">${e.body}</p>` : nothing}`
   }
 
@@ -1059,7 +1078,7 @@ export class Reader {
       >
         <span class="lg-seq">#${e.seq}</span>
         <span class="lg-main"
-          ><span class="ty ty-${e.type}">${e.type}</span> ${e.author}${about}</span
+          ><span class="ty ty-${e.type}">${e.type}</span>${spaced(e.author)}${about}</span
         >
         <span class="lg-time">${this.time(e.at)}</span>
         <span class="lg-body">${text}</span>
@@ -1074,7 +1093,7 @@ export class Reader {
     const at = entry ? this.time(entry.at) : ''
     // Entry numbers count the whole workspace, so they only match the position in a one-file log.
     const seq = entry?.seq ?? 0
-    const of = seq === this.pos ? ` of ${n}` : ` · ${this.pos} of ${n}`
+    const of = seq === this.pos ? ` of ${n}` : ` (${this.pos} of ${n})`
     const progress = n > 1 ? (this.pos - 1) / (n - 1) : 1
     return html`<div class="rd-time">
       <button
@@ -1129,7 +1148,10 @@ export class Reader {
           @input=${this.onRange}
         />
       </div>
-      <p class="rd-pos">#${seq}<span class="of">${of}</span> · ${at}</p>
+      <p class="rd-pos">
+        <span>#${seq}<span class="of">${of}</span></span>
+        <time datetime=${entry?.at ?? nothing}>${at}</time>
+      </p>
       ${this.standing(session)}
     </div>`
   }
@@ -1176,7 +1198,7 @@ export class Reader {
         </div>
         <div>
           <dt>Showing</dt>
-          <dd>#${state.list.at(-1)?.seq ?? 0} · ${time(state.now)}</dd>
+          <dd>#${state.list.at(-1)?.seq ?? 0} at ${time(state.now)}</dd>
         </div>
         ${
           session.expiresAt
@@ -1234,14 +1256,10 @@ const afterPaint = () =>
 const topIn = (box: HTMLElement, el: Element) =>
   el.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop
 
-// A claim by the same author as an earlier one renews the lease rather than taking the task.
-const renews = (kids: Entry[], i: number) => {
-  const kid = kids[i]
-  return (
-    kid?.type === 'claim' &&
-    kids.slice(0, i).some((k) => k.type === 'claim' && k.author === kid.author)
-  )
-}
+// Text that follows an element, with the space before it as part of the text. Chromium leaves a
+// lone space out of an accessible name when lit-html's marker comes next, so the words either
+// side of it would run together for a screen reader.
+const spaced = (text: string) => ` ${text}`
 
 function rowTarget(key: string, pos: number, head: number): number | null {
   switch (key) {
@@ -1263,9 +1281,13 @@ function rowTarget(key: string, pos: number, head: number): number | null {
 const ENTRY_LINE =
   /^(- #(\d+) \d\d:\d\d UTC )(\S+), (write|delete|task|claim|comment|response|cancel)(.*)$/
 const BAND = /^(---|## .*)$/
+// A list item, or any line indented by two spaces or more, as an item's further lines are. Each
+// hangs by two characters, so only a top-level item's wrapped text lines up exactly.
+const ITEM = /^(- | {2})/
 
 // The markdown an agent reads, with entry types coloured. Entry lines carry their sequence number,
-// so the reader can keep the current one in view here too.
+// so the reader can keep the current one in view here too. List items hang from their dash, so on
+// a narrow screen a wrapped line lines up under the text rather than the dash.
 export function highlight(text: string): TemplateResult {
   const lines = text.split('\n').map((line, i) => {
     const br = i > 0 ? '\n' : ''
@@ -1275,9 +1297,11 @@ export function highlight(text: string): TemplateResult {
       // Short pieces, so the formatter keeps this on one line: whitespace matters in a <pre>.
       const who = html`<span class="m">${author}</span>`
       const kind = html`<span class="ty ty-${type}">${type}</span>`
-      return html`${br}<span data-seq=${seq ?? nothing}>${lead}${who}, ${kind}${rest}</span>`
+      const item = html`${lead}${who}, ${kind}${rest}`
+      return html`${br}<span class="li" data-seq=${seq ?? nothing}>${item}</span>`
     }
     if (BAND.test(line)) return html`${br}<span class="band">${line}</span>`
+    if (ITEM.test(line)) return html`${br}<span class="li">${line}</span>`
     return html`${br}${line}`
   })
   return html`${lines}`

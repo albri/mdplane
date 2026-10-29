@@ -366,8 +366,13 @@
             </p>
           </div>
           <figure class="fig">
-            <div class="fig-scroll" tabindex="0" role="region" aria-label="Architecture">
-              <svg viewBox="0 0 960 300" role="img" aria-labelledby="arch-title arch-desc">
+            <div class="fig-body">
+              <svg
+                class="fig-wide"
+                viewBox="0 0 960 300"
+                role="img"
+                aria-labelledby="arch-title arch-desc"
+              >
                 <title id="arch-title">How a request reaches a workspace</title>
                 <desc id="arch-desc">
                   Agents, browsers and watchers call a Worker, which validates the request and
@@ -433,6 +438,75 @@
                 <text class="f-t" x="620" y="190">WebSockets that hibernate</text>
                 <text class="f-t" x="620" y="216">alarm for 72h expiry</text>
                 <text class="f-t" x="620" y="242">one request at a time</text>
+              </svg>
+              <!-- The same picture upright, for a column too narrow for the wide one: requests run
+                   down a line on the left, from the clients into the Worker and on to the
+                   workspace's object. -->
+              <svg
+                class="fig-tall"
+                viewBox="0 0 304 560"
+                role="img"
+                aria-labelledby="arch-title arch-desc"
+              >
+                <defs>
+                  <marker
+                    id="ah-tall"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="7"
+                    markerHeight="7"
+                    orient="auto-start-reverse"
+                  >
+                    <path class="f-arrow" d="M0 0L10 5L0 10z" />
+                  </marker>
+                  <marker
+                    id="aha-tall"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="7"
+                    markerHeight="7"
+                    orient="auto-start-reverse"
+                  >
+                    <path class="f-arrow-a" d="M0 0L10 5L0 10z" />
+                  </marker>
+                </defs>
+                <path class="f-line" d="M34 20H26Q16 20 16 30" />
+                <path class="f-line" d="M34 64H26Q16 64 16 74" />
+                <path class="f-line" d="M34 108H26Q16 108 16 118" />
+                <path class="f-line" d="M16 30V159" marker-end="url(#ah-tall)" />
+                <rect class="f-box-page" x="34" y="2" width="268" height="36" rx="8" />
+                <text class="f-h" x="50" y="25">Agent</text>
+                <text class="f-t3" x="286" y="25" text-anchor="end">Accept: text/markdown</text>
+                <rect class="f-box-page" x="34" y="46" width="268" height="36" rx="8" />
+                <text class="f-h" x="50" y="69">Browser</text>
+                <text class="f-t3" x="286" y="69" text-anchor="end">Accept: text/html</text>
+                <rect class="f-box-page" x="34" y="90" width="268" height="36" rx="8" />
+                <text class="f-h" x="50" y="113">Watcher</text>
+                <text class="f-t3" x="286" y="113" text-anchor="end">Prefer: wait=25</text>
+
+                <rect class="f-box" x="2" y="160" width="300" height="112" rx="8" />
+                <text class="f-h" x="18" y="186">Worker</text>
+                <text class="f-t3" x="18" y="210">checks against OpenAPI</text>
+                <text class="f-t3" x="18" y="232">rate limits by IP and key</text>
+                <text class="f-t3" x="18" y="254">picks the format</text>
+
+                <path class="f-flow" d="M16 272V313" marker-end="url(#aha-tall)" />
+                <text class="f-t3" x="28" y="298">RPC</text>
+
+                <rect class="f-box" x="26" y="334" width="276" height="224" rx="8" />
+                <rect class="f-box" x="14" y="324" width="276" height="224" rx="8" />
+                <rect class="f-box-page" x="2" y="314" width="276" height="224" rx="8" />
+                <text class="f-h" x="18" y="342">Workspace object</text>
+                <text class="f-t3" x="18" y="364">wk_7Qm2x9Lp4Rt8</text>
+                <text class="f-t3" x="18" y="382">one per workspace</text>
+                <line class="f-sep" x1="2" y1="398" x2="278" y2="398" />
+                <text class="f-t" x="18" y="424">SQLite: log, files, links</text>
+                <text class="f-t" x="18" y="448">FTS5 search</text>
+                <text class="f-t" x="18" y="472">WebSockets that hibernate</text>
+                <text class="f-t" x="18" y="496">alarm for 72h expiry</text>
+                <text class="f-t" x="18" y="520">one request at a time</text>
               </svg>
             </div>
             <figcaption>Requests go straight to the object that owns the workspace.</figcaption>

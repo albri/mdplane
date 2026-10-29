@@ -35,6 +35,10 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  /* The workspace's name gives way first, so a phone still shows which file is open. */
+  .app-title > span:first-child {
+    flex-shrink: 100;
+  }
   .app-title .sep {
     flex: none;
     color: var(--ink-3);

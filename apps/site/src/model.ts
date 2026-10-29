@@ -116,20 +116,21 @@ export function countTasks(threads: Thread[]): Counts {
   return counts
 }
 
+// A sentence, so on a narrow screen it wraps between words like any other.
 export function summary(threads: Thread[]): string {
   if (threads.length === 0) return 'Nothing yet'
   const c = countTasks(threads)
-  const parts = [`${threads.length} ${threads.length === 1 ? 'task' : 'tasks'}`]
-  if (c.done) parts.push(`${c.done} done`)
+  const parts = [`${c.done} of ${threads.length} done`]
   if (c.claimed) parts.push(`${c.claimed} in progress`)
   if (c.open) parts.push(`${c.open} open`)
   if (c.cancelled) parts.push(`${c.cancelled} cancelled`)
-  return parts.join(' · ')
+  return parts.join(', ')
 }
 
+// The number keeps to its unit, with a non-breaking space, wherever the sentence wraps.
 export function minutesLeft(until: number, now: number): string {
   const m = Math.ceil((until - now) / 60_000)
-  return m <= 1 ? 'under a minute left' : `${m} min left`
+  return m <= 1 ? 'under a minute left' : `${m}\u00a0min left`
 }
 
 const headOf = (log: LogItem[]) => {
@@ -160,6 +161,16 @@ export function agentView(session: Session, state: State): string {
 }
 
 export const leaseEnd = (claim: Entry) => Date.parse(claim.at) + LEASE_MS
+
+// Whether the claim at `i` in a task's thread renews the lease: it comes from whoever holds it,
+// before the lease runs out. Any other claim takes the task afresh, with a new token, even from
+// an author who held it before.
+export function renews(kids: Entry[], i: number): boolean {
+  const kid = kids[i]
+  if (kid?.type !== 'claim') return false
+  const last = kids.slice(0, i).findLast((k) => k.type === 'claim')
+  return last?.author === kid.author && Date.parse(kid.at) < leaseEnd(last)
+}
 
 // One entry as a sentence, for screen readers and titles.
 export function describe(entry: Entry): string {
