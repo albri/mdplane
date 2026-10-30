@@ -298,19 +298,11 @@
   .srcfig .src {
     font: inherit;
   }
-
-  /* The instructions are an 80-column file. Where 80 columns fit, only the odd longer line wraps;
-     where they don't, lines scroll rather than rewrap into a ragged column. */
+  /* The instructions are written to 80 columns, and keep to them where the screen is wider. */
   #inst-text {
-    white-space: pre;
-    overflow-wrap: normal;
+    max-width: 80ch;
   }
-  @container (min-width: 80ch) {
-    #inst-text {
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-    }
-  }
+
   .srcfig-foot {
     padding: 12px 20px 14px;
     border-top: 1px solid var(--line);

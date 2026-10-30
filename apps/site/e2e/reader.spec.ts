@@ -210,13 +210,17 @@ test.describe('on a phone', () => {
     expect(sideways).toBe(0)
   })
 
-  test('the chain and the diagram fit a phone without scrolling sideways', async ({ page }) => {
+  // A block that scrolled both ways would have the reader panning across it to follow each line.
+  test('the files, the chain and the diagram fit a phone without scrolling sideways', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 360, height: 760 })
     await page.goto('/')
     await expect(page.locator('#chain .blk')).toHaveCount(5)
+    await expect(page.locator('#inst-text')).toContainText('## Right now')
     const sideways = await page
-      .locator('#chain, .fig-body')
+      .locator('#chain, .fig-body, .srcfig-body')
       .evaluateAll((els) => els.map((el) => el.scrollWidth - el.clientWidth))
-    expect(sideways).toEqual([0, 0])
+    expect(sideways).toEqual([0, 0, 0, 0])
   })
 })
