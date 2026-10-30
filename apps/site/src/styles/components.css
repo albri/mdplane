@@ -206,13 +206,14 @@
   .src .ty {
     font-size: inherit;
   }
-  /* Each item is a box as wide as the file, indented by the two characters of its dash and then
-     pulled back by them on its first line. A continuation line's own two spaces fill that gap. */
+  /* Each item is a box as wide as the file, indented by its marker, two characters unless the line
+     sets its own, and pulled back by it on its first line. A continuation line's own indent fills
+     that gap. */
   .src .li {
     display: inline-block;
     width: 100%;
-    padding-left: 2ch;
-    text-indent: -2ch;
+    padding-left: calc(var(--hang, 2) * 1ch);
+    text-indent: calc(var(--hang, 2) * -1ch);
   }
 
   /* Name and value pairs. */

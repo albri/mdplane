@@ -1281,9 +1281,10 @@ function rowTarget(key: string, pos: number, head: number): number | null {
 const ENTRY_LINE =
   /^(- #(\d+) \d\d:\d\d UTC )(\S+), (write|delete|task|claim|comment|response|cancel)(.*)$/
 const BAND = /^(---|## .*)$/
-// A list item, or any line indented by two spaces or more, as an item's further lines are. Each
-// hangs by two characters, so only a top-level item's wrapped text lines up exactly.
-const ITEM = /^(- | {2})/
+// A list item, bulleted or numbered and at any depth, or a line indented by two spaces or more, as
+// an item's further lines and its code are. Each hangs by what the match covers, so its wrapped
+// text lines up under the text after its marker or indent.
+const ITEM = /^(?: *(?:- |\d+\. )| {2,})/
 
 // The markdown an agent reads, with entry types coloured. Entry lines carry their sequence number,
 // so the reader can keep the current one in view here too. List items hang from their dash, so on
@@ -1301,7 +1302,9 @@ export function highlight(text: string): TemplateResult {
       return html`${br}<span class="li" data-seq=${seq ?? nothing}>${item}</span>`
     }
     if (BAND.test(line)) return html`${br}<span class="band">${line}</span>`
-    if (ITEM.test(line)) return html`${br}<span class="li">${line}</span>`
+    const hang = String(ITEM.exec(line)?.[0].length ?? 0)
+    if (hang !== '0')
+      return html`${br}<span class="li" ${cssProps({ '--hang': hang })}>${line}</span>`
     return html`${br}${line}`
   })
   return html`${lines}`

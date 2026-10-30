@@ -16,7 +16,7 @@ const sample = await sampleSession()
 hero.load(sample, { pos: motionOK() ? 9 : sample.entries.length })
 
 render(highlight(agentView(sample, stateAt(sample, sample.entries.length))), $('#ws-source'))
-render(highlight(agentInstructions(sample)), $('#inst-text'))
+render(highlight(reflow(agentInstructions(sample))), $('#inst-text'))
 
 if (globalThis.crypto?.subtle) initChainDemo(sample)
 initTryIt(hero, sample)
@@ -51,6 +51,32 @@ function agentInstructions(session: Session): string {
     },
     { [session.path]: state.threads.map((t) => t.task) },
   )
+}
+
+// The instructions are hard-wrapped at 80 columns, and wrapped again to a phone's width each of
+// those breaks would leave a word or two on a line of its own. So a paragraph's lines are joined
+// for the screen to wrap; code keeps its lines, and the words are the agent's.
+function reflow(text: string): string {
+  const out: string[] = []
+  let fenced = false
+  // The indent a paragraph's further lines have, while one is open.
+  let hang = -1
+  for (const line of text.split('\n')) {
+    const rest = line.trimStart()
+    const indent = line.length - rest.length
+    if (rest.startsWith('```')) fenced = !fenced
+    const marker = /^(?:- |\d+\. )/.exec(rest)?.[0]
+    if (fenced || rest === '' || rest.startsWith('#') || rest.startsWith('```')) {
+      out.push(line)
+      hang = -1
+    } else if (!marker && indent === hang) {
+      out[out.length - 1] += ` ${rest}`
+    } else {
+      out.push(line)
+      hang = indent + (marker?.length ?? 0)
+    }
+  }
+  return out.join('\n')
 }
 
 // Hero replay: start mid-session and play to the end once, when the reader is on screen.
