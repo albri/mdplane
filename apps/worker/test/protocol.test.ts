@@ -10,7 +10,7 @@ import {
   zWorkspace,
   zWriteResult,
 } from '@mdplane/contract'
-import { evictDurableObject } from 'cloudflare:test'
+import { evictDurableObject, runInDurableObject } from 'cloudflare:test'
 import { env } from 'cloudflare:workers'
 import { describe, expect, test } from 'vitest'
 import { append, call, createWorkspace, json, ORIGIN, sleep, writeFile } from './helpers.ts'
@@ -408,6 +408,30 @@ describe('idempotency', () => {
     expect(await json(second)).toEqual(await json(first))
     const page = zLogPage.parse(await json(await call(`${ws.read}/log`)))
     expect(page.head.seq).toBe(3)
+  })
+
+  test('a retried claim replays its entry and its lease', async () => {
+    const ws = await withQueue()
+    const request = { path: 'queue.md', type: 'claim', author: 'codex@ci', ref: ws.task }
+    const first = await json(await append(ws.append, request, 'claim-1'))
+    const retry = await append(ws.append, request, 'claim-1')
+    expect(retry.headers.get('Idempotent-Replayed')).toBe('true')
+    expect(await json(retry)).toEqual(first)
+  })
+
+  test('an answer saved whole, before answers were kept compact, still replays', async () => {
+    const ws = await withQueue()
+    const request = { path: 'queue.md', type: 'claim', author: 'codex@ci', ref: ws.task }
+    const first = await json(await append(ws.append, request, 'claim-1'))
+    // Takes the workspace back to the schema that saved the whole response.
+    await runInDurableObject(env.WORKSPACES.getByName(ws.id), (instance, state) => {
+      state.storage.sql.exec(`UPDATE idempotency SET response = ?`, JSON.stringify(first))
+      state.storage.sql.exec(`UPDATE schema_version SET version = 3`)
+      Reflect.set(instance, 'exists', false)
+    })
+    const retry = await append(ws.append, request, 'claim-1')
+    expect(retry.headers.get('Idempotent-Replayed')).toBe('true')
+    expect(await json(retry)).toEqual(first)
   })
 
   test('keys belong to the link that sent them', async () => {
