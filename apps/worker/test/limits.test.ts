@@ -9,13 +9,14 @@ import {
   zLogPage,
   zProblem,
   zSearchResults,
+  zWorkspace,
 } from '@mdplane/contract'
 import { runInDurableObject } from 'cloudflare:test'
 import { env } from 'cloudflare:workers'
 import { describe, expect, test } from 'vitest'
 import { clientAddress } from '../src/http.ts'
 import { hashSecret } from '../src/keys.ts'
-import { LIMITS } from '../src/workspace.ts'
+import { LIMITS, type Workspace } from '../src/workspace.ts'
 import { append, call, createWorkspace, json, sleep, withVars, writeFile } from './helpers.ts'
 
 const problemOf = async (response: Response) => zProblem.parse(await json(response))
@@ -312,6 +313,40 @@ describe('reading a busy file', () => {
     const tasks = result.value.tasks['queue.md'] ?? []
     expect(tasks.map((task) => [task.seq, task.status])).toEqual([[2, 'open']])
     expect(tasks[0]?.body.length).toBeLessThanOrEqual(240)
+  })
+})
+
+describe('the overview', () => {
+  // Each version of a file is a write entry, so the listing has to find each file's newest write
+  // without a lookup per version.
+  test('stays quick for a file with thousands of versions', { timeout: 30_000 }, async () => {
+    const ws = await createWorkspace()
+    const auth = { tier: 'w', secretHash: await hashSecret(ws.write.split('.')[1] ?? '') } as const
+    const comment = { path: 'status.md', type: 'comment', author: 'a', body: 'ok' } as const
+    await runInDurableObject(env.WORKSPACES.getByName(ws.id), (workspace: Workspace) => {
+      const create = (path: string, body: string) =>
+        workspace.writeFile(auth, path, body, { ifMatch: undefined, ifNoneMatch: '*' })
+      create('status.md', 'v1')
+      for (let i = 2; i <= 3000; i++) {
+        workspace.writeFile(auth, 'status.md', `v${i}`, { ifMatch: '*', ifNoneMatch: undefined })
+      }
+      for (let i = 0; i < 3000; i++) workspace.append(auth, comment, null)
+      // A deleted file is gone, and one written again after its delete is back.
+      for (const path of ['gone.md', 'back.md']) {
+        create(path, 'one')
+        workspace.deleteFile(auth, path, '*')
+      }
+      create('back.md', 'two')
+    })
+    const started = Date.now()
+    const response = await call(ws.read, { headers: { Accept: 'application/json' } })
+    const took = Date.now() - started
+    const { files } = zWorkspace.parse(await json(response))
+    expect(files.map(({ path, version, lastSeq }) => ({ path, version, lastSeq }))).toEqual([
+      { path: 'back.md', version: 2, lastSeq: 6005 },
+      { path: 'status.md', version: 3000, lastSeq: 6000 },
+    ])
+    expect(took).toBeLessThan(250)
   })
 })
 

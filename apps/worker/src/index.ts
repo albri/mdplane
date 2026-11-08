@@ -116,13 +116,23 @@ function query(c: Context<App>): Record<string, string | number> {
   return out
 }
 
+// JSON can escape half of a surrogate pair, which UTF-8 can't hold. SQLite would keep replacement
+// characters in its place, so an entry read back would no longer match the hash it was sealed with.
+const LONE_SURROGATE = /\p{Cs}/u
+class IllFormed extends Error {}
+const wellFormed = (_key: string, value: unknown) => {
+  if (typeof value === 'string' && LONE_SURROGATE.test(value)) throw new IllFormed()
+  return value
+}
+
 async function readJson(c: Context<App>): Promise<{ value: unknown } | Response> {
   const text = await readBody(c.req.raw, JSON_LIMIT)
   if (text === null) return tooLarge(JSON_LIMIT)
   if (text.trim() === '') return { value: undefined }
   try {
-    return { value: JSON.parse(text) }
-  } catch {
+    return { value: JSON.parse(text, wellFormed) }
+  } catch (error) {
+    if (error instanceof IllFormed) return invalid('The body has text that isn’t valid Unicode.')
     return invalid('The body is not valid JSON.')
   }
 }

@@ -218,6 +218,22 @@ describe('the log', () => {
     expect(page.cursor).toBe(27)
   })
 
+  // JSON can escape half of a surrogate pair, which UTF-8 can't hold, so the stored text would
+  // differ from the text that was hashed.
+  test('refuses text that is not valid Unicode, so every entry matches its hash', async () => {
+    const ws = await withQueue()
+    const half = await call(`${ws.append}/appends`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{"path":"queue.md","type":"comment","author":"a","body":"half \\ud83d an emoji"}',
+    })
+    expect(half.status).toBe(400)
+    const whole = { path: 'queue.md', type: 'comment', author: 'a', body: 'a whole 😀' }
+    expect((await append(ws.append, whole)).status).toBe(201)
+    const page = zLogPage.parse(await json(await call(`${ws.read}/log`)))
+    expect(await verifyChain(page.entries)).toEqual({ ok: true, head: page.head.hash })
+  })
+
   test('pages with a cursor', async () => {
     const ws = await withQueue()
     const first = zLogPage.parse(await json(await call(`${ws.read}/log?limit=1`)))
