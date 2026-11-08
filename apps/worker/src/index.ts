@@ -314,14 +314,15 @@ app.get('/api/health', async (c) => {
 app.get(
   '/:tier/:key',
   keyed(ALL, async (c, { stub, auth }) => {
-    const result = await stub.overview(auth)
+    const type = negotiate(c.req.header('Accept'), [
+      'text/markdown',
+      'application/json',
+      'text/html',
+    ])
+    // Only the markdown overview shows tasks.
+    const result = await stub.overview(auth, { tasks: type === 'text/markdown' })
     return respond(result, ({ workspace, tasks, counts }) => {
       const headers = { ETag: `"${workspace.head.hash}"`, Vary: 'Accept' }
-      const type = negotiate(c.req.header('Accept'), [
-        'text/markdown',
-        'application/json',
-        'text/html',
-      ])
       if (type === 'application/json') return c.json(workspace, 200, headers)
       // The reader is the same page for every link; it reads the key from its own URL.
       if (type === 'text/html') return htmlPage(c, '/reader', 200)

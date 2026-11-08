@@ -45,7 +45,8 @@ export type Result<T> =
 export type NewLink = { id: string; tier: Tier; folder: string | null; secretHash: string }
 export type LogQuery = { path?: string | undefined; after: number; limit: number }
 // `tasks` holds each file's open and claimed tasks, with only as much of each body as the summary
-// shows, and `counts` tallies all of them.
+// shows, and `counts` tallies all of them. Both are empty when the overview is asked for without
+// tasks.
 export type Overview = {
   workspace: WorkspaceView
   tasks: Record<string, TaskView[]>
@@ -419,12 +420,16 @@ export class Workspace extends DurableObject<Env> {
     return deriveTasks(rows, asOf, this.leaseMs)
   }
 
-  overview(auth: Auth): Result<Overview> {
+  // Deriving every task's status reads each file's whole task history, so a format that shows no
+  // tasks asks for none.
+  overview(auth: Auth, options = { tasks: true }): Result<Overview> {
     const link = this.authorize(auth)
     if (!link) return { ok: false, problem: NOT_FOUND }
     const meta = this.meta()
     const head = this.head()
     const files = this.liveFiles().filter((file) => inScope(link.folder, file.path))
+    const workspace = { ...meta, link, head, files }
+    if (!options.tasks) return ok({ workspace, tasks: {}, counts: {} })
     const tasks: Record<string, TaskView[]> = {}
     const counts: Record<string, TaskCounts> = {}
     for (const file of files) {
@@ -434,7 +439,7 @@ export class Workspace extends DurableObject<Env> {
       counts[file.path] = tallyTasks(all)
       tasks[file.path] = all.filter((task) => task.status === 'open' || task.status === 'claimed')
     }
-    return ok({ workspace: { ...meta, link, head, files }, tasks, counts })
+    return ok({ workspace, tasks, counts })
   }
 
   readFile(auth: Auth, path: string, at?: number): Result<FileView> {
