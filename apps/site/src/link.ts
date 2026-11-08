@@ -7,7 +7,15 @@ const GONE =
   "This link doesn't work. It may be mistyped, revoked, or for a workspace that has expired."
 
 const app = mountApp()
-const fileFromHash = () => decodeURIComponent(location.hash.slice(1)) || undefined
+// A fragment edited by hand may not decode, and then it names no file. Throwing would stop the
+// reader from opening the workspace at all.
+const fileFromHash = () => {
+  try {
+    return decodeURIComponent(location.hash.slice(1)) || undefined
+  } catch {
+    return undefined
+  }
+}
 
 const showTitle = (live: Watch) =>
   app.title(

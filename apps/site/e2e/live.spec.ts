@@ -72,6 +72,23 @@ it('a revoked link stops following and says the link no longer works', async ({
   await expect(page.locator('#app-status')).toHaveText(/This link doesn't work/)
 })
 
+it('a fragment that does not decode still opens the workspace', async ({ page, shared, files }) => {
+  const path = named('fragment')
+  await files({ [path]: '# Brief' })
+  await page.goto(`${shared.read}#%E0%A4%A`)
+  await expect(badge(page)).toHaveText('Live')
+  await expect(page.locator('#app-status')).not.toHaveText(/Couldn't load/)
+  // The reader's own listener runs first, so it has seen the change once this one has.
+  await page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        addEventListener('hashchange', resolve, { once: true })
+        location.hash = '%'
+      }),
+  )
+  await expect(badge(page)).toHaveText('Live')
+})
+
 it('reconnects after the live socket drops and misses nothing', async ({
   page,
   request,

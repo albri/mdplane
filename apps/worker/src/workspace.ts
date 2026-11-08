@@ -378,15 +378,18 @@ export class Workspace extends DurableObject<Env> {
     return { write: last, since }
   }
 
+  // Each path's newest write or delete is found in one grouped pass, so listing stays fast for a
+  // file with a long history.
   private liveFiles(): FileSummary[] {
     return this.sql
       .exec<FileSummary>(
-        `SELECT e.path, e.version, e.content_hash AS contentHash, e.at AS updatedAt,
-                (SELECT MAX(seq) FROM entries x WHERE x.path = e.path) AS lastSeq
-         FROM entries e
-         WHERE e.type = 'write' AND e.seq = (
-           SELECT MAX(seq) FROM entries y WHERE y.path = e.path AND y.type IN ('write', 'delete')
+        `WITH newest AS (
+           SELECT MAX(seq) AS seq FROM entries WHERE type IN ('write', 'delete') GROUP BY path
          )
+         SELECT e.path, e.version, e.content_hash AS contentHash, e.at AS updatedAt,
+                (SELECT MAX(seq) FROM entries x WHERE x.path = e.path) AS lastSeq
+         FROM newest JOIN entries e ON e.seq = newest.seq
+         WHERE e.type = 'write'
          ORDER BY e.path`,
       )
       .toArray()
