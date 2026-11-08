@@ -39,6 +39,8 @@ tags:
     description: Appending entries and following the log.
   - name: Links
     description: Capability URLs for other people and agents.
+  - name: Health
+    description: Whether the service is up.
 
 paths:
   /:
@@ -107,6 +109,50 @@ paths:
           $ref: '#/components/responses/RateLimited'
         '503':
           $ref: '#/components/responses/CreationPaused'
+
+  /api/health:
+    get:
+      operationId: getHealth
+      summary: Check that the service is up
+      description: |
+        For monitors. It needs no link and says nothing about any workspace.
+        Its one check reads from the Durable Object that counts new
+        workspaces, and gives up after 3 seconds. An answer is reused for up
+        to 10 seconds, so asking often costs little.
+      tags: [Health]
+      responses:
+        '200':
+          description: Every check is ok.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+              example:
+                status: ok
+                service: mdplane
+                environment: production
+                version: 3f6c1b2e-8a4d-4e7f-9b05-6d2a1c8e4f70
+                timestamp: '2026-11-08T09:00:00.000Z'
+                checks:
+                  objects:
+                    status: ok
+                    latencyMs: 12
+        '503':
+          description: A check is down.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+              example:
+                status: degraded
+                service: mdplane
+                environment: production
+                version: 3f6c1b2e-8a4d-4e7f-9b05-6d2a1c8e4f70
+                timestamp: '2026-11-08T09:00:00.000Z'
+                checks:
+                  objects:
+                    status: down
+                    error: timeout
 
   /{tier}/{key}:
     parameters:
@@ -1344,6 +1390,60 @@ components:
         url:
           type: string
           format: uri
+
+    Health:
+      type: object
+      additionalProperties: false
+      required: [status, service, environment, version, timestamp, checks]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+          description: '`degraded` when any check is down.'
+        service:
+          type: string
+          const: mdplane
+        environment:
+          type: string
+          description: Which deploy answered, such as `production`.
+        version:
+          type: string
+          description: The ID of the Worker version that answered.
+        timestamp:
+          type: string
+          format: date-time
+          description: When the checks ran.
+        checks:
+          type: object
+          additionalProperties: false
+          required: [objects]
+          properties:
+            objects:
+              $ref: '#/components/schemas/HealthCheck'
+              description: A read from the Durable Object that counts new workspaces.
+    HealthCheck:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required: [status, latencyMs]
+          properties:
+            status:
+              type: string
+              const: ok
+            latencyMs:
+              type: integer
+              minimum: 0
+        - type: object
+          additionalProperties: false
+          required: [status, error]
+          properties:
+            status:
+              type: string
+              const: down
+            error:
+              type: string
+              enum: [timeout, unavailable]
+              description: '`timeout` after 3 seconds, or `unavailable` when the object fails.'
 
     Problem:
       type: object

@@ -28,6 +28,8 @@
   // those logs are off and only what the Worker logs itself is kept. Traces record the URL too:
   // never turn them on.
   "observability": { "enabled": true, "logs": { "invocation_logs": false } },
+  // The ID of the version that answers, for GET /api/health.
+  "version_metadata": { "binding": "CF_VERSION_METADATA" },
   "durable_objects": {
     "bindings": [
       { "name": "WORKSPACES", "class_name": "Workspace" },
@@ -60,6 +62,8 @@
     "CREATE_ENABLED": "true",
     // New workspaces a day across the service, counted in UTC. 0 means no limit.
     "CREATE_DAILY_LIMIT": "100",
+    // The deploy's name in GET /api/health.
+    "ENVIRONMENT": "preview",
   },
   // mdplane.dev, as the Worker "mdplane-production". Only CI deploys it, from main, after a
   // reviewer approves the GitHub production environment. A plain `wrangler deploy` makes the
@@ -73,6 +77,7 @@
       "workers_dev": true,
       // Each version's own URL would be another way in, and a test needs only the one.
       "preview_urls": false,
+      "version_metadata": { "binding": "CF_VERSION_METADATA" },
       "durable_objects": {
         "bindings": [
           { "name": "WORKSPACES", "class_name": "Workspace" },
@@ -102,6 +107,7 @@
         "WORKSPACE_MAX_BYTES": "8388608",
         "CREATE_ENABLED": "true",
         "CREATE_DAILY_LIMIT": "100",
+        "ENVIRONMENT": "preview",
       },
     },
     "production": {
@@ -119,6 +125,7 @@
       "limits": { "cpu_ms": 1000 },
       // An environment inherits no bindings or vars, so these repeat the ones above. The limiters
       // have their own namespaces, so the preview's traffic doesn't count against mdplane.dev.
+      "version_metadata": { "binding": "CF_VERSION_METADATA" },
       "durable_objects": {
         "bindings": [
           { "name": "WORKSPACES", "class_name": "Workspace" },
@@ -148,6 +155,7 @@
         "WORKSPACE_MAX_BYTES": "8388608",
         "CREATE_ENABLED": "true",
         "CREATE_DAILY_LIMIT": "100",
+        "ENVIRONMENT": "production",
       },
     },
   },

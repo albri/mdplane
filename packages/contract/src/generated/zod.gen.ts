@@ -277,6 +277,28 @@ export const zCreateLinkResult = z.strictObject({
     url: z.url()
 });
 
+export const zHealthCheck = z.union([
+    z.strictObject({
+        status: z.literal('ok'),
+        latencyMs: z.int().gte(0)
+    }),
+    z.strictObject({
+        status: z.literal('down'),
+        error: z.enum(['timeout', 'unavailable'])
+    })
+]);
+
+export const zHealth = z.strictObject({
+    status: z.enum(['ok', 'degraded']),
+    service: z.literal('mdplane'),
+    environment: z.string(),
+    version: z.string(),
+    timestamp: z.iso.datetime(),
+    checks: z.strictObject({
+        objects: zHealthCheck
+    })
+});
+
 /**
  * RFC 9457 problem details.
  */
@@ -379,6 +401,11 @@ export const zCreateWorkspaceBody = zCreateWorkspaceRequest;
  * The workspace and its three links.
  */
 export const zCreateWorkspaceResponse2 = zCreateWorkspaceResponse;
+
+/**
+ * Every check is ok.
+ */
+export const zGetHealthResponse = zHealth;
 
 export const zGetWorkspacePath = z.object({
     tier: zTier,

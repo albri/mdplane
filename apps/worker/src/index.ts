@@ -1,4 +1,6 @@
 import {
+  type Health,
+  type HealthCheck,
   type LogPage,
   renderFile,
   renderInstructions,
@@ -245,6 +247,59 @@ app.post('/workspaces', async (c) => {
 app.all('/workspaces', () =>
   problem({ status: 405, code: 'method_not_allowed' }, { Allow: 'POST' }),
 )
+
+const CHECK_TIMEOUT_MS = 3000
+const HEALTH_FRESH_MS = 10_000
+
+// Reads from the object that counts creates, without taking one or touching a workspace. A check
+// that fails says only how, since an error's message could name a host.
+async function checkObjects(env: Env): Promise<HealthCheck> {
+  const started = Date.now()
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timedOut = new Promise<'timeout'>((resolve) => {
+    timer = setTimeout(() => resolve('timeout'), CHECK_TIMEOUT_MS)
+  })
+  try {
+    const read = env.QUOTA.getByName('creates').ping()
+    if ((await Promise.race([read, timedOut])) === 'timeout') {
+      return { status: 'down', error: 'timeout' }
+    }
+    return { status: 'ok', latencyMs: Date.now() - started }
+  } catch (error) {
+    console.error(error)
+    return { status: 'down', error: 'unavailable' }
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+async function checkHealth(env: Env): Promise<Health> {
+  const objects = await checkObjects(env)
+  return {
+    status: objects.status === 'ok' ? 'ok' : 'degraded',
+    service: 'mdplane',
+    environment: env.ENVIRONMENT,
+    version: env.CF_VERSION_METADATA.id,
+    timestamp: new Date().toISOString(),
+    checks: { objects },
+  }
+}
+
+// Anyone may ask, so each isolate shares one answer for 10 seconds, and asking often costs at most
+// one read every 10 seconds.
+let shared: { at: number; answer: Promise<Health> } | undefined
+
+app.get('/api/health', async (c) => {
+  const now = Date.now()
+  if (!shared || now - shared.at >= HEALTH_FRESH_MS) {
+    shared = { at: now, answer: checkHealth(c.env) }
+    // Other requests wait on this request's check, so it has to finish even if this request's
+    // client goes away.
+    c.executionCtx.waitUntil(shared.answer)
+  }
+  const health = await shared.answer
+  return c.json(health, health.status === 'ok' ? 200 : 503)
+})
 
 app.get(
   '/:tier/:key',

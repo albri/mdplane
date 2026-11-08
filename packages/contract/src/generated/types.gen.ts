@@ -325,6 +325,43 @@ export type CreateLinkResult = {
     url: string;
 };
 
+export type Health = {
+    /**
+     * `degraded` when any check is down.
+     */
+    status: 'ok' | 'degraded';
+    service: 'mdplane';
+    /**
+     * Which deploy answered, such as `production`.
+     */
+    environment: string;
+    /**
+     * The ID of the Worker version that answered.
+     */
+    version: string;
+    /**
+     * When the checks ran.
+     */
+    timestamp: string;
+    checks: {
+        /**
+         * A read from the Durable Object that counts new workspaces.
+         */
+        objects: HealthCheck;
+    };
+};
+
+export type HealthCheck = {
+    status: 'ok';
+    latencyMs: number;
+} | {
+    status: 'down';
+    /**
+     * `timeout` after 3 seconds, or `unavailable` when the object fails.
+     */
+    error: 'timeout' | 'unavailable';
+};
+
 /**
  * RFC 9457 problem details.
  */
@@ -463,6 +500,31 @@ export type CreateWorkspaceResponses = {
 };
 
 export type CreateWorkspaceResponse2 = CreateWorkspaceResponses[keyof CreateWorkspaceResponses];
+
+export type GetHealthData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/health';
+};
+
+export type GetHealthErrors = {
+    /**
+     * A check is down.
+     */
+    503: Health;
+};
+
+export type GetHealthError = GetHealthErrors[keyof GetHealthErrors];
+
+export type GetHealthResponses = {
+    /**
+     * Every check is ok.
+     */
+    200: Health;
+};
+
+export type GetHealthResponse = GetHealthResponses[keyof GetHealthResponses];
 
 export type GetWorkspaceData = {
     body?: never;

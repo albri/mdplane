@@ -312,6 +312,7 @@ const worker = z.object({
       traces: z.object({ enabled: z.boolean().optional() }).optional(),
     })
     .optional(),
+  version_metadata: z.unknown(),
   durable_objects: z.unknown(),
   ratelimits: z.array(z.object({ namespace_id: z.string() }).loose()),
   vars: z.record(z.string(), z.string()),
@@ -346,7 +347,9 @@ describe('mdplane.dev', () => {
     // Each Worker counts in its own namespaces.
     const limits = (target: typeof production) =>
       target.ratelimits.map((limit) => ({ ...limit, namespace_id: undefined }))
-    expect(production.vars).toEqual(deployed.vars)
+    // Only the deploy's name differs.
+    expect(production.vars).toEqual({ ...deployed.vars, ENVIRONMENT: 'production' })
+    expect(production.version_metadata).toEqual(deployed.version_metadata)
     expect(production.durable_objects).toEqual(deployed.durable_objects)
     expect(limits(production)).toEqual(limits(deployed))
   })
@@ -370,6 +373,7 @@ describe('the preview, opened for a test', () => {
   test('is the same Worker, with the same bindings, limits and vars', () => {
     expect(open.name).toBe(deployed.name)
     expect(open.vars).toEqual(deployed.vars)
+    expect(open.version_metadata).toEqual(deployed.version_metadata)
     expect(open.durable_objects).toEqual(deployed.durable_objects)
     expect(open.ratelimits).toEqual(deployed.ratelimits)
   })

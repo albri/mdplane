@@ -24,4 +24,9 @@ export class Quota extends DurableObject<Env> {
     )
     return true
   }
+
+  // Reads from storage and changes nothing, so a health check can ask without taking a create.
+  ping(): void {
+    this.ctx.storage.sql.exec(`SELECT 1 FROM creates LIMIT 1`).toArray()
+  }
 }
