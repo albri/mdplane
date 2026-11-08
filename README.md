@@ -219,6 +219,8 @@ pnpm --filter @mdplane/worker run deploy
 That Worker has no public URL. `pnpm --filter @mdplane/worker run deploy:open` puts it on
 workers.dev, or add a route on your own zone.
 
+`GET /api/health` answers `200` while a deploy reaches its Durable Objects, and `503` if it cannot.
+
 These variables in `apps/worker/wrangler.jsonc` set the behaviour. The defaults are the values on
 mdplane.dev.
 
