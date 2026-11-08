@@ -173,6 +173,21 @@ describe('the text budget', () => {
       expect((await append(ws.append, big)).status).toBe(409)
     })
   })
+
+  test('is not outgrown by the answers saved for retries', async () => {
+    const ws = await createWorkspace()
+    await writeFile(ws.write, 'queue.md', 'Brief\n')
+    // JSON escapes each character as six, so a copy of the response would be about 60 KB.
+    const body = '\u0001'.repeat(10_000)
+    const comment = { path: 'queue.md', type: 'comment', author: 'a', body }
+    expect((await append(ws.append, comment, 'retry-1')).status).toBe(201)
+    const saved = await runInDurableObject(env.WORKSPACES.getByName(ws.id), (_, state) =>
+      state.storage.sql
+        .exec<{ bytes: number }>(`SELECT octet_length(response) AS bytes FROM idempotency`)
+        .one(),
+    )
+    expect(saved.bytes).toBeLessThan(200)
+  })
 })
 
 describe('waiting on a workspace', () => {

@@ -67,6 +67,9 @@ export const LIMITS = {
 // The close code that tells a live connection there is more backlog than one connection sends.
 export const MORE_BACKLOG = 4000
 const IDEMPOTENCY_MS = 24 * 60 * 60 * 1000
+// What an append keeps to answer a retry. A replay reads the entry back from the log, so a saved
+// answer holds no second copy of the entry's text and stays the same size however long it is.
+type SavedAnswer = { seq: number; lease: Lease | null }
 const ALL: readonly Tier[] = ['r', 'a', 'w']
 
 const NOT_FOUND: Failure = { code: 'not_found', status: 404 }
@@ -124,6 +127,9 @@ const MIGRATIONS = [
   // 3: revoking a link now deletes it, so only live links count toward the limit and making and
   // revoking links can't grow the table.
   `DELETE FROM links WHERE revoked_at IS NOT NULL;`,
+  // 4: a saved answer to a retried append keeps the entry's seq and the lease, not the response.
+  `UPDATE idempotency SET response = json_object(
+     'seq', json_extract(response, '$.entry.seq'), 'lease', json_extract(response, '$.lease'));`,
 ]
 
 const sha256 = (text: string) => createHash('sha256').update(text).digest('hex')
@@ -628,8 +634,11 @@ export class Workspace extends DurableObject<Env> {
             'This Idempotency-Key was used for a different request.',
           )
         }
-        const value: AppendResult = JSON.parse(prior.response)
-        return { ok: true, value, created: true, replayed: true }
+        const saved: SavedAnswer = JSON.parse(prior.response)
+        const entry = this.sql
+          .exec<Entry>(`SELECT ${ENTRY} FROM entries WHERE seq = ?`, saved.seq)
+          .one()
+        return { ok: true, value: { entry, lease: saved.lease }, created: true, replayed: true }
       }
     }
 
@@ -701,17 +710,17 @@ export class Workspace extends DurableObject<Env> {
         token,
       }
     }
-    const value: AppendResult = { entry, lease }
     if (key) {
+      const saved: SavedAnswer = { seq: entry.seq, lease }
       this.sql.exec(
         `INSERT INTO idempotency VALUES (?, ?, ?, ?)`,
         key,
         requestHash,
-        JSON.stringify(value),
+        JSON.stringify(saved),
         now,
       )
     }
-    return ok(value, { created: true })
+    return ok({ entry, lease }, { created: true })
   }
 
   private leaseToken(task: number): string | null {
