@@ -363,6 +363,20 @@ describe('the overview', () => {
     ])
     expect(took).toBeLessThan(250)
   })
+
+  // JSON and the reader show no tasks, so they shouldn't pay to derive every task's status.
+  test('derives no tasks when asked for none, and lists the same workspace', async () => {
+    const ws = await createWorkspace()
+    await writeFile(ws.write, 'queue.md', 'Brief\n')
+    await append(ws.append, { path: 'queue.md', type: 'task', author: 'a', body: 'Ship it' })
+    const auth = { tier: 'r', secretHash: await hashSecret(ws.read.split('.')[1] ?? '') } as const
+    const stub = env.WORKSPACES.getByName(ws.id)
+    const full = await stub.overview(auth)
+    const bare = await stub.overview(auth, { tasks: false })
+    if (!full.ok || !bare.ok) throw new Error('overview failed')
+    expect(full.value.tasks['queue.md']?.map((task) => task.status)).toEqual(['open'])
+    expect(bare.value).toEqual({ workspace: full.value.workspace, tasks: {}, counts: {} })
+  })
 })
 
 // 40 entries of 16,000 bytes come to 640,000 bytes, more than one page carries.
