@@ -12,12 +12,12 @@
   },
   "dependencies": {
     "@mdplane/contract": "workspace:*",
-    "hono": "^4.13.14"
+    "hono": "^4.13.16"
   },
   "devDependencies": {
-    "@cloudflare/vitest-plugin": "^1.4.10",
-    "vitest": "^5.0.5",
-    "wrangler": "^4.155.0",
+    "@cloudflare/vitest-plugin": "^1.6.0",
+    "vitest": "^5.1.0",
+    "wrangler": "^4.158.0",
     "zod": "^4.6.7"
   }
 }
