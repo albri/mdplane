@@ -16,9 +16,9 @@
     "@axe-core/playwright": "~4.14.0",
     "@fontsource-variable/schibsted-grotesk": "^5.3.0",
     "@fontsource/fragment-mono": "^5.3.0",
-    "@playwright/test": "~1.63.0",
+    "@playwright/test": "~1.65.0",
     "@types/node": "^22.19.0",
     "esbuild": "^0.28.2",
-    "vitest": "^5.0.5"
+    "vitest": "^5.1.0"
   }
 }
